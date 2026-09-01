@@ -530,7 +530,7 @@ export const SPECIAL_VERBS = [
       imperfecto: "pedía pedías pedías pedía pedíamos pedíais pedían",
       futuro: "pediré pedirás pedirás pedirá pediremos pediréis pedirán",
       condicional: "pediría pedirías pedirías pediría pediríamos pediríais pedirían",
-      subjuntivo: "pida pidas pidás pida pidamos pidáis pidan",
+      subjuntivo: "pida pidas pedás pida pidamos pidáis pidan",
     }),
   },
   {
@@ -542,7 +542,7 @@ export const SPECIAL_VERBS = [
       imperfecto: "servía servías servías servía servíamos servíais servían",
       futuro: "serviré servirás servirás servirá serviremos serviréis servirán",
       condicional: "serviría servirías servirías serviría serviríamos serviríais servirían",
-      subjuntivo: "sirva sirvas sirvás sirva sirvamos sirváis sirvan",
+      subjuntivo: "sirva sirvas servás sirva sirvamos sirváis sirvan",
     }),
   },
   {
@@ -554,7 +554,7 @@ export const SPECIAL_VERBS = [
       imperfecto: "repetía repetías repetías repetía repetíamos repetíais repetían",
       futuro: "repetiré repetirás repetirás repetirá repetiremos repetiréis repetirán",
       condicional: "repetiría repetirías repetirías repetiría repetiríamos repetiríais repetirían",
-      subjuntivo: "repita repitas repitás repita repitamos repitáis repitan",
+      subjuntivo: "repita repitas repetás repita repitamos repitáis repitan",
     }),
   },
   {
@@ -566,7 +566,7 @@ export const SPECIAL_VERBS = [
       imperfecto: "seguía seguías seguías seguía seguíamos seguíais seguían",
       futuro: "seguiré seguirás seguirás seguirá seguiremos seguiréis seguirán",
       condicional: "seguiría seguirías seguirías seguiría seguiríamos seguiríais seguirían",
-      subjuntivo: "siga sigas sigás siga sigamos sigáis sigan",
+      subjuntivo: "siga sigas seguás siga sigamos sigáis sigan",
     }),
   },
   {

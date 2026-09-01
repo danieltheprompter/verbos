@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { conjugate, SPECIAL_VERBS, verbsInBucket } from "./verbs.js";
+import { ALL_VERBS, conjugate, SPECIAL_VERBS, verbsInBucket } from "./verbs.js";
 
 const ALL_TENSES = [
   "presente",
@@ -91,6 +91,54 @@ describe("irregulars and stem-changers", () => {
           expect(form, `${verb.inf} ${tense} ${person}`).toMatch(/\S/);
         }
       }
+    }
+  });
+});
+
+describe("Rioplatense vos", () => {
+  const matchTu = ["preterito", "imperfecto", "futuro", "condicional", "subjuntivo_imp"];
+  const divergePlaces = ["presente", "subjuntivo", "commands"];
+
+  it("diverges from tú only in presente, presente de subjuntivo, and commands", () => {
+    expect(divergePlaces).toEqual(["presente", "subjuntivo", "commands"]);
+    for (const verb of ALL_VERBS) {
+      for (const tense of matchTu) {
+        expect(conjugate(verb.inf, tense, "vos"), `${verb.inf} ${tense}`).toBe(
+          conjugate(verb.inf, tense, "tu"),
+        );
+      }
+    }
+    expect(conjugate("hablar", "presente", "vos")).toBe("hablás");
+    expect(conjugate("hablar", "subjuntivo", "vos")).toBe("hablés");
+    expect(conjugate("hablar", "mandato_af", "vos")).toBe("hablá");
+    expect(conjugate("hablar", "mandato_neg", "vos")).toBe("no hablés");
+  });
+
+  it("rejects Chilean, Central American, and hypercorrect forms", () => {
+    expect(conjugate("poder", "presente", "vos")).toBe("podés");
+    expect(conjugate("poder", "subjuntivo", "vos")).toBe("podás");
+    expect(conjugate("hablar", "preterito", "vos")).toBe("hablaste");
+    expect(conjugate("hablar", "presente", "vos")).toBe("hablás");
+    expect(conjugate("comer", "presente", "vos")).toBe("comés");
+    expect(conjugate("pedir", "presente", "vos")).toBe("pedís");
+    expect(conjugate("pedir", "subjuntivo", "vos")).toBe("pedás");
+    expect(conjugate("pedir", "mandato_neg", "vos")).toBe("no pedás");
+    expect(conjugate("servir", "subjuntivo", "vos")).toBe("servás");
+    expect(conjugate("repetir", "subjuntivo", "vos")).toBe("repetás");
+    expect(conjugate("seguir", "subjuntivo", "vos")).toBe("seguás");
+    expect(conjugate("pensar", "presente", "vos")).toBe("pensás");
+    expect(conjugate("ir", "mandato_af", "vos")).toBe("andá");
+
+    for (const verb of ALL_VERBS) {
+      const present = conjugate(verb.inf, "presente", "vos");
+      const preterite = conjugate(verb.inf, "preterito", "vos");
+      expect(present, verb.inf).not.toBe("habés");
+      expect(present, verb.inf).not.toBe("puedés");
+      expect(present, verb.inf).not.toMatch(/ái$/);
+      expect(preterite, verb.inf).not.toMatch(/stes$/);
+    }
+    for (const verb of ALL_VERBS.filter((verb) => verb.inf.endsWith("er"))) {
+      expect(conjugate(verb.inf, "presente", "vos"), verb.inf).not.toMatch(/ís$/);
     }
   });
 });
