@@ -2,7 +2,7 @@ import { ROUND_SIZE } from "./constants.js";
 import { cellsFor } from "./board.js";
 import { completePassDone, isOwned, isVisited } from "./mastery.js";
 import { pick, shuffle, weightedPick } from "./random.js";
-import { activeTypes, conjugate, verbsForSettings } from "./verbs.js";
+import { activeTypes, conjugate, verbFamily, verbsForSettings } from "./verbs.js";
 
 function avoidRepeat(prev, candidate) {
   if (!prev) return true;
@@ -20,17 +20,27 @@ function itemFrom(cell, verb) {
     person: cell.person,
     verb: verb.inf,
     type: verb.type,
+    family: verb.family || verbFamily(verb.inf),
     expected: conjugate(verb.inf, cell.tense, cell.person),
   };
 }
 
-function pickWeightedCell(cells, attempts, types, prev, rng) {
+function sliceWeight(attempts, tense, person, type, family) {
+  return isOwned(attempts, tense, person, type, family) ? 1 : 5;
+}
+
+function pickWeightedCell(cells, attempts, types, families, prev, rng) {
   const empty = cells.filter((cell) => !isVisited(attempts, cell.tense, cell.person));
   const board = empty.length ? empty : cells;
   const weights = board.map((cell) => {
     if (empty.length) return 8;
-    const weak = types.some((type) => !isOwned(attempts, cell.tense, cell.person, type));
-    return weak ? 5 : 1;
+    let weight = 0;
+    for (const type of types) {
+      for (const family of families) {
+        weight += sliceWeight(attempts, cell.tense, cell.person, type, family);
+      }
+    }
+    return weight || 1;
   });
 
   for (let tryNo = 0; tryNo < 8; tryNo += 1) {
@@ -40,11 +50,15 @@ function pickWeightedCell(cells, attempts, types, prev, rng) {
   return weightedPick(board, weights, rng);
 }
 
-function pickTypeForCell(types, verbsByType, cell, attempts, rng) {
+function pickTypeForCell(types, verbsByType, cell, attempts, families, rng) {
   const open = types.filter((type) => verbsByType[type]?.length);
-  const weights = open.map((type) =>
-    isOwned(attempts, cell.tense, cell.person, type) ? 1 : 5,
-  );
+  const weights = open.map((type) => {
+    let weight = 0;
+    for (const family of families) {
+      weight += sliceWeight(attempts, cell.tense, cell.person, type, family);
+    }
+    return weight || 1;
+  });
   return weightedPick(open, weights, rng);
 }
 
@@ -52,6 +66,7 @@ export function buildRound(settings, attempts, rng = Math.random, size = ROUND_S
   const cells = cellsFor(settings);
   const verbs = verbsForSettings(settings);
   const types = activeTypes(settings);
+  const families = [...new Set(verbs.map((verb) => verb.family || verbFamily(verb.inf)))];
   const verbsByType = Object.fromEntries(
     types.map((type) => [type, verbs.filter((verb) => verb.type === type)]),
   );
@@ -65,7 +80,7 @@ export function buildRound(settings, attempts, rng = Math.random, size = ROUND_S
   if (firstPass && empty.length) {
     const cover = shuffle(empty, rng).slice(0, size);
     for (const cell of cover) {
-      const type = pickTypeForCell(types, verbsByType, cell, attempts, rng);
+      const type = pickTypeForCell(types, verbsByType, cell, attempts, families, rng);
       const verb = pickVerb(verbsByType[type] || verbs, usedVerbs, rng);
       usedVerbs.add(verb.inf);
       items.push(itemFrom(cell, verb));
@@ -73,8 +88,8 @@ export function buildRound(settings, attempts, rng = Math.random, size = ROUND_S
   }
 
   while (items.length < size) {
-    const cell = pickWeightedCell(cells, attempts, types, items[items.length - 1], rng);
-    const type = pickTypeForCell(types, verbsByType, cell, attempts, rng);
+    const cell = pickWeightedCell(cells, attempts, types, families, items[items.length - 1], rng);
+    const type = pickTypeForCell(types, verbsByType, cell, attempts, families, rng);
     const verb = pickVerb(verbsByType[type] || verbs, usedVerbs, rng);
     usedVerbs.add(verb.inf);
     items.push(itemFrom(cell, verb));

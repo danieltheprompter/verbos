@@ -36,7 +36,6 @@ export function App() {
         <Play
           key={playId}
           settings={settings}
-          attempts={store.attempts}
           items={items}
           onAttempt={(attempt) => setStore((prev) => recordAttempt(prev, attempt))}
           onDone={() => setStore((prev) => markFinished(prev))}

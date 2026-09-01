@@ -191,14 +191,23 @@ p {
   transition: background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
-.cell-visit {
+.cell-fill,
+.cell-learning {
   background: var(--visit);
   border-color: #b9a583;
 }
 
-.cell-owned {
+.cell-know {
   background: var(--owned);
   border-color: var(--owned);
+}
+
+.atlas {
+  grid-template-columns: 3.4rem repeat(var(--cols), minmax(0, 1fr));
+}
+
+.atlas-key {
+  flex-wrap: wrap;
 }
 
 .cell-na {

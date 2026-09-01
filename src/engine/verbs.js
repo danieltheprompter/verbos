@@ -1,4 +1,4 @@
-import { POOL } from "./constants.js";
+import { bucketsFromPool, POOL } from "./constants.js";
 
 const PERSONS = ["yo", "tu", "vos", "el", "nos", "vosotros", "ellos"];
 
@@ -664,10 +664,26 @@ export function parseCustomList(text) {
     .filter(Boolean);
 }
 
+export function verbFamily(infinitive) {
+  const bare = String(infinitive || "")
+    .normalize("NFD")
+    .replace(/\p{M}/gu, "")
+    .toLowerCase();
+  return bare.slice(-2) === "ar" ? "ar" : "er_ir";
+}
+
+export function verbsForBuckets(buckets) {
+  const set = new Set(buckets?.length ? buckets : ["regular"]);
+  return ALL_VERBS.filter((verb) => set.has(verb.type));
+}
+
 export function verbsForSettings(settings) {
   const custom = parseCustomList(settings.customList);
   if (custom.length) return custom;
-  return verbsInPool(settings.pool);
+  const buckets = settings.buckets?.length
+    ? settings.buckets
+    : bucketsFromPool(settings.pool);
+  return verbsForBuckets(buckets);
 }
 
 export function activeTypes(settings) {

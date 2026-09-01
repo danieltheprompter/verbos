@@ -1,20 +1,11 @@
 import { useState } from "react";
-import { POOL, TARGET_GROUPS } from "../engine/constants.js";
-
-const POOLS = [
-  { id: POOL.REGULARS, title: "Regulars", note: "Clean endings only." },
-  { id: POOL.IRREGULARS, title: "Common irregulars", note: "Adds ser, ir, tener, hacer…" },
-  {
-    id: POOL.STEM,
-    title: "Stem-changers & spelling changes",
-    note: "Adds pensar, dormir, buscar…",
-  },
-];
+import { TARGET_GROUPS, VERB_BUCKETS } from "../engine/constants.js";
 
 export function Customize({ settings, onSave, onBack, onProgress }) {
   const [draft, setDraft] = useState({
     ...settings,
     tenses: [...settings.tenses],
+    buckets: settings.buckets?.length ? [...settings.buckets] : ["regular"],
     customList: settings.customList || "",
     address: settings.address || "tu",
   });
@@ -30,6 +21,17 @@ export function Customize({ settings, onSave, onBack, onProgress }) {
     });
   }
 
+  function toggleBucket(id) {
+    setDraft((prev) => {
+      const on = prev.buckets.includes(id);
+      if (on && prev.buckets.length === 1) return prev;
+      return {
+        ...prev,
+        buckets: on ? prev.buckets.filter((bucket) => bucket !== id) : [...prev.buckets, id],
+      };
+    });
+  }
+
   return (
     <section className="panel">
       <header className="panel-head">
@@ -41,22 +43,22 @@ export function Customize({ settings, onSave, onBack, onProgress }) {
       </header>
 
       <fieldset>
-        <legend>Verb pool</legend>
+        <legend>Verb sets</legend>
         <div className="steps">
-          {POOLS.map((pool) => (
+          {VERB_BUCKETS.map((bucket) => (
             <button
-              key={pool.id}
+              key={bucket.id}
               type="button"
-              className={`step ${draft.pool === pool.id ? "is-on" : ""}`}
-              onClick={() => setDraft((prev) => ({ ...prev, pool: pool.id }))}
+              className={`step ${draft.buckets.includes(bucket.id) ? "is-on" : ""}`}
+              onClick={() => toggleBucket(bucket.id)}
             >
-              <strong>{pool.title}</strong>
-              <span>{pool.note}</span>
+              <strong>{bucket.label}</strong>
+              <span>{bucket.examples}</span>
             </button>
           ))}
         </div>
         <label className="custom-list">
-          <span>Custom infinitives</span>
+          <span>Pick specific verbs</span>
           <textarea
             value={draft.customList}
             onChange={(event) =>
@@ -127,11 +129,13 @@ export function Customize({ settings, onSave, onBack, onProgress }) {
           <input
             type="checkbox"
             checked={draft.mc}
-            onChange={(event) => setDraft((prev) => ({ ...prev, mc: event.target.checked }))}
+            onChange={(event) =>
+              setDraft((prev) => ({ ...prev, mc: event.target.checked }))
+            }
           />
           <span>
             <strong>Multiple choice</strong>
-            Crutch only. Does not count toward mastered.
+            Crutch only. Does not count toward knowing a cell.
           </span>
         </label>
       </fieldset>
@@ -142,7 +146,9 @@ export function Customize({ settings, onSave, onBack, onProgress }) {
           <input
             type="checkbox"
             checked={draft.timer}
-            onChange={(event) => setDraft((prev) => ({ ...prev, timer: event.target.checked }))}
+            onChange={(event) =>
+              setDraft((prev) => ({ ...prev, timer: event.target.checked }))
+            }
           />
           <span>
             <strong>Per-item timer</strong>

@@ -3,14 +3,13 @@ import { CONTENT_VERSION, TENSES } from "../engine/constants.js";
 import { personLabel } from "../engine/board.js";
 import { answersMatch } from "../engine/check.js";
 import { makeDistractors } from "../engine/round.js";
-import { isSingleTypePool, verbType } from "../engine/verbs.js";
-import { Board, BoardLegend, TypeReadout } from "./Board.jsx";
+import { verbFamily, verbType } from "../engine/verbs.js";
+import { Board } from "./Board.jsx";
 
 const ACCENTS = ["á", "é", "í", "ó", "ú", "ü", "ñ"];
 
 export function Play({
   settings,
-  attempts,
   items,
   onAttempt,
   onDone,
@@ -67,6 +66,7 @@ export function Play({
     item.given = raw;
     setResult({ ok, expected: item.expected });
     const verb_type = item.type || item.verb_type || verbType(item.verb);
+    const family = item.family || verbFamily(item.verb);
     onAttempt({
       attempt_id: globalThis.crypto?.randomUUID?.(),
       tense: item.tense,
@@ -74,6 +74,7 @@ export function Play({
       verb: item.verb,
       verb_type,
       type: verb_type,
+      family,
       expected: item.expected,
       given: raw,
       correct: ok,
@@ -125,9 +126,7 @@ export function Play({
             {correctCount} / {items.length}
           </p>
         </header>
-        <Board settings={settings} attempts={attempts} />
-        <TypeReadout settings={settings} attempts={attempts} />
-        <BoardLegend paintOwned={isSingleTypePool(settings)} />
+        <Board settings={settings} fills={items} />
         <div className="home-actions">
           <button className="btn btn-primary" type="button" onClick={onPlayAgain}>
             Play again
@@ -152,7 +151,11 @@ export function Play({
         </p>
       </header>
 
-      <Board settings={settings} attempts={attempts} current={item} />
+      <Board
+        settings={settings}
+        fills={items.slice(0, result ? index + 1 : index)}
+        current={item}
+      />
 
       {settings.timer ? (
         <div className="timer" aria-hidden="true">

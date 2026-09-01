@@ -51,23 +51,33 @@ export const POOL = {
   STEM: 3,
 };
 
-export const VERB_TYPES = [
-  { id: "regular", label: "regulars", pool: POOL.REGULARS },
-  { id: "irregular", label: "common irregulars", pool: POOL.IRREGULARS },
-  { id: "stem", label: "stem-changers", pool: POOL.STEM },
-  { id: "spelling", label: "spelling", pool: POOL.STEM },
+export const VERB_BUCKETS = [
+  { id: "regular", label: "Regulars", examples: "hablar, comer, vivir" },
+  { id: "irregular", label: "High-freq irregulars", examples: "ser, ir, tener, hacer" },
+  { id: "stem", label: "Stem-changers", examples: "pensar, dormir, pedir" },
+  { id: "spelling", label: "Spelling changes", examples: "buscar, llegar, conocer" },
 ];
 
-export const TYPE_LINE_BUCKETS = VERB_TYPES.map((type) => type.id);
+export const VERB_TYPES = VERB_BUCKETS.map((bucket) => ({
+  id: bucket.id,
+  label: bucket.label.toLowerCase(),
+}));
 
-export const STATE_LABEL = {
-  empty: "—",
-  visit: "practiced",
-  owned: "mastered",
+export const FAMILIES = [
+  { id: "ar", label: "-ar" },
+  { id: "er_ir", label: "-er / -ir" },
+];
+
+export const ATLAS_LABEL = {
+  not_enough: "not enough yet",
+  learning: "still learning",
+  know: "you know this",
 };
 
-export function typesInPool(pool) {
-  return VERB_TYPES.filter((type) => type.pool <= pool).map((type) => type.id);
+export function bucketsFromPool(pool) {
+  if (pool === POOL.IRREGULARS) return ["regular", "irregular"];
+  if (pool === POOL.STEM) return ["regular", "irregular", "stem", "spelling"];
+  return ["regular"];
 }
 
 export function isCommand(tense) {
@@ -75,7 +85,7 @@ export function isCommand(tense) {
 }
 
 export const DEFAULT_SETTINGS = {
-  pool: POOL.REGULARS,
+  buckets: ["regular"],
   tenses: [...DEFAULT_TENSES],
   address: "tu",
   vosotros: false,
