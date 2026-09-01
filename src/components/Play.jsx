@@ -33,6 +33,8 @@ export function Play({
   const [beat, setBeat] = useState("hold");
   const inputRef = useRef(null);
   const playAgainRef = useRef(null);
+  const playAgainReady = useRef(false);
+  const finishFromKeyboard = useRef(false);
   const submitted = useRef(false);
   const startedAt = useRef(Date.now());
 
@@ -64,26 +66,38 @@ export function Play({
   }, [index, settings.timer, settings.timerSec, finished, result]);
 
   useEffect(() => {
-    if (!finished) return undefined;
+    if (!finished) {
+      playAgainReady.current = false;
+      return undefined;
+    }
     setBeat("hold");
     let enterUp = null;
     let focusAt = 0;
+    const fromKeyboard = finishFromKeyboard.current;
     const pipsAt = window.setTimeout(() => setBeat("pips"), 420);
     const goAt = window.setTimeout(() => {
       setBeat("go");
-      const focusPlayAgain = () => playAgainRef.current?.focus();
+      const armPlayAgain = () => {
+        playAgainReady.current = true;
+        playAgainRef.current?.focus();
+      };
+      if (!fromKeyboard) {
+        armPlayAgain();
+        return;
+      }
       enterUp = (event) => {
         if (event.key !== "Enter") return;
+        event.preventDefault();
         window.removeEventListener("keyup", enterUp);
         enterUp = null;
-        focusPlayAgain();
+        window.setTimeout(armPlayAgain, 0);
       };
       window.addEventListener("keyup", enterUp);
       focusAt = window.setTimeout(() => {
         if (enterUp) window.removeEventListener("keyup", enterUp);
         enterUp = null;
-        focusPlayAgain();
-      }, 80);
+        armPlayAgain();
+      }, 500);
     }, Math.min(1100, RECAP_BEAT_MS - 200));
     return () => {
       window.clearTimeout(pipsAt);
@@ -200,23 +214,30 @@ export function Play({
           pipTick={beat !== "hold"}
         />
         <p className="recap-sub">{story.line}</p>
-        <div className="home-actions">
-          <button
-            ref={playAgainRef}
-            className="btn btn-primary"
-            type="button"
-            disabled={beat !== "go"}
-            onClick={onPlayAgain}
-          >
-            Play again
-          </button>
-          <button className="btn btn-ghost" type="button" onClick={onProgress}>
-            What you know
-          </button>
-          <button className="btn btn-ghost" type="button" onClick={onCustomize}>
-            Customize
-          </button>
-        </div>
+        {beat === "go" ? (
+          <div className="home-actions">
+            <button
+              ref={playAgainRef}
+              className="btn btn-primary"
+              type="button"
+              onClick={onPlayAgain}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" && !playAgainReady.current) {
+                  event.preventDefault();
+                  event.stopPropagation();
+                }
+              }}
+            >
+              Play again
+            </button>
+            <button className="btn btn-ghost" type="button" onClick={onProgress}>
+              What you know
+            </button>
+            <button className="btn btn-ghost" type="button" onClick={onCustomize}>
+              Customize
+            </button>
+          </div>
+        ) : null}
       </section>
     );
   }
@@ -273,6 +294,8 @@ export function Play({
           className="answer-form"
           onSubmit={(event) => {
             event.preventDefault();
+            event.stopPropagation();
+            finishFromKeyboard.current = true;
             if (result) next();
             else judge(value);
           }}
@@ -307,7 +330,14 @@ export function Play({
         <div className="reveal">
           {showMiss && result.miss ? <p className="miss">{result.miss.message}</p> : null}
           <p className="reveal-form">{result.expected}</p>
-          <button className="btn btn-primary" type="button" onClick={next}>
+          <button
+            className="btn btn-primary"
+            type="button"
+            onClick={() => {
+              finishFromKeyboard.current = false;
+              next();
+            }}
+          >
             Next
           </button>
         </div>
