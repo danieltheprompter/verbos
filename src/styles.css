@@ -459,9 +459,9 @@ p {
   pointer-events: none;
 }
 
-.play-done.is-recap-go .recap-sub,
-.play-done.is-recap-go .btn-ghost {
+.play-done .btn-primary:disabled {
   opacity: 1;
+  cursor: default;
 }
 
 .timer {

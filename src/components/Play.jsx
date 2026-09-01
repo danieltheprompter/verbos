@@ -66,14 +66,30 @@ export function Play({
   useEffect(() => {
     if (!finished) return undefined;
     setBeat("hold");
+    let enterUp = null;
+    let focusAt = 0;
     const pipsAt = window.setTimeout(() => setBeat("pips"), 420);
     const goAt = window.setTimeout(() => {
       setBeat("go");
-      playAgainRef.current?.focus();
+      const focusPlayAgain = () => playAgainRef.current?.focus();
+      enterUp = (event) => {
+        if (event.key !== "Enter") return;
+        window.removeEventListener("keyup", enterUp);
+        enterUp = null;
+        focusPlayAgain();
+      };
+      window.addEventListener("keyup", enterUp);
+      focusAt = window.setTimeout(() => {
+        if (enterUp) window.removeEventListener("keyup", enterUp);
+        enterUp = null;
+        focusPlayAgain();
+      }, 80);
     }, Math.min(1100, RECAP_BEAT_MS - 200));
     return () => {
       window.clearTimeout(pipsAt);
       window.clearTimeout(goAt);
+      window.clearTimeout(focusAt);
+      if (enterUp) window.removeEventListener("keyup", enterUp);
     };
   }, [finished]);
 
@@ -117,9 +133,6 @@ export function Play({
       pulse(null, "stem");
     }
     if (index + 1 >= items.length) setLockIn(true);
-    if (index + 1 >= items.length) {
-      window.setTimeout(finishRound, ok ? 380 : 780);
-    }
     const verb_type = item.type || item.verb_type || verbType(item.verb);
     const ending_pattern = item.ending_pattern || endingPattern(item.verb);
     onAttempt({
@@ -192,6 +205,7 @@ export function Play({
             ref={playAgainRef}
             className="btn btn-primary"
             type="button"
+            disabled={beat !== "go"}
             onClick={onPlayAgain}
           >
             Play again
@@ -293,11 +307,9 @@ export function Play({
         <div className="reveal">
           {showMiss && result.miss ? <p className="miss">{result.miss.message}</p> : null}
           <p className="reveal-form">{result.expected}</p>
-          {index + 1 >= items.length ? null : (
-            <button className="btn btn-primary" type="button" onClick={next}>
-              Next
-            </button>
-          )}
+          <button className="btn btn-primary" type="button" onClick={next}>
+            Next
+          </button>
         </div>
       ) : (
         <button
