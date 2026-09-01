@@ -100,7 +100,7 @@ export function recapStory(items = [], attempts = []) {
 
   return {
     head,
-    line: `${RECAP_STILL} ${RECAP_NEXT_AGAIN}`,
+    line: RECAP_STILL,
     next: RECAP_NEXT_AGAIN,
     action: "again",
   };

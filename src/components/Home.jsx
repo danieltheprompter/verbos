@@ -12,7 +12,7 @@ export function Home({ finishedRound, onPlay, onCustomize, onProgress }) {
         {finishedRound ? (
           <>
             <button className="btn btn-ghost" type="button" onClick={onCustomize}>
-              Tweak
+              Customize
             </button>
             <button className="btn btn-ghost" type="button" onClick={onProgress}>
               What you know

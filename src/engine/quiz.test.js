@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
-import { answersMatch } from "./check.js";
+import { answersMatch, isBlankAnswer } from "./check.js";
 import {
   BOARD_NOTE,
   CONTENT_VERSION,
@@ -97,6 +97,16 @@ describe("answer checking", () => {
   });
 });
 
+describe("blank submit", () => {
+  it("does not count empty Check as a miss or a visit", () => {
+    expect(isBlankAnswer("")).toBe(true);
+    expect(isBlankAnswer("   ")).toBe(true);
+    expect(isBlankAnswer("hablo")).toBe(false);
+    expect(answeredCellKeys([{ tense: "presente", person: "yo", verb: "hablar" }]).size).toBe(0);
+    expect(answeredCellKeys([{ tense: "presente", person: "yo", correct: false }]).size).toBe(1);
+  });
+});
+
 describe("miss feedback names the miss", () => {
   it("calls missing accent and extra s, not a generic incorrect", () => {
     expect(explainMiss("estás", "estas")).toMatchObject({
@@ -159,7 +169,7 @@ describe("visual tokens", () => {
       join(dirname(fileURLToPath(import.meta.url)), "../components/Home.jsx"),
       "utf8",
     );
-    expect(home).toMatch(/Tweak/);
+    expect(home).toMatch(/Customize/);
     expect(home).toMatch(/finishedRound/);
   });
 });
@@ -370,23 +380,33 @@ describe("recap hero", () => {
     expect(formCopy(attempts, spec())).toBe("not enough yet");
   });
 
-  it("tells the teacher what the first 2×5 means", () => {
+  it("keeps recap as a short beat and never hardcodes a 2×5", () => {
     expect(RECAP_HEAD).toBe("Board lit");
     expect(RECAP_CLEAN).toBe("Clean board");
     expect(RECAP_BEAT_MS).toBe(1600);
-    expect(`${RECAP_HEAD} ${RECAP_CLEAN}`).not.toMatch(/8\/10/);
+    expect(`${RECAP_HEAD} ${RECAP_CLEAN}`).not.toMatch(/8\/10|5 of last 7/);
+    expect(RECAP_SUB).not.toMatch(/2\s*[×x]\s*5|5 of last 7/);
     const first = buildRound(DEFAULT_SETTINGS, [], mulberry32(7));
     const attempts = first.map((item) => typed(item.tense, item.person, true, { verb: item.verb }));
     const clean = first.map((item) => ({ ...item, correct: true }));
     const story = recapStory(clean, attempts);
     expect(story.head).toBe("Clean board");
     expect(story.line).toBe(RECAP_SUB);
-    expect(story.line).toMatch(/not enough yet/);
-    expect(story.line).toMatch(/5 of last 7 typed/);
+    expect(story.line.split(/\s+/).length).toBeLessThanOrEqual(6);
     expect(story.action).toBe("again");
-    expect(story.line).not.toMatch(/xp|streak|loot|8\/10/i);
+    expect(story.line).not.toMatch(/xp|streak|loot|8\/10|2\s*[×x]\s*5|5 of last 7/i);
     const mixed = clean.map((item, index) => ({ ...item, correct: index !== 0 }));
     expect(recapStory(mixed, attempts).head).toBe("Board lit");
+    const commands = [
+      { tense: "mandato_af", person: "tu", correct: true },
+      { tense: "mandato_af", person: "el", correct: true },
+      { tense: "mandato_af", person: "nos", correct: true },
+      { tense: "mandato_af", person: "ellos", correct: true },
+    ];
+    const commandAttempts = commands.map((item) => typed(item.tense, item.person, true));
+    const commandStory = recapStory(commands, commandAttempts);
+    expect(commandStory.head).toBe("Clean board");
+    expect(commandStory.line).not.toMatch(/2\s*[×x]\s*5/);
   });
 
   it("names a cell that changed state and gives one next action", () => {

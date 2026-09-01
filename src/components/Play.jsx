@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { CONTENT_VERSION, RECAP_BEAT_MS, WORDMARK } from "../engine/config.js";
 import { moodOf, pack, personLabel, tenseLabel, timeOf } from "../engine/pack.js";
-import { answersMatch } from "../engine/check.js";
+import { answersMatch, isBlankAnswer } from "../engine/check.js";
 import { explainMiss } from "../engine/miss.js";
 import { recapStory } from "../engine/recap.js";
 import { makeDistractors } from "../engine/round.js";
@@ -56,7 +56,7 @@ export function Play({
       setLeft(Math.max(0, remain));
       if (remain <= 0) {
         window.clearInterval(tick);
-        judge("");
+        judge("", { force: true });
       }
     }, 80);
     return () => window.clearInterval(tick);
@@ -91,8 +91,9 @@ export function Play({
     onDone();
   }
 
-  function judge(raw) {
+  function judge(raw, { force = false } = {}) {
     if (submitted.current || !item) return;
+    if (!force && isBlankAnswer(raw)) return;
     submitted.current = true;
     const ok = answersMatch(item.expected, raw);
     item.correct = ok;
@@ -199,7 +200,7 @@ export function Play({
             What you know
           </button>
           <button className="btn btn-ghost" type="button" onClick={onCustomize}>
-            Tweak
+            Customize
           </button>
         </div>
       </section>

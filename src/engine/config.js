@@ -15,11 +15,9 @@ export const RECAP_HEAD = "Board lit";
 export const RECAP_CLEAN = "Clean board";
 export const RECAP_BEAT_MS = 1600;
 export const SOUND_MUTED = true;
-export const RECAP_SUB =
-  "You lit the 2×5; those squares are on What you know as not enough yet — you know this takes 5 of last 7 typed.";
+export const RECAP_SUB = "Those squares are lit.";
 export const RECAP_ROUND1 = RECAP_SUB;
-export const RECAP_STILL =
-  "Same squares, still not enough yet — you know this takes 5 of last 7 typed.";
+export const RECAP_STILL = "Same squares.";
 export const RECAP_NEXT_AGAIN = "Play those squares again.";
 export const RECAP_NEXT_REST = "Play the ones that are not you know this.";
 export const RECAP_NEXT_MAP = "Open What you know.";

@@ -28,6 +28,10 @@ export function stripPronoun(folded, pronouns = pack.leadingPronouns) {
   return folded;
 }
 
+export function isBlankAnswer(raw) {
+  return !String(raw ?? "").trim();
+}
+
 export function answersMatch(expected, given) {
   const want = fold(expected);
   const got = stripPronoun(fold(given));
