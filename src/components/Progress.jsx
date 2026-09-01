@@ -1,6 +1,6 @@
 import { useState } from "react";
+import { FORM_COPY, RANK_PATH } from "../engine/config.js";
 import { pack } from "../engine/pack.js";
-import { FORM_COPY } from "../engine/config.js";
 import { atlasFillStats, atlasPersons, buildAtlas } from "../engine/progress.js";
 import { ClearProgress } from "./ClearProgress.jsx";
 
@@ -13,13 +13,21 @@ export function Progress({ attempts, onBack, onCustomize, onClear }) {
   const fill = atlasFillStats(attempts, { mood, type, ending });
 
   return (
-    <section className="panel">
-      <header className="panel-head">
+    <section className="panel career">
+      <header className="panel-head career-head">
         <button className="text-back" type="button" onClick={onBack}>
           Back
         </button>
-        <h1>What you know</h1>
-        <p>A map of forms. Typed answers only.</p>
+        <p className="career-kicker">What you know</p>
+        <h1 className="atlas-rank">{fill.line}</h1>
+        <ol className="rank-path" aria-label="Path">
+          {RANK_PATH.map((rank) => (
+            <li key={rank.id} className={rank.id === fill.rank ? "is-now" : ""}>
+              {rank.label}
+            </li>
+          ))}
+        </ol>
+        <p className="atlas-fill">{fill.name}</p>
       </header>
 
       <div className="atlas-tabs" role="tablist" aria-label="Mood">
@@ -70,11 +78,6 @@ export function Progress({ attempts, onBack, onCustomize, onClear }) {
           </div>
         </div>
       ) : null}
-
-      <div className="atlas-chrome">
-        <p className="atlas-fill">{fill.name}</p>
-        <p className="atlas-level">{fill.line}</p>
-      </div>
 
       <div className="atlas" style={{ "--cols": persons.length }} aria-label={`${mood} atlas`}>
         <div className="board-corner" />

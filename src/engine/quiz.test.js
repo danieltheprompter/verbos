@@ -15,6 +15,7 @@ import {
   MOODS,
   PERSONS,
   PIP_SLOTS,
+  RANK_PATH,
   RECAP_BEAT_MS,
   RECAP_CLEAN,
   RECAP_HEAD,
@@ -43,7 +44,7 @@ import {
   typedPips,
 } from "./board.js";
 import { explainMiss } from "./miss.js";
-import { atlasCopyAt, atlasFillName, atlasFillStats, buildAtlas } from "./progress.js";
+import { atlasCopyAt, atlasFillName, atlasFillStats, atlasRank, buildAtlas } from "./progress.js";
 import { recapStory } from "./recap.js";
 import { mulberry32 } from "./random.js";
 import { buildRound, makeDistractors } from "./round.js";
@@ -165,6 +166,7 @@ describe("visual tokens", () => {
     expect(tokens).toMatch(/--motion-visit/);
     expect(tokens).toMatch(/--type-display/);
     expect(tokens).not.toMatch(/xp|streak|loot/i);
+    expect(tokens).not.toMatch(/New map|RANK_PATH|Finding your feet/);
     const home = readFileSync(
       join(dirname(fileURLToPath(import.meta.url)), "../components/Home.jsx"),
       "utf8",
@@ -407,6 +409,11 @@ describe("recap hero", () => {
     const commandStory = recapStory(commands, commandAttempts);
     expect(commandStory.head).toBe("Clean board");
     expect(commandStory.line).not.toMatch(/2\s*[×x]\s*5/);
+    const boardUi = readFileSync(
+      join(dirname(fileURLToPath(import.meta.url)), "../components/Board.jsx"),
+      "utf8",
+    );
+    expect(boardUi).not.toMatch(/pips/i);
   });
 
   it("names a cell that changed state and gives one next action", () => {
@@ -452,17 +459,21 @@ describe("atlas copy and ending filter", () => {
     expect(formCopy(known, spec())).toBe("you know this");
   });
 
-  it("shows fill chrome as known over opened on the open region", () => {
+  it("shows a named rank on the open region, not a known/total dump", () => {
+    expect(atlasRank({ known: 0, opened: 0, allowed: 10 }).label).toBe("New map");
     const one = [typed("presente", "yo", true, { verb: "hablar" })];
     const stats = atlasFillStats(one, { mood: "indicative", type: "regular", ending: "ar" });
     expect(stats.name).toBe("Indicative · Regulars · -ar");
     expect(stats.known).toBe(0);
     expect(stats.opened).toBe(1);
-    expect(stats.line).toBe("0/1 you know this");
+    expect(stats.rank).toBe("first_marks");
+    expect(stats.line).toBe("First marks");
+    expect(stats.line).not.toMatch(/\d+\s*\/\s*\d+/);
     const known = Array.from({ length: 5 }, () => typed("presente", "yo", true, { verb: "hablar" }));
-    expect(atlasFillStats(known, { mood: "indicative", type: "regular", ending: "ar" }).line).toBe(
-      "1/1 you know this",
-    );
+    const owned = atlasFillStats(known, { mood: "indicative", type: "regular", ending: "ar" });
+    expect(owned.known).toBe(1);
+    expect(owned.line).toBe("Finding your feet");
+    expect(owned.line).not.toMatch(/\d+\s*\/\s*\d+/);
     const rows = buildAtlas(one, { mood: "indicative", type: "regular", ending: "ar" });
     const yo = rows[0].cells.find((cell) => cell.person === "yo");
     expect(yo.opened).toBe(true);
@@ -792,7 +803,7 @@ describe("round builder", () => {
     expect(items.every((item) => item.verb === "hablar")).toBe(true);
   });
 
-  it("replays the same 10 cells so recap pips can move", () => {
+  it("replays the same 10 cells so a second pass can deepen the same squares", () => {
     const first = buildRound(DEFAULT_SETTINGS, [], mulberry32(7));
     expect(first).toHaveLength(10);
     const cells = itemsToCells(first);
@@ -887,7 +898,16 @@ describe("teaching + UX freeze", () => {
       learning: "still learning",
       know: "you know this",
     });
-    const chrome = `${BOARD_NOTE} ${RECAP_HEAD} ${RECAP_SUB} ${Object.values(FORM_COPY).join(" ")}`;
+    expect(RANK_PATH.map((rank) => rank.label)).toEqual([
+      "New map",
+      "First marks",
+      "Finding your feet",
+      "On the map",
+      "Lighting up",
+      "You own this",
+      "This map is yours",
+    ]);
+    const chrome = `${BOARD_NOTE} ${RECAP_HEAD} ${RECAP_SUB} ${Object.values(FORM_COPY).join(" ")} ${RANK_PATH.map((rank) => rank.label).join(" ")}`;
     expect(chrome).not.toMatch(/xp|streak|loot|points|\bscore\b/i);
     expect(PERSONS.map((person) => person.label)).toEqual([
       "yo",

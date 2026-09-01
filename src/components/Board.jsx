@@ -1,34 +1,17 @@
-import { BOARD_NOTE, PIP_SLOTS } from "../engine/config.js";
+import { BOARD_NOTE } from "../engine/config.js";
 import { tenses as packTenses } from "../engine/pack.js";
 import {
   answeredCellKeys,
   cellAllowed,
-  cellPips,
   columnLabels,
   roundCellState,
 } from "../engine/board.js";
-
-function Pips({ count, slots = PIP_SLOTS, tick = false }) {
-  return (
-    <span className="pips" aria-label={`${count} of ${slots}`}>
-      {Array.from({ length: slots }, (_, index) => (
-        <i
-          key={index}
-          className={index < count ? `is-on${tick ? " is-tick" : ""}` : ""}
-          style={tick && index < count ? { animationDelay: `${index * 70}ms` } : undefined}
-        />
-      ))}
-    </span>
-  );
-}
 
 export function Board({
   settings,
   items = [],
   current,
-  attempts = [],
-  showPips = false,
-  pipTick = false,
+  recap = false,
   land = null,
   flick = null,
   lockIn = false,
@@ -38,7 +21,7 @@ export function Board({
   const answered = answeredCellKeys(items);
 
   return (
-    <div className={`board-wrap ${showPips ? "is-recap" : ""}`}>
+    <div className={`board-wrap${recap ? " is-recap" : ""}`}>
       <div
         className={`board${lockIn ? " is-snap" : ""}`}
         style={{ "--cols": columns.length }}
@@ -71,7 +54,6 @@ export function Board({
                   return <div key={column.id} className="cell cell-na" />;
                 }
                 const state = roundCellState(row.id, column.id, current, answered);
-                const pips = showPips ? cellPips(attempts, row.id, column.id) : 0;
                 const isLand = Boolean(
                   land && land.tense === row.id && land.person === column.id,
                 );
@@ -84,16 +66,14 @@ export function Board({
                       axis ? ` is-flick is-flick-${axis}` : ""
                     }`}
                     title={`${row.label} · ${column.label}`}
-                  >
-                    {showPips ? <Pips count={pips} tick={pipTick} /> : null}
-                  </div>
+                  />
                 );
               })}
             </div>
           );
         })}
       </div>
-      {showPips ? null : <p className="board-note">{BOARD_NOTE}</p>}
+      {recap ? null : <p className="board-note">{BOARD_NOTE}</p>}
     </div>
   );
 }

@@ -51,10 +51,10 @@ p {
 }
 
 .shell {
-  width: min(520px, 100%);
+  width: min(560px, 100%);
   min-height: 100dvh;
   margin: 0 auto;
-  padding: 28px 20px 36px;
+  padding: var(--space-shell);
   display: flex;
   flex-direction: column;
 }
@@ -108,6 +108,11 @@ p {
   display: flex;
   flex-direction: column;
   gap: 10px;
+}
+
+.home .btn-primary {
+  font-size: 1.15rem;
+  padding: 16px 24px;
 }
 
 .btn {
@@ -179,7 +184,7 @@ p {
 .board-col,
 .board-row-label {
   font-family: var(--type-display);
-  font-size: var(--type-board-size);
+  font-size: clamp(var(--type-board-size), 1.8vw, 1.05rem);
   font-weight: 650;
   letter-spacing: 0;
   color: var(--ink-soft);
@@ -304,45 +309,62 @@ p {
     inset 0 1px 0 rgba(255, 236, 200, 0.55);
 }
 
-.pips {
-  display: flex;
-  gap: 3px;
-}
-
-.pips i {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: #6a4a28;
-  opacity: 0.28;
-}
-
-.pips i.is-on {
-  background: #2a1c10;
-  opacity: 1;
+.play-done {
+  justify-content: center;
+  text-align: center;
+  gap: 22px;
+  padding-top: 2vh;
 }
 
 .recap-head {
-  font-family: Fraunces, Georgia, serif;
-  font-size: clamp(1.8rem, 7vw, 2.4rem);
-  font-weight: 650;
-  line-height: 1.1;
+  font-family: var(--type-display);
+  font-size: clamp(2.8rem, 10vw, 5.8rem);
+  font-weight: 720;
+  line-height: 0.95;
+  letter-spacing: -0.03em;
+  color: var(--color-ink);
 }
 
 .recap-sub,
 .recap-state {
-  color: var(--ink-soft);
-  font-size: 1.05rem;
-  line-height: 1.45;
+  color: var(--color-ink);
+  font-size: clamp(1.2rem, 3.2vw, 2rem);
+  font-weight: 600;
+  line-height: 1.25;
 }
 
 .recap-state {
   font-weight: 600;
 }
 
-.play-done .cell-answered .pips i.is-on,
-.is-recap .cell-answered .pips i.is-on {
-  background: #2a1c10;
+.is-recap .board {
+  padding: 24px 20px 22px;
+}
+
+.is-recap .board-col,
+.is-recap .board-row-label {
+  font-size: clamp(0.92rem, 2.4vw, 1.4rem);
+  color: var(--color-now-ring);
+}
+
+.is-recap .cell {
+  min-height: clamp(52px, 9vw, 92px);
+}
+
+.play-done.is-recap-pips .cell-answered,
+.play-done.is-recap-pips .cell-visit,
+.play-done.is-recap-go .cell-answered,
+.play-done.is-recap-go .cell-visit {
+  animation: recap-glow 520ms var(--motion-ease);
+}
+
+@keyframes recap-glow {
+  0% {
+    filter: brightness(1.15);
+  }
+  100% {
+    filter: brightness(1);
+  }
 }
 
 .cell.is-flick-col,
@@ -400,24 +422,6 @@ p {
   }
   100% {
     transform: scale(1);
-  }
-}
-
-.pips i.is-tick {
-  animation: pip-tick 180ms var(--motion-ease) both;
-}
-
-@keyframes pip-tick {
-  0% {
-    transform: scale(0);
-    opacity: 0;
-  }
-  70% {
-    transform: scale(1.35);
-  }
-  100% {
-    transform: scale(1);
-    opacity: 1;
   }
 }
 
@@ -602,8 +606,12 @@ p {
 }
 
 .panel-head h1 {
-  font-family: Fraunces, Georgia, serif;
-  font-size: 2.4rem;
+  font-family: var(--type-display);
+  font-size: clamp(2.2rem, 7vw, 3.2rem);
+}
+
+.career-head .atlas-rank {
+  font-size: clamp(2.4rem, 8vw, 4.4rem);
 }
 
 .panel-head p,
@@ -779,23 +787,54 @@ p {
   border-color: var(--ink);
 }
 
-.atlas-chrome {
+.career-head {
   display: grid;
-  gap: 4px;
+  gap: 10px;
+}
+
+.career-kicker {
+  margin: 0;
+  font-size: 0.78rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
+.atlas-rank {
+  margin: 0;
+  font-family: var(--type-display);
+  font-size: clamp(2.4rem, 8vw, 4.4rem);
+  font-weight: 720;
+  line-height: 0.95;
+  letter-spacing: -0.03em;
+  color: var(--color-ink);
+}
+
+.rank-path {
+  list-style: none;
+  padding: 0;
+  margin: 4px 0 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+}
+
+.rank-path li {
+  font-size: 0.92rem;
+  color: var(--ink-soft);
+}
+
+.rank-path li.is-now {
+  font-family: var(--type-display);
+  font-size: 1.15rem;
+  font-weight: 650;
+  color: var(--color-ink);
 }
 
 .atlas-fill {
   margin: 0;
   color: var(--ink-soft);
-  font-size: 0.92rem;
-}
-
-.atlas-level {
-  margin: 0;
-  font-family: Fraunces, Georgia, serif;
-  font-size: 1.45rem;
-  font-weight: 650;
-  line-height: 1.15;
+  font-size: 1.05rem;
 }
 
 .farm-note {
@@ -812,23 +851,25 @@ p {
 .atlas {
   --cols: 7;
   display: grid;
-  grid-template-columns: 5.4rem repeat(var(--cols), minmax(2.6rem, 1fr));
-  gap: 7px 5px;
+  grid-template-columns: 5.8rem repeat(var(--cols), minmax(2.8rem, 1fr));
+  gap: 10px 8px;
   overflow-x: auto;
-  padding: 14px 12px;
+  padding: var(--space-board);
   background:
-    linear-gradient(180deg, #2c241b 0%, #211a14 100%);
-  border: 1px solid #1a1510;
-  border-radius: 22px;
+    radial-gradient(120% 80% at 50% 0%, var(--color-board-lift) 0%, transparent 55%),
+    linear-gradient(180deg, #2c241b 0%, var(--color-board) 100%);
+  border: 1px solid #140f0c;
+  border-radius: var(--radius-board);
   box-shadow:
-    var(--shadow),
-    inset 0 1px 0 rgba(255, 236, 210, 0.08);
+    var(--shadow-paper),
+    inset 0 1px 0 rgba(255, 236, 210, 0.1),
+    inset 0 -18px 40px rgba(0, 0, 0, 0.18);
 }
 
 .atlas .board-col,
 .atlas .board-row-label {
-  color: #d8cbb6;
-  font-size: 0.58rem;
+  color: var(--color-label);
+  font-size: clamp(0.7rem, 1.5vw, 0.95rem);
 }
 
 .atlas .board-col {
@@ -837,7 +878,7 @@ p {
   align-items: center;
   justify-content: end;
   gap: 1px;
-  min-height: 2.1rem;
+  min-height: 2.2rem;
 }
 
 .clear-block {
@@ -860,32 +901,29 @@ p {
 }
 
 .atlas-cell {
-  min-height: 36px;
+  min-height: 44px;
   aspect-ratio: 1;
-  border-radius: 9px;
-  border: 1px solid #3a3127;
-  background: #3a3127;
-  box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.25);
+  border-radius: var(--radius-cell);
+  border: 0;
+  background:
+    radial-gradient(80% 80% at 50% 40%, #2f261e 0%, var(--color-empty) 70%);
+  box-shadow:
+    inset 0 3px 8px rgba(0, 0, 0, 0.5),
+    inset 0 0 0 1px rgba(255, 220, 180, 0.04);
 }
 
-.atlas-cell.is-not_enough {
-  background: #3a3127;
-}
-
-.atlas-cell.is-not_enough.is-open {
-  background: #6a5340;
-  border-color: #8d7058;
-  box-shadow: inset 0 1px 0 rgba(255, 236, 210, 0.12);
-}
-
+.atlas-cell.is-not_enough.is-open,
 .atlas-cell.is-learning {
-  background: #c4a06a;
-  border-color: #d8b88a;
+  background:
+    radial-gradient(80% 80% at 50% 40%, #3a3026 0%, var(--color-well) 78%);
+  box-shadow:
+    inset 0 2px 6px rgba(0, 0, 0, 0.4),
+    inset 0 0 0 1px rgba(255, 220, 180, 0.1);
 }
 
 .atlas-cell.is-know {
-  background: var(--color-owned);
-  border-color: #f0c27a;
+  background:
+    radial-gradient(120% 90% at 30% 20%, #f0b56a 0%, var(--color-owned) 55%, #9a5c22 100%);
   box-shadow: var(--shadow-owned), inset 0 1px 0 rgba(255, 236, 200, 0.4);
   animation: cell-owned var(--motion-owned) var(--motion-ease);
 }
@@ -905,7 +943,7 @@ p {
   padding: 0;
   margin: 0;
   color: var(--ink-soft);
-  font-size: 0.78rem;
+  font-size: 0.88rem;
 }
 
 .atlas-key li {
@@ -915,27 +953,25 @@ p {
 }
 
 .key-swatch {
-  width: 12px;
-  height: 12px;
-  border-radius: 4px;
+  width: 14px;
+  height: 14px;
+  border-radius: 6px;
   display: block;
-  border: 1px solid #8d7058;
-  background: #6a5340;
+  border: 0;
+  background: var(--color-empty);
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.35);
 }
 
 .key-swatch.is-not_enough {
-  border-color: #8d7058;
-  background: #6a5340;
+  background: var(--color-empty);
 }
 
 .key-swatch.is-learning {
-  background: #c4a06a;
-  border-color: #d8b88a;
+  background: var(--color-well);
 }
 
 .key-swatch.is-know {
-  background: #e39a45;
-  border-color: #f0c27a;
+  background: var(--color-owned);
 }
 
 .buckets {
@@ -995,6 +1031,51 @@ p {
   }
 
   .shell {
-    padding-top: 48px;
+    width: min(980px, 94vw);
+    padding-top: 40px;
+  }
+
+  .home .btn-primary,
+  .play-done .btn-primary {
+    font-size: 1.3rem;
+    padding: 18px 28px;
+  }
+
+  .play-done .btn-ghost {
+    font-size: 1.08rem;
+    padding: 16px 24px;
+  }
+
+  .cell {
+    min-height: 64px;
+  }
+
+  .atlas {
+    grid-template-columns: 7.2rem repeat(var(--cols), minmax(3.4rem, 1fr));
+    gap: 12px 10px;
+  }
+
+  .atlas-cell {
+    min-height: 56px;
+  }
+}
+
+@media (min-width: 1100px) {
+  .shell {
+    width: min(1180px, 92vw);
+    padding: 48px 40px 64px;
+  }
+
+  .recap-head {
+    font-size: clamp(4.4rem, 8vw, 6.4rem);
+  }
+
+  .is-recap .cell {
+    min-height: 88px;
+  }
+
+  .atlas-rank,
+  .career-head .atlas-rank {
+    font-size: clamp(3.2rem, 6vw, 5rem);
   }
 }

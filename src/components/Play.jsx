@@ -195,9 +195,7 @@ export function Play({
         <Board
           settings={settings}
           items={items}
-          attempts={attempts}
-          showPips
-          pipTick={beat !== "hold"}
+          recap
         />
         <p className="recap-sub">{story.line}</p>
         {beat === "go" ? (

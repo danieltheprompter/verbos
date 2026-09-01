@@ -37,6 +37,17 @@ export const FORM_COPY = {
   know: "you know this",
 };
 
+/** Placeholder path until Pedagogy freezes names. Copy, not tokens. */
+export const RANK_PATH = [
+  { id: "new_map", label: "New map" },
+  { id: "first_marks", label: "First marks" },
+  { id: "finding_feet", label: "Finding your feet" },
+  { id: "on_the_map", label: "On the map" },
+  { id: "lighting_up", label: "Lighting up" },
+  { id: "you_own_this", label: "You own this" },
+  { id: "this_map", label: "This map is yours" },
+];
+
 export const MASTERY_WINDOW = 7;
 export const MASTERY_NEED = 5;
 export const MASTERY_MIN = 5;

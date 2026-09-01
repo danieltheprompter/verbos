@@ -1,4 +1,4 @@
-import { ENDING_PATTERNS, FORM_COPY, MOODS, VERB_BUCKETS, timesForMood } from "./constants.js";
+import { ENDING_PATTERNS, FORM_COPY, MOODS, RANK_PATH, VERB_BUCKETS, timesForMood } from "./constants.js";
 import { pack } from "./pack.js";
 import { cellAllowed } from "./board.js";
 import { formCopy, formState, typedAttemptsFor } from "./mastery.js";
@@ -63,6 +63,17 @@ export function atlasFillName(mood, type, ending) {
   return `${moodLabel} · ${typeLabel} · ${endingLabel}`;
 }
 
+export function atlasRank({ known = 0, opened = 0, allowed = 0 } = {}) {
+  if (!opened) return RANK_PATH[0];
+  if (!known) return RANK_PATH[1];
+  if (allowed > 0 && known >= allowed) return RANK_PATH[6];
+  const fill = allowed ? known / allowed : 0;
+  if (fill < 0.2) return RANK_PATH[2];
+  if (fill < 0.4) return RANK_PATH[3];
+  if (fill < 0.7) return RANK_PATH[4];
+  return RANK_PATH[5];
+}
+
 export function atlasFillStats(attempts, { mood, type, ending }) {
   const rows = buildAtlas(attempts, { mood, type, ending });
   let allowed = 0;
@@ -76,13 +87,13 @@ export function atlasFillStats(attempts, { mood, type, ending }) {
       if (cell.state === "know") known += 1;
     }
   }
-  const total = opened || allowed;
+  const rank = atlasRank({ known, opened, allowed });
   return {
     allowed,
     opened,
     known,
-    total,
+    rank: rank.id,
     name: atlasFillName(mood, type, ending),
-    line: `${known}/${total} ${FORM_COPY.know}`,
+    line: rank.label,
   };
 }
