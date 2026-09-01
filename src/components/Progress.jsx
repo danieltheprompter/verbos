@@ -104,7 +104,7 @@ export function Progress({ attempts, onBack, onCustomize, onClear }) {
 
       {onClear ? (
         <section className="clear-block">
-          <h2 className="slice-title">Clear the atlas</h2>
+          <h2 className="slice-title">Reset</h2>
           <ClearProgress onClear={onClear} />
         </section>
       ) : null}

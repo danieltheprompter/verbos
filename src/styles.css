@@ -4,7 +4,7 @@
   --ink: #1a1612;
   --ink-soft: #5f564c;
   --rule: #d2c4ad;
-  --answered: #d8cbb3;
+  --answered: #b07a3a;
   --ok: #1d6a44;
   --ok-wash: #d7eee1;
   --bad: #9f1d28;
@@ -206,7 +206,7 @@ p {
 .cell-answered,
 .cell-answered-now {
   background: var(--answered);
-  border-color: #c4b396;
+  border-color: #8d5f2a;
 }
 
 .cell-na {

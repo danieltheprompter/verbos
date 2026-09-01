@@ -6,14 +6,14 @@ export function ClearProgress({ onClear }) {
   if (!confirming) {
     return (
       <button className="btn btn-ghost" type="button" onClick={() => setConfirming(true)}>
-        Clear what you know
+        Clear progress
       </button>
     );
   }
 
   return (
     <div className="clear-confirm">
-      <p>This clears the atlas. It cannot be undone.</p>
+      <p>Clear the atlas? This cannot be undone.</p>
       <button
         className="btn btn-ghost"
         type="button"
