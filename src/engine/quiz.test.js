@@ -37,7 +37,8 @@ import {
   typedPips,
 } from "./board.js";
 import { explainMiss } from "./miss.js";
-import { atlasCopyAt, atlasFillName, buildAtlas } from "./progress.js";
+import { atlasCopyAt, atlasFillName, atlasFillStats, buildAtlas } from "./progress.js";
+import { recapStory } from "./recap.js";
 import { mulberry32 } from "./random.js";
 import { buildRound, makeDistractors } from "./round.js";
 import { clearProgress, toLogAttempt } from "./storage.js";
@@ -299,10 +300,35 @@ describe("recap hero", () => {
     expect(formCopy(attempts, spec())).toBe("not enough yet");
   });
 
-  it("uses the recap headline and never says 5 of last 7", () => {
+  it("tells the teacher what the first 2×5 means", () => {
     expect(RECAP_HEAD).toBe("You lit the board.");
-    expect(RECAP_SUB).toBe("Next 10: same squares. Those hits fill the pips.");
-    expect(`${RECAP_HEAD} ${RECAP_SUB}`).not.toMatch(/5 of last 7/i);
+    const first = buildRound(DEFAULT_SETTINGS, [], mulberry32(7));
+    const attempts = first.map((item) => typed(item.tense, item.person, true, { verb: item.verb }));
+    const story = recapStory(first, attempts);
+    expect(story.line).toBe(RECAP_SUB);
+    expect(story.line).toMatch(/not enough yet/);
+    expect(story.line).toMatch(/5 of last 7 typed/);
+    expect(story.action).toBe("again");
+    expect(story.line).not.toMatch(/xp|streak|loot/i);
+  });
+
+  it("names a cell that changed state and gives one next action", () => {
+    const prior = Array.from({ length: 4 }, () => typed("presente", "yo", false));
+    const item = {
+      tense: "presente",
+      person: "yo",
+      mood: "indicative",
+      time: "presente",
+      type: "regular",
+      ending_pattern: "ar",
+    };
+    const after = [...prior, typed("presente", "yo", true)];
+    expect(formState(after, spec())).toBe("learning");
+    const story = recapStory([item], after);
+    expect(story.line).toMatch(/Presente · yo/);
+    expect(story.line).toMatch(/still learning/);
+    expect(story.next).toBe("Play those squares again.");
+    expect(story.action).toBe("again");
   });
 });
 
@@ -327,6 +353,24 @@ describe("atlas copy and ending filter", () => {
 
     const known = Array.from({ length: 5 }, () => typed("presente", "yo", true));
     expect(formCopy(known, spec())).toBe("you know this");
+  });
+
+  it("shows fill chrome as known over opened on the open region", () => {
+    const one = [typed("presente", "yo", true, { verb: "hablar" })];
+    const stats = atlasFillStats(one, { mood: "indicative", type: "regular", ending: "ar" });
+    expect(stats.name).toBe("Indicative · Regulars · -ar");
+    expect(stats.known).toBe(0);
+    expect(stats.opened).toBe(1);
+    expect(stats.line).toBe("0/1 you know this");
+    const known = Array.from({ length: 5 }, () => typed("presente", "yo", true, { verb: "hablar" }));
+    expect(atlasFillStats(known, { mood: "indicative", type: "regular", ending: "ar" }).line).toBe(
+      "1/1 you know this",
+    );
+    const rows = buildAtlas(one, { mood: "indicative", type: "regular", ending: "ar" });
+    const yo = rows[0].cells.find((cell) => cell.person === "yo");
+    expect(yo.opened).toBe(true);
+    expect(yo.state).toBe("not_enough");
+    expect(rows[0].cells.find((cell) => cell.person === "tu").opened).toBe(false);
   });
 
   it("filters -ar separately from -er / -ir", () => {

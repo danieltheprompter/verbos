@@ -12,7 +12,14 @@ export const BOARD_NOTE =
   "This board is this round. A square fills when you answer. Right or wrong shows on what you typed.";
 
 export const RECAP_HEAD = "You lit the board.";
-export const RECAP_SUB = "Next 10: same squares. Those hits fill the pips.";
+export const RECAP_SUB =
+  "You lit the 2×5; those squares are on What you know as not enough yet — you know this takes 5 of last 7 typed.";
+export const RECAP_ROUND1 = RECAP_SUB;
+export const RECAP_STILL =
+  "Same squares, still not enough yet — you know this takes 5 of last 7 typed.";
+export const RECAP_NEXT_AGAIN = "Play those squares again.";
+export const RECAP_NEXT_REST = "Play the ones that are not you know this.";
+export const RECAP_NEXT_MAP = "Open What you know.";
 
 export const FARM_NOTE =
   "These are forms you already know. Add another time or kind of verb.";

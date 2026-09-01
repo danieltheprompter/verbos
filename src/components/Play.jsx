@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from "react";
-import { CONTENT_VERSION, FORM_COPY, RECAP_HEAD, RECAP_SUB } from "../engine/config.js";
-import { recapStillNotEnough } from "../engine/board.js";
+import { CONTENT_VERSION } from "../engine/config.js";
 import { moodOf, pack, personLabel, tenseLabel, timeOf } from "../engine/pack.js";
 import { answersMatch } from "../engine/check.js";
 import { explainMiss } from "../engine/miss.js";
+import { recapStory } from "../engine/recap.js";
 import { makeDistractors } from "../engine/round.js";
 import { endingPattern, verbType } from "../engine/verbs.js";
 import { Board } from "./Board.jsx";
@@ -123,27 +123,38 @@ export function Play({
   }
 
   if (finished) {
+    const story = recapStory(items, attempts);
+    const playFirst = story.action !== "map";
     return (
       <section className="play play-done">
         <header className="play-bar">
           <p className="wordmark-mini">VERBOS</p>
         </header>
-        <h1 className="recap-head">{RECAP_HEAD}</h1>
-        <p className="recap-sub">{RECAP_SUB}</p>
+        <h1 className="recap-head">{story.head}</h1>
+        <p className="recap-sub">{story.line}</p>
         <Board settings={settings} items={items} attempts={attempts} showPips />
-        {recapStillNotEnough(attempts, items) ? (
-          <p className="recap-state">{FORM_COPY.not_enough}</p>
-        ) : null}
         <div className="home-actions">
-          <button className="btn btn-primary" type="button" onClick={onPlayAgain}>
-            Play again
-          </button>
+          {playFirst ? (
+            <button className="btn btn-primary" type="button" onClick={onPlayAgain}>
+              Play again
+            </button>
+          ) : (
+            <button className="btn btn-primary" type="button" onClick={onProgress}>
+              What you know
+            </button>
+          )}
           <button className="btn btn-ghost" type="button" onClick={onCustomize}>
             Customize
           </button>
-          <button className="btn btn-ghost" type="button" onClick={onProgress}>
-            What you know
-          </button>
+          {playFirst ? (
+            <button className="btn btn-ghost" type="button" onClick={onProgress}>
+              What you know
+            </button>
+          ) : (
+            <button className="btn btn-ghost" type="button" onClick={onPlayAgain}>
+              Play again
+            </button>
+          )}
         </div>
       </section>
     );

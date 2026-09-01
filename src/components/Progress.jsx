@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { pack } from "../engine/pack.js";
 import { FORM_COPY } from "../engine/config.js";
-import { atlasFillName, atlasPersons, buildAtlas } from "../engine/progress.js";
+import { atlasFillStats, atlasPersons, buildAtlas } from "../engine/progress.js";
 import { ClearProgress } from "./ClearProgress.jsx";
 
 export function Progress({ attempts, onBack, onCustomize, onClear }) {
@@ -10,6 +10,7 @@ export function Progress({ attempts, onBack, onCustomize, onClear }) {
   const [ending, setEnding] = useState(pack.endingPatterns[0]?.id);
   const rows = buildAtlas(attempts, { mood, type, ending });
   const persons = atlasPersons(mood);
+  const fill = atlasFillStats(attempts, { mood, type, ending });
 
   return (
     <section className="panel">
@@ -68,7 +69,10 @@ export function Progress({ attempts, onBack, onCustomize, onClear }) {
         </div>
       </div>
 
-      <p className="atlas-fill">{atlasFillName(mood, type, ending)}</p>
+      <div className="atlas-chrome">
+        <p className="atlas-fill">{fill.name}</p>
+        <p className="atlas-level">{fill.line}</p>
+      </div>
 
       <div className="atlas" style={{ "--cols": persons.length }} aria-label={`${mood} atlas`}>
         <div className="board-corner" />
@@ -86,7 +90,7 @@ export function Progress({ attempts, onBack, onCustomize, onClear }) {
               cell.allowed ? (
                 <div
                   key={cell.person}
-                  className={`atlas-cell is-${cell.state}`}
+                  className={`atlas-cell is-${cell.state}${cell.opened ? " is-open" : ""}`}
                   title={`${row.label} · ${cell.label}`}
                   aria-label={`${row.label} · ${cell.label}: ${cell.copy}`}
                 />

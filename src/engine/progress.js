@@ -1,7 +1,7 @@
 import { ENDING_PATTERNS, FORM_COPY, MOODS, VERB_BUCKETS, timesForMood } from "./constants.js";
 import { pack } from "./pack.js";
 import { cellAllowed } from "./board.js";
-import { formCopy, formState } from "./mastery.js";
+import { formCopy, formState, typedAttemptsFor } from "./mastery.js";
 
 export function atlasPersons(mood) {
   return pack.persons.filter((person) => !person.skipMoods?.includes(mood));
@@ -12,10 +12,12 @@ export function atlasSpec(mood, time, person, type, ending) {
 }
 
 export function atlasCell(attempts, spec) {
+  const typed = typedAttemptsFor(attempts, spec);
   const state = formState(attempts, spec);
   return {
     ...spec,
     state,
+    opened: typed.length > 0,
     copy: FORM_COPY[state],
   };
 }
@@ -59,4 +61,28 @@ export function atlasFillName(mood, type, ending) {
   const typeLabel = VERB_BUCKETS.find((item) => item.id === type)?.label ?? type;
   const endingLabel = ENDING_PATTERNS.find((item) => item.id === ending)?.label ?? ending;
   return `${moodLabel} · ${typeLabel} · ${endingLabel}`;
+}
+
+export function atlasFillStats(attempts, { mood, type, ending }) {
+  const rows = buildAtlas(attempts, { mood, type, ending });
+  let allowed = 0;
+  let opened = 0;
+  let known = 0;
+  for (const row of rows) {
+    for (const cell of row.cells) {
+      if (!cell.allowed) continue;
+      allowed += 1;
+      if (cell.opened) opened += 1;
+      if (cell.state === "know") known += 1;
+    }
+  }
+  const total = opened || allowed;
+  return {
+    allowed,
+    opened,
+    known,
+    total,
+    name: atlasFillName(mood, type, ending),
+    line: `${known}/${total} ${FORM_COPY.know}`,
+  };
 }
