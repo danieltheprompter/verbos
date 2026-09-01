@@ -16,7 +16,7 @@ Shared names for web (`src/tokens.css`) and later iOS. Light-first. Paper / ink 
 | `--space-1` … `--space-6` | Rhythm |
 | `--radius-cell`, `--radius-board`, `--radius-pill` | Toy vs chrome |
 | `--motion-visit` (180ms), `--motion-owned` (220ms) | Land / lock |
-| `--motion-flick` (160ms), `--motion-snap` (140ms) | Miss flick / board snap |
+| `--motion-flick` (220ms), `--motion-snap` (180ms) | Miss flick / board snap |
 | `--motion-recap` (1600ms) | Recap beat |
 
 Cell states on the round board: **empty / visit**. **owned** is atlas only. Right/wrong never paints a cell.

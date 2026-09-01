@@ -46,41 +46,52 @@ export function Board({
       >
         <div className="board-corner" />
         {columns.map((column) => (
-          <div className="board-col" key={column.id}>
+          <div
+            className={`board-col${
+              flick?.axis === "col" && flick.person === column.id ? " is-flick is-flick-col" : ""
+            }`}
+            key={column.id}
+          >
             {column.lines.map((line) => (
               <span key={line}>{line}</span>
             ))}
           </div>
         ))}
-        {rows.map((row) => (
-          <div className="board-row-wrap" key={row.id}>
-            <div className="board-row-label">{row.boardLabel}</div>
-            {columns.map((column) => {
-              if (!cellAllowed(row.id, column.id)) {
-                return <div key={column.id} className="cell cell-na" />;
-              }
-              const state = roundCellState(row.id, column.id, current, answered);
-              const pips = showPips ? cellPips(attempts, row.id, column.id) : 0;
-              const isLand = Boolean(
-                land && land.tense === row.id && land.person === column.id,
-              );
-              const isFlick =
-                (flick?.axis === "col" && flick.person === column.id) ||
-                (flick?.axis === "row" && flick.tense === row.id);
-              return (
-                <div
-                  key={column.id}
-                  className={`cell cell-${state}${isLand ? " is-land" : ""}${
-                    isFlick ? ` is-flick is-flick-${flick.axis}` : ""
-                  }`}
-                  title={`${row.label} · ${column.label}`}
-                >
-                  {showPips ? <Pips count={pips} tick={pipTick} /> : null}
-                </div>
-              );
-            })}
-          </div>
-        ))}
+        {rows.map((row) => {
+          const rowFlick = flick?.axis === "row" && flick.tense === row.id;
+          return (
+            <div className="board-row-wrap" key={row.id}>
+              <div
+                className={`board-row-label${rowFlick ? " is-flick is-flick-row" : ""}`}
+              >
+                {row.boardLabel}
+              </div>
+              {columns.map((column) => {
+                if (!cellAllowed(row.id, column.id)) {
+                  return <div key={column.id} className="cell cell-na" />;
+                }
+                const state = roundCellState(row.id, column.id, current, answered);
+                const pips = showPips ? cellPips(attempts, row.id, column.id) : 0;
+                const isLand = Boolean(
+                  land && land.tense === row.id && land.person === column.id,
+                );
+                const colFlick = flick?.axis === "col" && flick.person === column.id;
+                const axis = colFlick ? "col" : rowFlick ? "row" : null;
+                return (
+                  <div
+                    key={column.id}
+                    className={`cell cell-${state}${isLand ? " is-land" : ""}${
+                      axis ? ` is-flick is-flick-${axis}` : ""
+                    }`}
+                    title={`${row.label} · ${column.label}`}
+                  >
+                    {showPips ? <Pips count={pips} tick={pipTick} /> : null}
+                  </div>
+                );
+              })}
+            </div>
+          );
+        })}
       </div>
       {showPips ? null : <p className="board-note">{BOARD_NOTE}</p>}
     </div>

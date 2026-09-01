@@ -227,8 +227,7 @@ p {
   place-items: center;
   transition:
     background var(--motion-visit) var(--motion-ease),
-    box-shadow var(--motion-visit) var(--motion-ease),
-    transform var(--motion-visit) var(--motion-ease);
+    box-shadow var(--motion-visit) var(--motion-ease);
 }
 
 .cell-empty {
@@ -346,11 +345,13 @@ p {
   background: #2a1c10;
 }
 
-.cell.is-flick-col {
+.cell.is-flick-col,
+.board-col.is-flick-col {
   animation: flick-x var(--motion-flick) var(--motion-ease);
 }
 
-.cell.is-flick-row {
+.cell.is-flick-row,
+.board-row-label.is-flick-row {
   animation: flick-y var(--motion-flick) var(--motion-ease);
 }
 
@@ -359,11 +360,14 @@ p {
   100% {
     transform: translateX(0);
   }
-  30% {
-    transform: translateX(-6px);
+  25% {
+    transform: translateX(-14px);
   }
-  70% {
-    transform: translateX(6px);
+  55% {
+    transform: translateX(12px);
+  }
+  80% {
+    transform: translateX(-4px);
   }
 }
 
@@ -372,11 +376,14 @@ p {
   100% {
     transform: translateY(0);
   }
-  30% {
-    transform: translateY(-5px);
+  25% {
+    transform: translateY(-12px);
   }
-  70% {
-    transform: translateY(5px);
+  55% {
+    transform: translateY(10px);
+  }
+  80% {
+    transform: translateY(-3px);
   }
 }
 
@@ -389,7 +396,7 @@ p {
     transform: scale(1);
   }
   40% {
-    transform: scale(0.978);
+    transform: scale(0.92);
   }
   100% {
     transform: scale(1);
@@ -415,7 +422,7 @@ p {
 }
 
 .infinitive.is-rattle {
-  animation: stem-rattle 220ms var(--motion-ease);
+  animation: stem-rattle 280ms var(--motion-ease);
 }
 
 @keyframes stem-rattle {
@@ -424,20 +431,20 @@ p {
     transform: translateX(0);
   }
   20% {
-    transform: translateX(-4px) rotate(-1deg);
+    transform: translateX(-10px) rotate(-2deg);
   }
   60% {
-    transform: translateX(4px) rotate(1deg);
+    transform: translateX(8px) rotate(2deg);
   }
 }
 
 .answer.is-drop {
-  animation: accent-drop 240ms var(--motion-ease);
+  animation: accent-drop 260ms var(--motion-ease);
 }
 
 @keyframes accent-drop {
   0% {
-    transform: translateY(-6px);
+    transform: translateY(-14px);
   }
   100% {
     transform: translateY(0);
@@ -583,7 +590,7 @@ p {
   color: var(--bad);
   font-weight: 600;
   font-size: 1.05rem;
-  animation: miss-out 720ms ease forwards;
+  animation: miss-out 1000ms ease forwards;
 }
 
 .reveal-form {

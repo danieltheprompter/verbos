@@ -83,7 +83,7 @@ export function Play({
     window.setTimeout(() => {
       setFlick(null);
       setMotion("");
-    }, 280);
+    }, 340);
   }
 
   function finishRound() {
@@ -117,7 +117,7 @@ export function Play({
     }
     if (index + 1 >= items.length) setLockIn(true);
     if (miss) {
-      window.setTimeout(() => setShowMiss(false), 720);
+      window.setTimeout(() => setShowMiss(false), 1000);
     }
     if (index + 1 >= items.length) {
       window.setTimeout(finishRound, ok ? 380 : 780);

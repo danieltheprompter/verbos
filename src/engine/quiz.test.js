@@ -123,6 +123,19 @@ describe("miss feedback names the miss", () => {
       message: "Pretérito, not Imperfecto",
       other: "imperfecto",
     });
+    expect(
+      explainMiss("usamos", "uso", { verb: "usar", tense: "presente", person: "nos" }),
+    ).toMatchObject({ kind: "person", message: "That's yo" });
+    expect(
+      explainMiss("esconden", "escondieron", {
+        verb: "esconder",
+        tense: "presente",
+        person: "ellos",
+      }),
+    ).toMatchObject({ kind: "time", other: "preterito" });
+    expect(
+      explainMiss("temieron", "comieron", { verb: "temer", tense: "preterito", person: "ellos" }),
+    ).toMatchObject({ kind: "stem" });
     expect(explainMiss("hablé", "hablaste", yoPreterite).message).not.toMatch(/incorrect|shame/i);
   });
 });
