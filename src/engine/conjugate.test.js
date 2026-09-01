@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { conjugate, SPECIAL_VERBS, verbsInPool } from "./verbs.js";
-import { POOL } from "./constants.js";
+import { conjugate, SPECIAL_VERBS, verbsInBucket } from "./verbs.js";
 
 const ALL_TENSES = [
   "presente",
@@ -75,6 +74,8 @@ describe("irregulars and stem-changers", () => {
     expect(conjugate("seguir", "presente", "yo")).toBe("sigo");
     expect(conjugate("buscar", "preterito", "yo")).toBe("busqué");
     expect(conjugate("llegar", "preterito", "yo")).toBe("llegué");
+    expect(conjugate("sacar", "preterito", "yo")).toBe("saqué");
+    expect(conjugate("sacar", "subjuntivo", "yo")).toBe("saque");
     expect(conjugate("empezar", "preterito", "yo")).toBe("empecé");
     expect(conjugate("conocer", "presente", "yo")).toBe("conozco");
     expect(conjugate("creer", "preterito", "el")).toBe("creyó");
@@ -93,17 +94,17 @@ describe("irregulars and stem-changers", () => {
   });
 });
 
-describe("verb pools", () => {
-  it("steps regulars → irregulars → stem-changers", () => {
-    const regulars = verbsInPool(POOL.REGULARS);
-    const irreg = verbsInPool(POOL.IRREGULARS);
-    const stem = verbsInPool(POOL.STEM);
-    expect(regulars.every((verb) => verb.pool === POOL.REGULARS)).toBe(true);
-    expect(irreg.some((verb) => verb.inf === "ser")).toBe(true);
-    expect(irreg.every((verb) => verb.pool <= POOL.IRREGULARS)).toBe(true);
-    expect(stem.some((verb) => verb.inf === "pensar" && verb.type === "stem")).toBe(true);
-    expect(stem.some((verb) => verb.inf === "buscar" && verb.type === "spelling")).toBe(true);
-    expect(stem.length).toBeGreaterThan(irreg.length);
-    expect(irreg.length).toBeGreaterThan(regulars.length);
+describe("verb buckets", () => {
+  it("keeps stem-changing and spelling-change as separate named sets", () => {
+    const regulars = verbsInBucket("regular");
+    const irregulars = verbsInBucket("irregular");
+    const stem = verbsInBucket("stem");
+    const spelling = verbsInBucket("spelling");
+    expect(regulars.every((verb) => verb.type === "regular")).toBe(true);
+    expect(irregulars.some((verb) => verb.inf === "ser")).toBe(true);
+    expect(stem.some((verb) => verb.inf === "pensar")).toBe(true);
+    expect(stem.some((verb) => verb.inf === "llegar")).toBe(false);
+    expect(spelling.some((verb) => verb.inf === "llegar")).toBe(true);
+    expect(spelling.some((verb) => verb.inf === "sacar")).toBe(true);
   });
 });

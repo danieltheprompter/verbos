@@ -14,7 +14,7 @@ export function Home({ finishedRound, onPlay, onCustomize, onProgress }) {
               Customize
             </button>
             <button className="btn btn-ghost" type="button" onClick={onProgress}>
-              Progress
+              What you know
             </button>
           </>
         ) : null}

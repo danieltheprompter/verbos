@@ -1,14 +1,14 @@
 import { TENSES } from "../engine/constants.js";
-import { cellAllowed, columnLabels } from "../engine/board.js";
-import { roundCellState } from "../engine/mastery.js";
+import { answeredCellKeys, cellAllowed, columnLabels, roundCellState } from "../engine/board.js";
 
-export function Board({ settings, fills = [], current }) {
+export function Board({ settings, items = [], current, compact = false }) {
   const columns = columnLabels(settings);
   const rows = TENSES.filter((tense) => settings.tenses.includes(tense.id));
+  const answered = answeredCellKeys(items);
 
   return (
     <div
-      className="board"
+      className={`board ${compact ? "board-compact" : ""}`}
       style={{ "--cols": columns.length }}
       aria-label="This round"
     >
@@ -25,7 +25,7 @@ export function Board({ settings, fills = [], current }) {
             if (!cellAllowed(row.id, column.id)) {
               return <div key={column.id} className="cell cell-na" />;
             }
-            const state = roundCellState(fills, current, row.id, column.id);
+            const state = roundCellState(row.id, column.id, current, answered);
             return (
               <div
                 key={column.id}

@@ -1,14 +1,17 @@
 import { useState } from "react";
 import { TARGET_GROUPS, VERB_BUCKETS } from "../engine/constants.js";
+import { verbsInBucket } from "../engine/verbs.js";
 
 export function Customize({ settings, onSave, onBack, onProgress }) {
   const [draft, setDraft] = useState({
     ...settings,
     tenses: [...settings.tenses],
-    buckets: settings.buckets?.length ? [...settings.buckets] : ["regular"],
+    types: [...(settings.types || ["regular"])],
+    pickedVerbs: [...(settings.pickedVerbs || [])],
     customList: settings.customList || "",
     address: settings.address || "tu",
   });
+  const [showPicker, setShowPicker] = useState(Boolean(draft.pickedVerbs.length));
 
   function toggleTense(id) {
     setDraft((prev) => {
@@ -21,13 +24,25 @@ export function Customize({ settings, onSave, onBack, onProgress }) {
     });
   }
 
-  function toggleBucket(id) {
+  function toggleType(id) {
     setDraft((prev) => {
-      const on = prev.buckets.includes(id);
-      if (on && prev.buckets.length === 1) return prev;
+      const on = prev.types.includes(id);
+      const next = on ? prev.types.filter((type) => type !== id) : [...prev.types, id];
+      if (!next.length && !prev.pickedVerbs.length && !String(prev.customList || "").trim()) {
+        return prev;
+      }
+      return { ...prev, types: next };
+    });
+  }
+
+  function togglePicked(infinitive) {
+    setDraft((prev) => {
+      const on = prev.pickedVerbs.includes(infinitive);
       return {
         ...prev,
-        buckets: on ? prev.buckets.filter((bucket) => bucket !== id) : [...prev.buckets, id],
+        pickedVerbs: on
+          ? prev.pickedVerbs.filter((verb) => verb !== infinitive)
+          : [...prev.pickedVerbs, infinitive],
       };
     });
   }
@@ -43,22 +58,50 @@ export function Customize({ settings, onSave, onBack, onProgress }) {
       </header>
 
       <fieldset>
-        <legend>Verb sets</legend>
-        <div className="steps">
+        <legend>Verb set</legend>
+        <div className="buckets">
           {VERB_BUCKETS.map((bucket) => (
             <button
               key={bucket.id}
               type="button"
-              className={`step ${draft.buckets.includes(bucket.id) ? "is-on" : ""}`}
-              onClick={() => toggleBucket(bucket.id)}
+              className={`bucket ${draft.types.includes(bucket.id) ? "is-on" : ""}`}
+              onClick={() => toggleType(bucket.id)}
             >
               <strong>{bucket.label}</strong>
               <span>{bucket.examples}</span>
             </button>
           ))}
         </div>
+        <button
+          className="btn btn-ghost picker-toggle"
+          type="button"
+          onClick={() => setShowPicker((open) => !open)}
+        >
+          {showPicker ? "Hide verb picker" : "Pick verbs"}
+        </button>
+        {showPicker ? (
+          <div className="verb-picker">
+            {VERB_BUCKETS.map((bucket) => (
+              <div key={bucket.id} className="picker-group">
+                <p className="picker-label">{bucket.label}</p>
+                <div className="chips">
+                  {verbsInBucket(bucket.id).map((verb) => (
+                    <button
+                      key={verb.inf}
+                      type="button"
+                      className={`chip ${draft.pickedVerbs.includes(verb.inf) ? "is-on" : ""}`}
+                      onClick={() => togglePicked(verb.inf)}
+                    >
+                      {verb.inf}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : null}
         <label className="custom-list">
-          <span>Pick specific verbs</span>
+          <span>Paste a list</span>
           <textarea
             value={draft.customList}
             onChange={(event) =>
@@ -68,7 +111,7 @@ export function Customize({ settings, onSave, onBack, onProgress }) {
             placeholder="hablar, ser, pedir"
             spellCheck="false"
           />
-          <em>If this box has verbs, they are the set for the round.</em>
+          <em>Picked and pasted verbs become the set for the next round.</em>
         </label>
       </fieldset>
 
@@ -129,13 +172,11 @@ export function Customize({ settings, onSave, onBack, onProgress }) {
           <input
             type="checkbox"
             checked={draft.mc}
-            onChange={(event) =>
-              setDraft((prev) => ({ ...prev, mc: event.target.checked }))
-            }
+            onChange={(event) => setDraft((prev) => ({ ...prev, mc: event.target.checked }))}
           />
           <span>
             <strong>Multiple choice</strong>
-            Crutch only. Does not count toward knowing a cell.
+            Crutch only. Does not count toward knowing a form.
           </span>
         </label>
       </fieldset>
@@ -146,9 +187,7 @@ export function Customize({ settings, onSave, onBack, onProgress }) {
           <input
             type="checkbox"
             checked={draft.timer}
-            onChange={(event) =>
-              setDraft((prev) => ({ ...prev, timer: event.target.checked }))
-            }
+            onChange={(event) => setDraft((prev) => ({ ...prev, timer: event.target.checked }))}
           />
           <span>
             <strong>Per-item timer</strong>
@@ -177,7 +216,7 @@ export function Customize({ settings, onSave, onBack, onProgress }) {
         </button>
         {onProgress ? (
           <button className="btn btn-ghost" type="button" onClick={onProgress}>
-            Progress
+            What you know
           </button>
         ) : null}
         <button className="btn btn-ghost" type="button" onClick={onBack}>

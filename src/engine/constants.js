@@ -1,34 +1,54 @@
+export const MOODS = [
+  { id: "indicative", label: "Indicative" },
+  { id: "subjunctive", label: "Subjunctive" },
+  { id: "commands", label: "Commands" },
+];
+
 export const TARGET_GROUPS = [
   {
     id: "indicative",
     label: "Indicative",
     items: [
-      { id: "presente", label: "Presente", short: "Pres." },
-      { id: "preterito", label: "Pretérito", short: "Pret." },
-      { id: "imperfecto", label: "Imperfecto", short: "Imp." },
-      { id: "futuro", label: "Futuro", short: "Fut." },
-      { id: "condicional", label: "Condicional", short: "Cond." },
+      { id: "presente", label: "Presente", short: "Pres.", mood: "indicative", time: "presente" },
+      { id: "preterito", label: "Pretérito", short: "Pret.", mood: "indicative", time: "preterito" },
+      { id: "imperfecto", label: "Imperfecto", short: "Imp.", mood: "indicative", time: "imperfecto" },
+      { id: "futuro", label: "Futuro", short: "Fut.", mood: "indicative", time: "futuro" },
+      { id: "condicional", label: "Condicional", short: "Cond.", mood: "indicative", time: "condicional" },
     ],
   },
   {
     id: "subjunctive",
     label: "Subjunctive",
     items: [
-      { id: "subjuntivo", label: "Presente de subjuntivo", short: "Pres. subj." },
-      { id: "subjuntivo_imp", label: "Imperfecto de subjuntivo", short: "Imp. subj." },
+      { id: "subjuntivo", label: "Presente", short: "Subj.", mood: "subjunctive", time: "presente" },
+      { id: "subjuntivo_imp", label: "Imperfecto", short: "Imp. subj.", mood: "subjunctive", time: "imperfecto" },
     ],
   },
   {
     id: "commands",
-    label: "Commands / mandatos",
+    label: "Commands",
     items: [
-      { id: "mandato_af", label: "Affirmative", short: "Afirm." },
-      { id: "mandato_neg", label: "Negative", short: "Neg." },
+      { id: "mandato_af", label: "Affirmative", short: "Afirm.", mood: "commands", time: "affirmative" },
+      { id: "mandato_neg", label: "Negative", short: "Neg.", mood: "commands", time: "negative" },
     ],
   },
 ];
 
 export const TENSES = TARGET_GROUPS.flatMap((group) => group.items);
+
+export const TENSE_BY_ID = Object.fromEntries(TENSES.map((tense) => [tense.id, tense]));
+
+export function moodOf(tense) {
+  return TENSE_BY_ID[tense]?.mood ?? "indicative";
+}
+
+export function timeOf(tense) {
+  return TENSE_BY_ID[tense]?.time ?? tense;
+}
+
+export function timesForMood(mood) {
+  return TARGET_GROUPS.find((group) => group.id === mood)?.items ?? [];
+}
 
 export const PERSONS = [
   { id: "yo", label: "yo", column: "yo" },
@@ -52,31 +72,34 @@ export const POOL = {
 };
 
 export const VERB_BUCKETS = [
-  { id: "regular", label: "Regulars", examples: "hablar, comer, vivir" },
-  { id: "irregular", label: "High-freq irregulars", examples: "ser, ir, tener, hacer" },
-  { id: "stem", label: "Stem-changers", examples: "pensar, dormir, pedir" },
-  { id: "spelling", label: "Spelling changes", examples: "buscar, llegar, conocer" },
+  { id: "regular", label: "Regulars", examples: "hablar" },
+  { id: "irregular", label: "High-frequency irregulars", examples: "ser, ir, tener" },
+  { id: "stem", label: "Stem-changing", examples: "pensar, volver" },
+  { id: "spelling", label: "Spelling-change", examples: "llegar, sacar" },
 ];
 
-export const VERB_TYPES = VERB_BUCKETS.map((bucket) => ({
-  id: bucket.id,
-  label: bucket.label.toLowerCase(),
-}));
+export const VERB_TYPES = VERB_BUCKETS;
 
-export const FAMILIES = [
+export const ENDING_PATTERNS = [
   { id: "ar", label: "-ar" },
   { id: "er_ir", label: "-er / -ir" },
 ];
 
-export const ATLAS_LABEL = {
+export const FORM_STATE = {
+  not_enough: "not_enough",
+  learning: "learning",
+  know: "know",
+};
+
+export const FORM_COPY = {
   not_enough: "not enough yet",
   learning: "still learning",
   know: "you know this",
 };
 
-export function bucketsFromPool(pool) {
-  if (pool === POOL.IRREGULARS) return ["regular", "irregular"];
-  if (pool === POOL.STEM) return ["regular", "irregular", "stem", "spelling"];
+export function typesFromLegacyPool(pool) {
+  if (pool >= POOL.STEM) return VERB_BUCKETS.map((bucket) => bucket.id);
+  if (pool >= POOL.IRREGULARS) return ["regular", "irregular"];
   return ["regular"];
 }
 
@@ -85,10 +108,11 @@ export function isCommand(tense) {
 }
 
 export const DEFAULT_SETTINGS = {
-  buckets: ["regular"],
+  types: ["regular"],
   tenses: [...DEFAULT_TENSES],
   address: "tu",
   vosotros: false,
+  pickedVerbs: [],
   customList: "",
   timer: false,
   timerSec: 12,

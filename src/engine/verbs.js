@@ -1,4 +1,4 @@
-import { bucketsFromPool, POOL } from "./constants.js";
+import { POOL } from "./constants.js";
 
 const PERSONS = ["yo", "tu", "vos", "el", "nos", "vosotros", "ellos"];
 
@@ -64,7 +64,12 @@ export const REGULAR_VERBS = [
   type: "regular",
 }));
 
-const SPELLING_INFS = new Set(["buscar", "llegar", "conocer", "construir", "creer"]);
+const SPELLING_INFS = new Set(["buscar", "llegar", "sacar", "conocer", "construir", "creer"]);
+
+export function endingPattern(infinitive) {
+  const text = String(infinitive || "").toLowerCase();
+  return text.endsWith("ar") ? "ar" : "er_ir";
+}
 
 export function typeFromPool(infinitive, pool) {
   if (pool === POOL.REGULARS) return "regular";
@@ -589,6 +594,18 @@ export const SPECIAL_VERBS = [
     }),
   },
   {
+    inf: "sacar",
+    pool: POOL.STEM,
+    forms: pack({
+      presente: "saco sacas sacás saca sacamos sacáis sacan",
+      preterito: "saqué sacaste sacaste sacó sacamos sacasteis sacaron",
+      imperfecto: "sacaba sacabas sacabas sacaba sacábamos sacabais sacaban",
+      futuro: "sacaré sacarás sacarás sacará sacaremos sacaréis sacarán",
+      condicional: "sacaría sacarías sacarías sacaría sacaríamos sacaríais sacarían",
+      subjuntivo: "saque saques saqués saque saquemos saquéis saquen",
+    }),
+  },
+  {
     inf: "conocer",
     pool: POOL.STEM,
     forms: pack({
@@ -664,26 +681,29 @@ export function parseCustomList(text) {
     .filter(Boolean);
 }
 
-export function verbFamily(infinitive) {
-  const bare = String(infinitive || "")
-    .normalize("NFD")
-    .replace(/\p{M}/gu, "")
-    .toLowerCase();
-  return bare.slice(-2) === "ar" ? "ar" : "er_ir";
+export function uniqueVerbs(verbs) {
+  const seen = new Set();
+  return verbs.filter((verb) => {
+    if (seen.has(verb.inf)) return false;
+    seen.add(verb.inf);
+    return true;
+  });
 }
 
-export function verbsForBuckets(buckets) {
-  const set = new Set(buckets?.length ? buckets : ["regular"]);
-  return ALL_VERBS.filter((verb) => set.has(verb.type));
+export function pickedVerbsFrom(settings) {
+  return uniqueVerbs(
+    (settings.pickedVerbs || []).map(asPlayableVerb).filter(Boolean),
+  );
 }
 
 export function verbsForSettings(settings) {
-  const custom = parseCustomList(settings.customList);
-  if (custom.length) return custom;
-  const buckets = settings.buckets?.length
-    ? settings.buckets
-    : bucketsFromPool(settings.pool);
-  return verbsForBuckets(buckets);
+  const chosen = uniqueVerbs([
+    ...pickedVerbsFrom(settings),
+    ...parseCustomList(settings.customList),
+  ]);
+  if (chosen.length) return chosen;
+  const types = settings.types?.length ? settings.types : ["regular"];
+  return ALL_VERBS.filter((verb) => types.includes(verb.type));
 }
 
 export function activeTypes(settings) {
@@ -692,6 +712,10 @@ export function activeTypes(settings) {
 
 export function isSingleTypePool(settings) {
   return activeTypes(settings).length <= 1;
+}
+
+export function verbsInBucket(type) {
+  return ALL_VERBS.filter((verb) => verb.type === type);
 }
 
 export function verbType(infinitive) {

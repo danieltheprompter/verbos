@@ -1,100 +1,83 @@
-import { ATLAS_LABEL, FAMILIES, MASTERY_MIN, MASTERY_NEED, MASTERY_WINDOW, VERB_BUCKETS } from "./constants.js";
-import { verbFamily, verbType } from "./verbs.js";
-
-const VERB_TYPE_IDS = VERB_BUCKETS.map((bucket) => bucket.id);
+import { FORM_COPY, MASTERY_MIN, MASTERY_NEED, MASTERY_WINDOW, moodOf, timeOf } from "./constants.js";
+import { endingPattern, verbType } from "./verbs.js";
 
 export function attemptType(attempt) {
   return attempt.verb_type || attempt.type || verbType(attempt.verb);
 }
 
-export function attemptFamily(attempt) {
-  return attempt.family || verbFamily(attempt.verb);
+export function attemptEnding(attempt) {
+  return attempt.ending_pattern || attempt.ending || attempt.family || endingPattern(attempt.verb);
+}
+
+export function attemptMood(attempt) {
+  return attempt.mood || moodOf(attempt.tense);
+}
+
+export function attemptTime(attempt) {
+  return attempt.time || timeOf(attempt.tense);
 }
 
 export function normalizeAttempt(attempt) {
   const type = attemptType(attempt);
-  const family = attemptFamily(attempt);
+  const ending_pattern = attemptEnding(attempt);
+  const mood = attemptMood(attempt);
+  const time = attemptTime(attempt);
   return {
     ...attempt,
     type,
     verb_type: attempt.verb_type || type,
-    family,
+    ending_pattern,
+    ending: ending_pattern,
+    mood,
+    time,
   };
 }
 
-export function cellKey(tense, person, type, family) {
-  return `${tense}:${person}:${type}:${family}`;
+export function formKey({ mood, time, person, type, ending }) {
+  return `${mood}:${time}:${person}:${type}:${ending}`;
 }
 
-export function typedAttemptsFor(attempts, tense, person, type, family) {
-  return attempts
-    .map(normalizeAttempt)
-    .filter(
-      (attempt) =>
-        attempt.typed &&
-        attempt.tense === tense &&
-        attempt.person === person &&
-        attempt.type === type &&
-        attempt.family === family,
-    );
+export function typedAttemptsFor(attempts, spec) {
+  return attempts.map(normalizeAttempt).filter((attempt) => {
+    if (!attempt.typed) return false;
+    if (spec.mood && attemptMood(attempt) !== spec.mood) return false;
+    if (spec.time && attemptTime(attempt) !== spec.time) return false;
+    if (spec.person && attempt.person !== spec.person) return false;
+    if (spec.type && attemptType(attempt) !== spec.type) return false;
+    if (spec.ending && attemptEnding(attempt) !== spec.ending) return false;
+    return true;
+  });
 }
 
-export function visitsForCell(attempts, tense, person) {
-  return attempts
-    .map(normalizeAttempt)
-    .filter((attempt) => attempt.tense === tense && attempt.person === person);
-}
-
-export function isVisited(attempts, tense, person) {
-  return visitsForCell(attempts, tense, person).length > 0;
-}
-
-export function isOwned(attempts, tense, person, type, family) {
-  if (!type || !family) return false;
-  const typed = typedAttemptsFor(attempts, tense, person, type, family);
-  if (typed.length < MASTERY_MIN) return false;
-  const window = typed.slice(-MASTERY_WINDOW);
-  return window.filter((attempt) => attempt.correct).length >= MASTERY_NEED;
-}
-
-export function completePassDone(attempts, cells) {
-  return cells.every((cell) => isVisited(attempts, cell.tense, cell.person));
-}
-
-export function sliceState(attempts, tense, person, type, family) {
-  const typed = typedAttemptsFor(attempts, tense, person, type, family);
+export function formState(attempts, spec) {
+  const typed = typedAttemptsFor(attempts, spec);
   if (typed.length < MASTERY_MIN) return "not_enough";
   const window = typed.slice(-MASTERY_WINDOW);
   if (window.filter((attempt) => attempt.correct).length >= MASTERY_NEED) return "know";
   return "learning";
 }
 
-function rollup(states) {
-  if (!states.length || states.every((state) => state === "not_enough")) return "not_enough";
-  if (states.some((state) => state === "learning")) return "learning";
-  if (states.some((state) => state === "know")) return "know";
-  return "not_enough";
+export function formCopy(attempts, spec) {
+  return FORM_COPY[formState(attempts, spec)];
 }
 
-export function atlasCellState(attempts, tense, person, filters = {}) {
-  const types = filters.type ? [filters.type] : VERB_TYPE_IDS;
-  const families = filters.family ? [filters.family] : FAMILIES.map((item) => item.id);
-  const states = [];
-  for (const type of types) {
-    for (const family of families) {
-      states.push(sliceState(attempts, tense, person, type, family));
-    }
-  }
-  return rollup(states);
+export function youKnowThis(attempts, spec) {
+  return formState(attempts, spec) === "know";
 }
 
-export function atlasLabel(state) {
-  return ATLAS_LABEL[state];
+export function visitsForCell(attempts, tense, person) {
+  return attempts.filter((attempt) => attempt.tense === tense && attempt.person === person);
 }
 
-export function roundCellState(fills, current, tense, person) {
-  const active = current && current.tense === tense && current.person === person;
-  if (active) return "now";
-  const filled = fills.some((item) => item.tense === tense && item.person === person);
-  return filled ? "fill" : "empty";
+export function isVisited(attempts, tense, person) {
+  return visitsForCell(attempts, tense, person).length > 0;
+}
+
+export function completePassDone(attempts, cells) {
+  return cells.every((cell) => isVisited(attempts, cell.tense, cell.person));
+}
+
+export function typeKnownAtCell(attempts, tense, person, type) {
+  const spec = { mood: moodOf(tense), time: timeOf(tense), person, type };
+  return ["ar", "er_ir"].some((ending) => youKnowThis(attempts, { ...spec, ending }));
 }

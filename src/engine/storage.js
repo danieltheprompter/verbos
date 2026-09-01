@@ -1,26 +1,28 @@
-import { bucketsFromPool, CONTENT_VERSION, DEFAULT_SETTINGS, STORAGE_KEY, VERB_BUCKETS } from "./constants.js";
-import { verbFamily, verbType } from "./verbs.js";
-
-function normalizeBuckets(raw = {}) {
-  const allowed = new Set(VERB_BUCKETS.map((bucket) => bucket.id));
-  const fromDraft = Array.isArray(raw.buckets)
-    ? raw.buckets.filter((id) => allowed.has(id))
-    : [];
-  if (fromDraft.length) return fromDraft;
-  return bucketsFromPool(raw.pool);
-}
+import {
+  CONTENT_VERSION,
+  DEFAULT_SETTINGS,
+  STORAGE_KEY,
+  moodOf,
+  timeOf,
+  typesFromLegacyPool,
+} from "./constants.js";
+import { endingPattern, verbType } from "./verbs.js";
 
 function normalizeSettings(raw = {}) {
   const tenses = Array.isArray(raw.tenses) && raw.tenses.length
     ? raw.tenses
     : [...DEFAULT_SETTINGS.tenses];
+  const types = Array.isArray(raw.types) && raw.types.length
+    ? raw.types
+    : typesFromLegacyPool(raw.pool);
   return {
     ...DEFAULT_SETTINGS,
     ...raw,
     tenses,
-    buckets: normalizeBuckets(raw),
+    types,
     address: raw.address || (raw.vos ? "vos" : "tu"),
     customList: raw.customList || "",
+    pickedVerbs: Array.isArray(raw.pickedVerbs) ? raw.pickedVerbs : [],
   };
 }
 
@@ -38,15 +40,17 @@ function newAttemptId() {
 
 export function toLogAttempt(attempt, now = Date.now()) {
   const verb_type = attempt.verb_type || attempt.type || verbType(attempt.verb);
-  const family = attempt.family || verbFamily(attempt.verb);
+  const ending_pattern = attempt.ending_pattern || attempt.ending || endingPattern(attempt.verb);
   return {
     attempt_id: attempt.attempt_id || newAttemptId(),
+    mood: attempt.mood || moodOf(attempt.tense),
+    time: attempt.time || timeOf(attempt.tense),
     tense: attempt.tense,
     person: attempt.person,
     verb: attempt.verb,
     verb_type,
     type: verb_type,
-    family,
+    ending_pattern,
     expected: attempt.expected ?? null,
     given: attempt.given ?? "",
     correct: Boolean(attempt.correct),

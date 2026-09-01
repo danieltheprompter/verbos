@@ -1,18 +1,13 @@
 import { useState } from "react";
-import { ATLAS_LABEL, FAMILIES, VERB_BUCKETS } from "../engine/constants.js";
-import { atlasGrid, atlasMoods } from "../engine/progress.js";
-
-const TYPE_FILTERS = [{ id: "", label: "All kinds" }, ...VERB_BUCKETS];
-const FAMILY_FILTERS = [{ id: "", label: "All endings" }, ...FAMILIES];
+import { ENDING_PATTERNS, FORM_COPY, MOODS, VERB_BUCKETS } from "../engine/constants.js";
+import { atlasPersons, buildAtlas } from "../engine/progress.js";
 
 export function Progress({ attempts, onBack, onCustomize }) {
   const [mood, setMood] = useState("indicative");
-  const [type, setType] = useState("");
-  const [family, setFamily] = useState("");
-  const grid = atlasGrid(attempts, mood, {
-    type: type || undefined,
-    family: family || undefined,
-  });
+  const [type, setType] = useState("regular");
+  const [ending, setEnding] = useState("ar");
+  const rows = buildAtlas(attempts, { mood, type, ending });
+  const persons = atlasPersons(mood);
 
   return (
     <section className="panel">
@@ -20,94 +15,89 @@ export function Progress({ attempts, onBack, onCustomize }) {
         <button className="text-back" type="button" onClick={onBack}>
           Back
         </button>
-        <h1>Progress</h1>
-        <p>Times × persons. Filter by kind of verb and -ar vs -er / -ir.</p>
+        <h1>What you know</h1>
+        <p>An atlas of forms. Typed answers only.</p>
       </header>
 
-      <fieldset>
-        <legend>Mood</legend>
-        <div className="chips chips-3">
-          {atlasMoods().map((item) => (
-            <button
-              key={item.id}
-              type="button"
-              className={`chip ${mood === item.id ? "is-on" : ""}`}
-              onClick={() => setMood(item.id)}
-            >
-              {item.label}
-            </button>
-          ))}
-        </div>
-      </fieldset>
+      <div className="atlas-tabs" role="tablist" aria-label="Mood">
+        {MOODS.map((item) => (
+          <button
+            key={item.id}
+            type="button"
+            role="tab"
+            aria-selected={mood === item.id}
+            className={`atlas-tab ${mood === item.id ? "is-on" : ""}`}
+            onClick={() => setMood(item.id)}
+          >
+            {item.label}
+          </button>
+        ))}
+      </div>
 
-      <fieldset>
+      <fieldset className="atlas-filters">
         <legend>Kind of verb</legend>
         <div className="chips">
-          {TYPE_FILTERS.map((item) => (
+          {VERB_BUCKETS.map((bucket) => (
             <button
-              key={item.id || "all-type"}
+              key={bucket.id}
               type="button"
-              className={`chip ${type === item.id ? "is-on" : ""}`}
-              onClick={() => setType(item.id)}
+              className={`chip ${type === bucket.id ? "is-on" : ""}`}
+              onClick={() => setType(bucket.id)}
             >
-              {item.label}
+              {bucket.label}
             </button>
           ))}
         </div>
       </fieldset>
 
-      <fieldset>
-        <legend>-ar vs -er / -ir</legend>
-        <div className="chips chips-3">
-          {FAMILY_FILTERS.map((item) => (
+      <fieldset className="atlas-filters">
+        <legend>Ending</legend>
+        <div className="chips chips-2">
+          {ENDING_PATTERNS.map((pattern) => (
             <button
-              key={item.id || "all-family"}
+              key={pattern.id}
               type="button"
-              className={`chip ${family === item.id ? "is-on" : ""}`}
-              onClick={() => setFamily(item.id)}
+              className={`chip ${ending === pattern.id ? "is-on" : ""}`}
+              onClick={() => setEnding(pattern.id)}
             >
-              {item.label}
+              {pattern.label}
             </button>
           ))}
         </div>
       </fieldset>
 
-      <div
-        className="board atlas"
-        style={{ "--cols": grid.columns.length }}
-        aria-label={`${mood} atlas`}
-      >
+      <div className="atlas" style={{ "--cols": persons.length }} aria-label={`${mood} atlas`}>
         <div className="board-corner" />
-        {grid.columns.map((column) => (
-          <div className="board-col" key={column.id}>
-            {column.label}
+        {persons.map((person) => (
+          <div className="board-col" key={person.id}>
+            {person.label}
           </div>
         ))}
-        {grid.rows.map((row) => (
-          <div className="board-row-wrap" key={row.id}>
+        {rows.map((row) => (
+          <div className="board-row-wrap" key={row.tense}>
             <div className="board-row-label">{row.short}</div>
-            {row.cells.map((cell) => (
-              <div
-                key={cell.person}
-                className={`cell cell-${cell.state}`}
-                title={cell.label}
-              />
-            ))}
+            {row.cells.map((cell) =>
+              cell.allowed ? (
+                <div
+                  key={cell.person}
+                  className={`atlas-cell is-${cell.state}`}
+                  title={`${row.label} · ${cell.label}`}
+                >
+                  {cell.copy}
+                </div>
+              ) : (
+                <div key={cell.person} className="atlas-cell is-na" />
+              ),
+            )}
           </div>
         ))}
       </div>
 
-      <ul className="legend atlas-key">
-        {Object.entries(ATLAS_LABEL).map(([state, label]) => (
-          <li key={state}>
-            <i className={`cell cell-${state}`} /> {label}
-          </li>
-        ))}
+      <ul className="atlas-key">
+        <li>{FORM_COPY.not_enough}</li>
+        <li>{FORM_COPY.learning}</li>
+        <li>{FORM_COPY.know}</li>
       </ul>
-      <p className="done-note">
-        A cell is tense × person × kind of verb × -ar vs -er / -ir. tú and vos stay
-        separate.
-      </p>
 
       <div className="home-actions">
         <button className="btn btn-ghost" type="button" onClick={onCustomize}>

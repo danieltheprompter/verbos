@@ -50,3 +50,20 @@ export function personLabel(person) {
 export function cellAllowed(tense, person) {
   return !(isCommand(tense) && person === "yo");
 }
+
+export function answeredCellKeys(items = []) {
+  return new Set(
+    items
+      .filter((item) => typeof item.correct === "boolean")
+      .map((item) => `${item.tense}:${item.person}`),
+  );
+}
+
+export function roundCellState(tense, person, current, answered = new Set()) {
+  const key = `${tense}:${person}`;
+  const isCurrent = Boolean(current && current.tense === tense && current.person === person);
+  const isAnswered = answered instanceof Set ? answered.has(key) : Boolean(answered[key]);
+  if (isAnswered) return isCurrent ? "answered-now" : "answered";
+  if (isCurrent) return "now";
+  return "empty";
+}

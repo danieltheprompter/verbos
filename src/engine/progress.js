@@ -1,36 +1,54 @@
-import { PERSONS, TARGET_GROUPS } from "./constants.js";
+import { FORM_COPY, PERSONS, timesForMood } from "./constants.js";
 import { cellAllowed } from "./board.js";
-import { atlasCellState, atlasLabel } from "./mastery.js";
+import { formCopy, formState } from "./mastery.js";
 
-export function atlasMoods() {
-  return TARGET_GROUPS.map((group) => ({ id: group.id, label: group.label }));
+export function atlasPersons(mood) {
+  return mood === "commands" ? PERSONS.filter((person) => person.id !== "yo") : PERSONS;
 }
 
-export function atlasPersons(moodId) {
-  return PERSONS.filter((person) => moodId !== "commands" || person.id !== "yo");
+export function atlasSpec(mood, time, person, type, ending) {
+  return { mood, time, person, type, ending };
 }
 
-export function atlasGrid(attempts, moodId, filters = {}) {
-  const group = TARGET_GROUPS.find((item) => item.id === moodId) || TARGET_GROUPS[0];
-  const columns = atlasPersons(group.id);
+export function atlasCell(attempts, spec) {
+  const state = formState(attempts, spec);
   return {
-    mood: group.id,
-    columns,
-    rows: group.items.map((tense) => ({
-      id: tense.id,
-      label: tense.label,
-      short: tense.short,
-      cells: columns.map((person) => {
-        const allowed = cellAllowed(tense.id, person.id);
-        const state = allowed
-          ? atlasCellState(attempts, tense.id, person.id, filters)
-          : "na";
+    ...spec,
+    state,
+    copy: FORM_COPY[state],
+  };
+}
+
+export function buildAtlas(attempts, { mood, type, ending }) {
+  const times = timesForMood(mood);
+  const persons = atlasPersons(mood);
+  return times.map((item) => ({
+    id: item.time,
+    tense: item.id,
+    label: item.label,
+    short: item.short,
+    cells: persons.map((person) => {
+      const allowed = cellAllowed(item.id, person.id);
+      if (!allowed) {
         return {
           person: person.id,
-          state,
-          label: allowed ? atlasLabel(state) : "",
+          label: person.label,
+          allowed: false,
+          state: "na",
+          copy: "",
         };
-      }),
-    })),
-  };
+      }
+      const spec = atlasSpec(mood, item.time, person.id, type, ending);
+      return {
+        person: person.id,
+        label: person.label,
+        allowed: true,
+        ...atlasCell(attempts, spec),
+      };
+    }),
+  }));
+}
+
+export function atlasCopyAt(attempts, mood, time, person, type, ending) {
+  return formCopy(attempts, atlasSpec(mood, time, person, type, ending));
 }

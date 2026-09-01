@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from "react";
-import { CONTENT_VERSION, TENSES } from "../engine/constants.js";
+import { CONTENT_VERSION, TENSES, moodOf, timeOf } from "../engine/constants.js";
 import { personLabel } from "../engine/board.js";
 import { answersMatch } from "../engine/check.js";
 import { makeDistractors } from "../engine/round.js";
-import { verbFamily, verbType } from "../engine/verbs.js";
+import { endingPattern, verbType } from "../engine/verbs.js";
 import { Board } from "./Board.jsx";
 
 const ACCENTS = ["á", "é", "í", "ó", "ú", "ü", "ñ"];
@@ -66,15 +66,17 @@ export function Play({
     item.given = raw;
     setResult({ ok, expected: item.expected });
     const verb_type = item.type || item.verb_type || verbType(item.verb);
-    const family = item.family || verbFamily(item.verb);
+    const ending_pattern = item.ending_pattern || endingPattern(item.verb);
     onAttempt({
       attempt_id: globalThis.crypto?.randomUUID?.(),
+      mood: item.mood || moodOf(item.tense),
+      time: item.time || timeOf(item.tense),
       tense: item.tense,
       person: item.person,
       verb: item.verb,
       verb_type,
       type: verb_type,
-      family,
+      ending_pattern,
       expected: item.expected,
       given: raw,
       correct: ok,
@@ -126,7 +128,7 @@ export function Play({
             {correctCount} / {items.length}
           </p>
         </header>
-        <Board settings={settings} fills={items} />
+        <Board settings={settings} items={items} />
         <div className="home-actions">
           <button className="btn btn-primary" type="button" onClick={onPlayAgain}>
             Play again
@@ -135,7 +137,7 @@ export function Play({
             Customize
           </button>
           <button className="btn btn-ghost" type="button" onClick={onProgress}>
-            Progress
+            What you know
           </button>
         </div>
       </section>
@@ -151,11 +153,7 @@ export function Play({
         </p>
       </header>
 
-      <Board
-        settings={settings}
-        fills={items.slice(0, result ? index + 1 : index)}
-        current={item}
-      />
+      <Board settings={settings} items={items} current={item} />
 
       {settings.timer ? (
         <div className="timer" aria-hidden="true">
