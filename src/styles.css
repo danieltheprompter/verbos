@@ -230,12 +230,12 @@ p {
 
 .pips {
   display: flex;
-  gap: 2px;
+  gap: 3px;
 }
 
 .pips i {
-  width: 5px;
-  height: 5px;
+  width: 6px;
+  height: 6px;
   border-radius: 99px;
   background: rgba(255, 255, 255, 0.32);
 }
