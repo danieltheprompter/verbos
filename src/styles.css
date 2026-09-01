@@ -754,6 +754,11 @@ p {
   background: #6a5340;
 }
 
+.key-swatch.is-not_enough {
+  border-color: #8d7058;
+  background: #6a5340;
+}
+
 .key-swatch.is-learning {
   background: #c4a06a;
   border-color: #d8b88a;
