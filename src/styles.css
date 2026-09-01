@@ -464,16 +464,6 @@ p {
   opacity: 1;
 }
 
-@keyframes miss-out {
-  0%,
-  70% {
-    opacity: 1;
-  }
-  100% {
-    opacity: 0;
-  }
-}
-
 .timer {
   height: 3px;
   background: var(--rule);
