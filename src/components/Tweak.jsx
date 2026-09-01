@@ -27,6 +27,9 @@ export function Tweak({ settings, onSave, onBack }) {
   return (
     <section className="tweak">
       <header className="tweak-head">
+        <button className="text-back" type="button" onClick={onBack}>
+          Back
+        </button>
         <h1>Tweak</h1>
         <p>One screen. Next round uses these.</p>
       </header>

@@ -190,13 +190,15 @@ export function Play({
             aria-label="Conjugated form"
             readOnly={Boolean(result)}
           />
-          <div className="accents" hidden={Boolean(result)}>
-            {ACCENTS.map((glyph) => (
-              <button key={glyph} type="button" onClick={() => insertGlyph(glyph)}>
-                {glyph}
-              </button>
-            ))}
-          </div>
+          {result ? null : (
+            <div className="accents">
+              {ACCENTS.map((glyph) => (
+                <button key={glyph} type="button" onClick={() => insertGlyph(glyph)}>
+                  {glyph}
+                </button>
+              ))}
+            </div>
+          )}
         </form>
       )}
 
