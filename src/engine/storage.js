@@ -1,9 +1,22 @@
 import { CONTENT_VERSION, DEFAULT_SETTINGS, STORAGE_KEY } from "./constants.js";
 import { verbType } from "./verbs.js";
 
+function normalizeSettings(raw = {}) {
+  const tenses = Array.isArray(raw.tenses) && raw.tenses.length
+    ? raw.tenses
+    : [...DEFAULT_SETTINGS.tenses];
+  return {
+    ...DEFAULT_SETTINGS,
+    ...raw,
+    tenses,
+    address: raw.address || (raw.vos ? "vos" : "tu"),
+    customList: raw.customList || "",
+  };
+}
+
 function blank() {
   return {
-    settings: { ...DEFAULT_SETTINGS, tenses: [...DEFAULT_SETTINGS.tenses] },
+    settings: normalizeSettings(),
     attempts: [],
     finishedRound: false,
   };
@@ -40,7 +53,7 @@ export function loadState() {
     return {
       ...blank(),
       ...parsed,
-      settings: { ...blank().settings, ...parsed.settings },
+      settings: normalizeSettings(parsed.settings),
       attempts: Array.isArray(parsed.attempts)
         ? parsed.attempts.map((attempt) => toLogAttempt(attempt, attempt.ts || Date.now()))
         : [],
@@ -77,7 +90,7 @@ export function markFinished(state) {
 }
 
 export function saveSettings(state, settings) {
-  const next = { ...state, settings };
+  const next = { ...state, settings: normalizeSettings(settings) };
   saveState(next);
   return next;
 }

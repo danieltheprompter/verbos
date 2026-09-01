@@ -1,8 +1,8 @@
-import { ROUND_SIZE, typesInPool } from "./constants.js";
+import { ROUND_SIZE } from "./constants.js";
 import { cellsFor } from "./board.js";
 import { completePassDone, isOwned, isVisited } from "./mastery.js";
 import { pick, shuffle, weightedPick } from "./random.js";
-import { conjugate, verbsOfType, verbsInPool } from "./verbs.js";
+import { activeTypes, conjugate, verbsForSettings } from "./verbs.js";
 
 function avoidRepeat(prev, candidate) {
   if (!prev) return true;
@@ -50,15 +50,17 @@ function pickTypeForCell(types, verbsByType, cell, attempts, rng) {
 
 export function buildRound(settings, attempts, rng = Math.random, size = ROUND_SIZE) {
   const cells = cellsFor(settings);
-  const types = typesInPool(settings.pool);
-  const verbs = verbsInPool(settings.pool);
+  const verbs = verbsForSettings(settings);
+  const types = activeTypes(settings);
   const verbsByType = Object.fromEntries(
-    types.map((type) => [type, verbsOfType(settings.pool, type)]),
+    types.map((type) => [type, verbs.filter((verb) => verb.type === type)]),
   );
   const items = [];
   const usedVerbs = new Set();
   const firstPass = !completePassDone(attempts, cells);
   const empty = cells.filter((cell) => !isVisited(attempts, cell.tense, cell.person));
+
+  if (!verbs.length || !cells.length) return items;
 
   if (firstPass && empty.length) {
     const cover = shuffle(empty, rng).slice(0, size);
@@ -92,18 +94,29 @@ export function makeDistractors(item, rng = Math.random) {
     "futuro",
     "condicional",
     "subjuntivo",
+    "subjuntivo_imp",
   ].filter((tense) => tense !== item.tense);
   const pool = new Set();
   for (const person of others) {
-    pool.add(conjugate(item.verb, item.tense, person));
+    try {
+      const form = conjugate(item.verb, item.tense, person);
+      if (form) pool.add(form);
+    } catch {
+      /* skip impossible person */
+    }
   }
   for (const tense of tenses) {
-    pool.add(conjugate(item.verb, tense, item.person));
+    try {
+      const form = conjugate(item.verb, tense, item.person);
+      if (form) pool.add(form);
+    } catch {
+      /* skip */
+    }
   }
   pool.delete(item.expected);
   const options = shuffle([...pool], rng).slice(0, 3);
   while (options.length < 3) {
-    options.push(item.expected + "s");
+    options.push(`${item.expected}s`);
   }
   return shuffle([item.expected, ...options], rng);
 }

@@ -39,6 +39,12 @@ describe("regular conjugations", () => {
     expect(conjugate("vivir", "imperfecto", "nos")).toBe("vivíamos");
     expect(conjugate("hablar", "futuro", "yo")).toBe("hablaré");
     expect(conjugate("comer", "condicional", "el")).toBe("comería");
+    expect(conjugate("hablar", "subjuntivo_imp", "yo")).toBe("hablara");
+    expect(conjugate("hablar", "subjuntivo_imp", "nos")).toBe("habláramos");
+    expect(conjugate("hablar", "mandato_af", "tu")).toBe("habla");
+    expect(conjugate("hablar", "mandato_af", "vos")).toBe("hablá");
+    expect(conjugate("hablar", "mandato_neg", "tu")).toBe("no hables");
+    expect(conjugate("hablar", "mandato_neg", "vos")).toBe("no hablés");
   });
 });
 
@@ -54,6 +60,11 @@ describe("irregulars and stem-changers", () => {
     expect(conjugate("saber", "presente", "yo")).toBe("sé");
     expect(conjugate("oír", "presente", "yo")).toBe("oigo");
     expect(conjugate("traer", "preterito", "ellos")).toBe("trajeron");
+    expect(conjugate("ser", "subjuntivo_imp", "yo")).toBe("fuera");
+    expect(conjugate("decir", "subjuntivo_imp", "el")).toBe("dijera");
+    expect(conjugate("ser", "mandato_af", "tu")).toBe("sé");
+    expect(conjugate("hacer", "mandato_af", "tu")).toBe("haz");
+    expect(conjugate("ir", "mandato_af", "vos")).toBe("andá");
   });
 
   it("covers stem changes and spelling changes", () => {

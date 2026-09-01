@@ -1,16 +1,22 @@
 import { useState } from "react";
-import { POOL, TENSES } from "../engine/constants.js";
+import { POOL, TARGET_GROUPS } from "../engine/constants.js";
 
 const POOLS = [
   { id: POOL.REGULARS, title: "Regulars", note: "Clean endings only." },
-  { id: POOL.IRREGULARS, title: "High-frequency irregulars", note: "Adds ser, ir, tener, hacer…" },
-  { id: POOL.STEM, title: "Stem-changers + spelling", note: "Adds pensar, dormir, buscar…" },
+  { id: POOL.IRREGULARS, title: "Common irregulars", note: "Adds ser, ir, tener, hacer…" },
+  {
+    id: POOL.STEM,
+    title: "Stem-changers & spelling changes",
+    note: "Adds pensar, dormir, buscar…",
+  },
 ];
 
-export function Tweak({ settings, onSave, onBack }) {
+export function Customize({ settings, onSave, onBack, onProgress }) {
   const [draft, setDraft] = useState({
     ...settings,
     tenses: [...settings.tenses],
+    customList: settings.customList || "",
+    address: settings.address || "tu",
   });
 
   function toggleTense(id) {
@@ -25,13 +31,13 @@ export function Tweak({ settings, onSave, onBack }) {
   }
 
   return (
-    <section className="tweak">
-      <header className="tweak-head">
+    <section className="panel">
+      <header className="panel-head">
         <button className="text-back" type="button" onClick={onBack}>
           Back
         </button>
-        <h1>Tweak</h1>
-        <p>One screen. Next round uses these.</p>
+        <h1>Customize</h1>
+        <p>Next round uses these. First play stays one tap.</p>
       </header>
 
       <fieldset>
@@ -49,37 +55,57 @@ export function Tweak({ settings, onSave, onBack }) {
             </button>
           ))}
         </div>
+        <label className="custom-list">
+          <span>Custom infinitives</span>
+          <textarea
+            value={draft.customList}
+            onChange={(event) =>
+              setDraft((prev) => ({ ...prev, customList: event.target.value }))
+            }
+            rows={3}
+            placeholder="hablar, ser, pedir"
+            spellCheck="false"
+          />
+          <em>If this box has verbs, they are the set for the round.</em>
+        </label>
       </fieldset>
 
+      {TARGET_GROUPS.map((group) => (
+        <fieldset key={group.id}>
+          <legend>{group.label}</legend>
+          <div className="chips">
+            {group.items.map((item) => (
+              <button
+                key={item.id}
+                type="button"
+                className={`chip ${draft.tenses.includes(item.id) ? "is-on" : ""}`}
+                onClick={() => toggleTense(item.id)}
+              >
+                {item.label}
+              </button>
+            ))}
+          </div>
+        </fieldset>
+      ))}
+
       <fieldset>
-        <legend>Tenses</legend>
-        <div className="chips">
-          {TENSES.map((tense) => (
+        <legend>Pronouns</legend>
+        <div className="chips chips-3">
+          {[
+            { id: "tu", label: "tú" },
+            { id: "vos", label: "vos" },
+            { id: "both", label: "both" },
+          ].map((option) => (
             <button
-              key={tense.id}
+              key={option.id}
               type="button"
-              className={`chip ${draft.tenses.includes(tense.id) ? "is-on" : ""}`}
-              onClick={() => toggleTense(tense.id)}
+              className={`chip ${draft.address === option.id ? "is-on" : ""}`}
+              onClick={() => setDraft((prev) => ({ ...prev, address: option.id }))}
             >
-              {tense.label}
+              {option.label}
             </button>
           ))}
         </div>
-      </fieldset>
-
-      <fieldset>
-        <legend>Persons</legend>
-        <label className="switch">
-          <input
-            type="checkbox"
-            checked={draft.vos}
-            onChange={(event) => setDraft((prev) => ({ ...prev, vos: event.target.checked }))}
-          />
-          <span>
-            <strong>vos</strong>
-            Replaces tú. Rioplatense forms in the same slot.
-          </span>
-        </label>
         <label className="switch">
           <input
             type="checkbox"
@@ -90,7 +116,7 @@ export function Tweak({ settings, onSave, onBack }) {
           />
           <span>
             <strong>vosotros</strong>
-            Adds a sixth column. Off by default.
+            Adds a column. Off by default.
           </span>
         </label>
       </fieldset>
@@ -105,7 +131,7 @@ export function Tweak({ settings, onSave, onBack }) {
           />
           <span>
             <strong>Multiple choice</strong>
-            Crutch only. Never counts toward owned.
+            Crutch only. Does not count toward mastered.
           </span>
         </label>
       </fieldset>
@@ -143,6 +169,11 @@ export function Tweak({ settings, onSave, onBack }) {
         <button className="btn btn-primary" type="button" onClick={() => onSave(draft)}>
           Play
         </button>
+        {onProgress ? (
+          <button className="btn btn-ghost" type="button" onClick={onProgress}>
+            Progress
+          </button>
+        ) : null}
         <button className="btn btn-ghost" type="button" onClick={onBack}>
           Back
         </button>

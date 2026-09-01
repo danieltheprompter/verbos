@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { Home } from "./components/Home.jsx";
 import { Play } from "./components/Play.jsx";
-import { Tweak } from "./components/Tweak.jsx";
+import { Customize } from "./components/Customize.jsx";
+import { Progress } from "./components/Progress.jsx";
 import { DEFAULT_SETTINGS } from "./engine/constants.js";
 import { buildRound } from "./engine/round.js";
 import { loadState, markFinished, recordAttempt, saveSettings } from "./engine/storage.js";
@@ -26,7 +27,8 @@ export function App() {
         <Home
           finishedRound={store.finishedRound}
           onPlay={() => start()}
-          onTweak={() => setScreen("tweak")}
+          onCustomize={() => setScreen("customize")}
+          onProgress={() => setScreen("progress")}
         />
       ) : null}
 
@@ -39,19 +41,29 @@ export function App() {
           onAttempt={(attempt) => setStore((prev) => recordAttempt(prev, attempt))}
           onDone={() => setStore((prev) => markFinished(prev))}
           onPlayAgain={() => start()}
-          onTweak={() => setScreen("tweak")}
+          onCustomize={() => setScreen("customize")}
+          onProgress={() => setScreen("progress")}
         />
       ) : null}
 
-      {screen === "tweak" ? (
-        <Tweak
+      {screen === "customize" ? (
+        <Customize
           settings={store.settings}
           onBack={() => setScreen("home")}
+          onProgress={() => setScreen("progress")}
           onSave={(next) => {
             const saved = saveSettings(store, next);
             setStore(saved);
             start(next, saved.attempts);
           }}
+        />
+      ) : null}
+
+      {screen === "progress" ? (
+        <Progress
+          attempts={store.attempts}
+          onBack={() => setScreen("home")}
+          onCustomize={() => setScreen("customize")}
         />
       ) : null}
     </main>

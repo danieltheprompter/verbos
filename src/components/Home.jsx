@@ -1,4 +1,4 @@
-export function Home({ finishedRound, onPlay, onTweak }) {
+export function Home({ finishedRound, onPlay, onCustomize, onProgress }) {
   return (
     <section className="home">
       <p className="eyebrow">v1</p>
@@ -9,9 +9,14 @@ export function Home({ finishedRound, onPlay, onTweak }) {
           {finishedRound ? "Play again" : "Play"}
         </button>
         {finishedRound ? (
-          <button className="btn btn-ghost" type="button" onClick={onTweak}>
-            Tweak
-          </button>
+          <>
+            <button className="btn btn-ghost" type="button" onClick={onCustomize}>
+              Customize
+            </button>
+            <button className="btn btn-ghost" type="button" onClick={onProgress}>
+              Progress
+            </button>
+          </>
         ) : null}
       </div>
     </section>

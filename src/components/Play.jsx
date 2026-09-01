@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from "react";
-import { CONTENT_VERSION, TENSES, isSingleTypePool } from "../engine/constants.js";
+import { CONTENT_VERSION, TENSES } from "../engine/constants.js";
 import { personLabel } from "../engine/board.js";
 import { answersMatch } from "../engine/check.js";
 import { makeDistractors } from "../engine/round.js";
-import { verbType } from "../engine/verbs.js";
+import { isSingleTypePool, verbType } from "../engine/verbs.js";
 import { Board, BoardLegend, TypeReadout } from "./Board.jsx";
 
 const ACCENTS = ["á", "é", "í", "ó", "ú", "ü", "ñ"];
@@ -15,7 +15,8 @@ export function Play({
   onAttempt,
   onDone,
   onPlayAgain,
-  onTweak,
+  onCustomize,
+  onProgress,
 }) {
   const [index, setIndex] = useState(0);
   const [value, setValue] = useState("");
@@ -94,6 +95,7 @@ export function Play({
     setResult(null);
     setValue("");
     setChoices(settings.mc ? makeDistractors(upcoming) : []);
+    startedAt.current = Date.now();
     setIndex((prev) => prev + 1);
   }
 
@@ -126,15 +128,15 @@ export function Play({
         <Board settings={settings} attempts={attempts} />
         <TypeReadout settings={settings} attempts={attempts} />
         <BoardLegend paintOwned={isSingleTypePool(settings)} />
-        {isSingleTypePool(settings) ? (
-          <p className="done-note">Visit is not owned. Owned is the only strength color.</p>
-        ) : null}
         <div className="home-actions">
           <button className="btn btn-primary" type="button" onClick={onPlayAgain}>
             Play again
           </button>
-          <button className="btn btn-ghost" type="button" onClick={onTweak}>
-            Tweak
+          <button className="btn btn-ghost" type="button" onClick={onCustomize}>
+            Customize
+          </button>
+          <button className="btn btn-ghost" type="button" onClick={onProgress}>
+            Progress
           </button>
         </div>
       </section>

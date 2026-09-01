@@ -4,16 +4,17 @@ import {
   CONTENT_VERSION,
   DEFAULT_SETTINGS,
   POOL,
+  STATE_LABEL,
   TYPE_LINE_BUCKETS,
-  isSingleTypePool,
   typesInPool,
 } from "./constants.js";
 import { isOwned, toyCellState, typeReadout } from "./mastery.js";
 import { mulberry32 } from "./random.js";
 import { buildRound, makeDistractors } from "./round.js";
-import { cellsFor } from "./board.js";
+import { cellsFor, personsFor } from "./board.js";
 import { toLogAttempt } from "./storage.js";
-import { verbType } from "./verbs.js";
+import { isSingleTypePool, parseCustomList, verbType, verbsForSettings } from "./verbs.js";
+import { progressReport } from "./progress.js";
 
 function typed(tense, person, correct, extra = {}) {
   return {
@@ -121,7 +122,7 @@ describe("mastery key", () => {
     const rows = typeReadout([...regularOwned, ...stemVisit], TYPE_LINE_BUCKETS, cells);
     expect(rows.map((row) => row.label)).toEqual([
       "regulars",
-      "high-freq irregulars",
+      "common irregulars",
       "stem-changers",
       "spelling",
     ]);
@@ -199,5 +200,49 @@ describe("round builder", () => {
     expect(options).toHaveLength(4);
     expect(options).toContain(item.expected);
     expect(new Set(options).size).toBe(4);
+  });
+
+  it("lets both tú and vos appear as separate persons", () => {
+    const both = { ...DEFAULT_SETTINGS, address: "both" };
+    expect(personsFor(both, "presente")).toEqual(["yo", "tu", "vos", "el", "nos", "ellos"]);
+    expect(personsFor({ ...DEFAULT_SETTINGS, address: "vos" }, "presente")).toEqual([
+      "yo",
+      "vos",
+      "el",
+      "nos",
+      "ellos",
+    ]);
+    expect(personsFor(DEFAULT_SETTINGS, "mandato_af")).not.toContain("yo");
+  });
+
+  it("uses a custom infinitive list as the verb set", () => {
+    expect(parseCustomList("hablar, ser\npedir").map((verb) => verb.inf)).toEqual([
+      "hablar",
+      "ser",
+      "pedir",
+    ]);
+    const items = buildRound(
+      { ...DEFAULT_SETTINGS, customList: "hablar" },
+      [],
+      mulberry32(2),
+    );
+    expect(items.every((item) => item.verb === "hablar")).toBe(true);
+    expect(verbsForSettings({ ...DEFAULT_SETTINGS, customList: "xyz" }).length).toBeGreaterThan(1);
+  });
+});
+
+describe("progress language", () => {
+  it("uses practiced and mastered, not visit or owned", () => {
+    expect(STATE_LABEL.visit).toBe("practiced");
+    expect(STATE_LABEL.owned).toBe("mastered");
+    const attempts = Array.from({ length: 5 }, () => typed("presente", "yo", true));
+    const report = progressReport(attempts);
+    expect(report.tenses[0].rows[0].label).toBe("mastered");
+    const labels = [
+      ...report.tenses.flatMap((group) => group.rows.map((row) => row.label)),
+      ...report.persons.map((row) => row.label),
+      ...report.types.map((row) => row.label),
+    ];
+    expect(labels.every((label) => label === "practiced" || label === "mastered")).toBe(true);
   });
 });

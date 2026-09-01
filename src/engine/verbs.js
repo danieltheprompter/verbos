@@ -121,7 +121,86 @@ export function regularForm(infinitive, tense, person) {
   const stem = infinitive.slice(0, -2);
   if (tense === "futuro") return infinitive + FUTURO[person];
   if (tense === "condicional") return infinitive + CONDICIONAL[person];
+  if (tense === "subjuntivo_imp") return imperfectSubjunctive(infinitive, person);
+  if (tense === "mandato_af" || tense === "mandato_neg") {
+    return commandForm(infinitive, tense === "mandato_af" ? "af" : "neg", person);
+  }
   return stem + ENDINGS[tense][group][person];
+}
+
+function pretEllos(infinitive) {
+  const special = SPECIAL_BY_INF?.[infinitive];
+  if (special?.forms?.preterito?.ellos) return special.forms.preterito.ellos;
+  const group = infinitive.slice(-2);
+  const stem = infinitive.slice(0, -2);
+  return stem + ENDINGS.preterito[group].ellos;
+}
+
+function accentLastVowel(text) {
+  return text.replace(/[aeiou](?!.*[aeiou])/i, (vowel) => {
+    return { a: "á", e: "é", i: "í", o: "ó", u: "ú" }[vowel.toLowerCase()] || vowel;
+  });
+}
+
+export function imperfectSubjunctive(infinitive, person) {
+  const stem = pretEllos(infinitive).slice(0, -3);
+  const forms = {
+    yo: `${stem}ra`,
+    tu: `${stem}ras`,
+    vos: `${stem}ras`,
+    el: `${stem}ra`,
+    nos: `${accentLastVowel(stem)}ramos`,
+    vosotros: `${stem}rais`,
+    ellos: `${stem}ran`,
+  };
+  return forms[person];
+}
+
+const AF_TU = {
+  ser: "sé",
+  ir: "ve",
+  tener: "ten",
+  venir: "ven",
+  poner: "pon",
+  salir: "sal",
+  hacer: "haz",
+  decir: "di",
+};
+
+const AF_VOS = {
+  ser: "sé",
+  ir: "andá",
+  tener: "tené",
+  venir: "vení",
+  poner: "poné",
+  salir: "salí",
+  hacer: "hacé",
+  decir: "decí",
+};
+
+function lookupForm(infinitive, tense, person) {
+  const special = SPECIAL_BY_INF?.[infinitive];
+  if (special?.forms?.[tense]?.[person]) return special.forms[tense][person];
+  return regularForm(infinitive, tense, person);
+}
+
+export function commandForm(infinitive, polarity, person) {
+  if (person === "yo") return null;
+  if (polarity === "neg") return `no ${lookupForm(infinitive, "subjuntivo", person)}`;
+  if (person === "tu") {
+    return AF_TU[infinitive] || lookupForm(infinitive, "presente", "el");
+  }
+  if (person === "vos") {
+    if (AF_VOS[infinitive]) return AF_VOS[infinitive];
+    const group = infinitive.slice(-2);
+    return infinitive.slice(0, -2) + { ar: "á", er: "é", ir: "í" }[group];
+  }
+  if (person === "vosotros") {
+    if (infinitive === "ir") return "id";
+    if (infinitive === "ser") return "sed";
+    return `${infinitive.slice(0, -1)}d`;
+  }
+  return lookupForm(infinitive, "subjuntivo", person);
 }
 
 export const SPECIAL_VERBS = [
@@ -567,9 +646,41 @@ export function getVerb(infinitive) {
   return SPECIAL_BY_INF[infinitive] || REGULAR_VERBS.find((verb) => verb.inf === infinitive);
 }
 
+export function asPlayableVerb(infinitive) {
+  const known = getVerb(infinitive);
+  if (known) return known;
+  const group = infinitive.slice(-2);
+  if (!["ar", "er", "ir"].includes(group)) return null;
+  return { inf: infinitive, group, pool: POOL.REGULARS, type: "regular" };
+}
+
+export function parseCustomList(text) {
+  return String(text || "")
+    .toLowerCase()
+    .split(/[\s,;]+/)
+    .map((part) => part.trim())
+    .filter(Boolean)
+    .map(asPlayableVerb)
+    .filter(Boolean);
+}
+
+export function verbsForSettings(settings) {
+  const custom = parseCustomList(settings.customList);
+  if (custom.length) return custom;
+  return verbsInPool(settings.pool);
+}
+
+export function activeTypes(settings) {
+  return [...new Set(verbsForSettings(settings).map((verb) => verb.type))];
+}
+
+export function isSingleTypePool(settings) {
+  return activeTypes(settings).length <= 1;
+}
+
 export function verbType(infinitive) {
   const verb = getVerb(infinitive);
-  return verb?.type || typeFromPool(infinitive, POOL.REGULARS);
+  return verb?.type || "regular";
 }
 
 export function verbsOfType(level, type) {
@@ -577,6 +688,9 @@ export function verbsOfType(level, type) {
 }
 
 export function conjugate(infinitive, tense, person) {
+  if (tense === "subjuntivo_imp") return imperfectSubjunctive(infinitive, person);
+  if (tense === "mandato_af") return commandForm(infinitive, "af", person);
+  if (tense === "mandato_neg") return commandForm(infinitive, "neg", person);
   const special = SPECIAL_BY_INF[infinitive];
   if (special) {
     const form = special.forms[tense]?.[person];

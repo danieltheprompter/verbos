@@ -63,7 +63,7 @@ p {
 
 .home,
 .play,
-.tweak {
+.panel {
   display: flex;
   flex-direction: column;
   gap: 18px;
@@ -199,6 +199,11 @@ p {
 .cell-owned {
   background: var(--owned);
   border-color: var(--owned);
+}
+
+.cell-na {
+  border-style: dotted;
+  opacity: 0.35;
 }
 
 .cell-now {
@@ -378,17 +383,18 @@ p {
   width: fit-content;
 }
 
-.tweak-head h1 {
+.panel-head h1 {
   font-family: Fraunces, Georgia, serif;
   font-size: 2.4rem;
 }
 
-.tweak-head p,
-.tweak fieldset span {
+.panel-head p,
+.panel fieldset span,
+.panel fieldset em {
   color: var(--ink-soft);
 }
 
-.tweak fieldset {
+.panel fieldset {
   border: 0;
   padding: 0;
   margin: 0;
@@ -396,12 +402,58 @@ p {
   gap: 10px;
 }
 
-.tweak legend {
+.panel legend {
   padding: 0;
   font-size: 0.76rem;
   letter-spacing: 0.16em;
   text-transform: uppercase;
   color: var(--ink-soft);
+}
+
+.custom-list {
+  display: grid;
+  gap: 6px;
+}
+
+.custom-list textarea {
+  width: 100%;
+  border: 1px solid var(--rule);
+  border-radius: 14px;
+  background: #fffaf2;
+  padding: 10px 12px;
+  resize: vertical;
+}
+
+.custom-list em {
+  font-size: 0.8rem;
+  font-style: normal;
+}
+
+.chips-3 {
+  grid-template-columns: 1fr 1fr 1fr;
+}
+
+.slice-title {
+  font-size: 0.76rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  margin: 8px 0 8px;
+}
+
+.slice-list {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 12px;
+  display: grid;
+  gap: 8px;
+}
+
+.slice-list li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 0.95rem;
 }
 
 .steps,
