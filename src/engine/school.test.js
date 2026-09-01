@@ -4,8 +4,10 @@ import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import {
   DEFAULT_SETTINGS,
+  FORM_COPY,
   LEVELS_NOTE,
   LEVEL_FILL_NEED,
+  LEVEL_FILL_TOTAL,
   LEVEL_LIT,
   MASTERY_MIN,
   NEXT_PLAY_LEGEND,
@@ -130,8 +132,8 @@ describe("named levels do not lock Customize", () => {
     expect(empty.every((level) => level.lock === false)).toBe(true);
     expect(empty.every((level) => level.checked === false)).toBe(true);
     expect(empty[0].name).toBe(LEVEL_LIT);
-    expect(empty[1].detail).toBe("New map");
-    expect(empty[1].detail).not.toMatch(/\d+\s*\/\s*\d+/);
+    expect(empty[1].name).toMatch(/2\s*×\s*5/);
+    expect(empty[1].detail).toBe(`0/${LEVEL_FILL_TOTAL} ${FORM_COPY.know}`);
     expect(customizeLockedByLevels(empty)).toBe(false);
     expect(customizeLockedByLevels(namedLevels(knownAt("presente", "yo")))).toBe(false);
   });
