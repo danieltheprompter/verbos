@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import { CONTENT_VERSION, TENSES, moodOf, timeOf } from "../engine/constants.js";
-import { personLabel } from "../engine/board.js";
+import { CONTENT_VERSION, FORM_COPY, RECAP_HEAD, RECAP_SUB, TENSES, moodOf, timeOf } from "../engine/constants.js";
+import { personLabel, recapStillNotEnough } from "../engine/board.js";
 import { answersMatch } from "../engine/check.js";
 import { makeDistractors } from "../engine/round.js";
 import { endingPattern, verbType } from "../engine/verbs.js";
@@ -11,6 +11,7 @@ const ACCENTS = ["á", "é", "í", "ó", "ú", "ü", "ñ"];
 export function Play({
   settings,
   items,
+  attempts = [],
   onAttempt,
   onDone,
   onPlayAgain,
@@ -124,18 +125,22 @@ export function Play({
       <section className="play play-done">
         <header className="play-bar">
           <p className="wordmark-mini">VERBOS</p>
-          <p className="progress">This round</p>
         </header>
-        <Board settings={settings} items={items} />
+        <h1 className="recap-head">{RECAP_HEAD}</h1>
+        <p className="recap-sub">{RECAP_SUB}</p>
+        <Board recap settings={settings} items={items} attempts={attempts} />
+        {recapStillNotEnough(attempts, items) ? (
+          <p className="recap-state">{FORM_COPY.not_enough}</p>
+        ) : null}
         <div className="home-actions">
           <button className="btn btn-primary" type="button" onClick={onPlayAgain}>
             Play again
           </button>
-          <button className="btn btn-ghost" type="button" onClick={onCustomize}>
-            Customize
-          </button>
           <button className="btn btn-ghost" type="button" onClick={onProgress}>
             What you know
+          </button>
+          <button className="btn btn-ghost" type="button" onClick={onCustomize}>
+            Customize
           </button>
         </div>
       </section>

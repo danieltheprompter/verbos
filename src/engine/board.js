@@ -1,4 +1,4 @@
-import { PERSONS, isCommand } from "./constants.js";
+import { PERSONS, PIP_SLOTS, isCommand } from "./constants.js";
 
 export function addressPersons(settings) {
   const address = settings.address || (settings.vos ? "vos" : "tu");
@@ -70,4 +70,26 @@ export function roundCellState(tense, person, current, answered = new Set()) {
   if (isAnswered) return isCurrent ? "answered-now" : "answered";
   if (isCurrent) return "now";
   return "empty";
+}
+
+export function cellKey(tense, person) {
+  return `${tense}:${person}`;
+}
+
+export function lastRoundResult(items, tense, person) {
+  const hits = items.filter((item) => item.tense === tense && item.person === person);
+  const last = hits[hits.length - 1];
+  if (!last || typeof last.correct !== "boolean") return null;
+  return last.correct;
+}
+
+export function typedPips(attempts, tense, person) {
+  const n = attempts.filter(
+    (attempt) => attempt.typed && attempt.tense === tense && attempt.person === person,
+  ).length;
+  return Math.min(PIP_SLOTS, n);
+}
+
+export function recapStillNotEnough(attempts, items) {
+  return items.every((item) => typedPips(attempts, item.tense, item.person) < PIP_SLOTS);
 }

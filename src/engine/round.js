@@ -71,31 +71,46 @@ function pickTypeForCell(types, verbsByType, cell, attempts, rng) {
   return weightedPick(open, weights, rng);
 }
 
-export function buildRound(settings, attempts, rng = Math.random, size = ROUND_SIZE) {
+function coverCells(cover, types, verbsByType, verbs, attempts, rng) {
+  const items = [];
+  const usedVerbs = new Set();
+  for (const cell of cover) {
+    const type = pickTypeForCell(types, verbsByType, cell, attempts, rng);
+    const verb = pickVerb(verbsByType[type] || verbs, usedVerbs, rng);
+    usedVerbs.add(verb.inf);
+    items.push(itemFrom(cell, verb));
+  }
+  return items;
+}
+
+export function buildRound(settings, attempts, rng = Math.random, size = ROUND_SIZE, priorCells = []) {
   const cells = cellsFor(settings);
   const verbs = verbsForSettings(settings);
   const types = activeTypes(settings);
   const verbsByType = Object.fromEntries(
     types.map((type) => [type, verbs.filter((verb) => verb.type === type)]),
   );
-  const items = [];
-  const usedVerbs = new Set();
   const firstPass = !completePassDone(attempts, cells);
   const empty = cells.filter((cell) => !isVisited(attempts, cell.tense, cell.person));
 
-  if (!verbs.length || !cells.length) return items;
+  if (!verbs.length || !cells.length) return [];
 
-  if (firstPass && empty.length) {
-    const cover = shuffle(empty, rng).slice(0, size);
-    for (const cell of cover) {
-      const type = pickTypeForCell(types, verbsByType, cell, attempts, rng);
-      const verb = pickVerb(verbsByType[type] || verbs, usedVerbs, rng);
-      usedVerbs.add(verb.inf);
-      items.push(itemFrom(cell, verb));
-    }
-    return items;
+  if (cells.length <= size) {
+    return coverCells(shuffle(cells, rng), types, verbsByType, verbs, attempts, rng);
   }
 
+  if (firstPass && empty.length) {
+    return coverCells(shuffle(empty, rng).slice(0, size), types, verbsByType, verbs, attempts, rng);
+  }
+
+  const board = new Set(cells.map((cell) => `${cell.tense}:${cell.person}`));
+  const replay = priorCells.filter((cell) => board.has(`${cell.tense}:${cell.person}`));
+  if (replay.length) {
+    return coverCells(shuffle(replay, rng).slice(0, size), types, verbsByType, verbs, attempts, rng);
+  }
+
+  const items = [];
+  const usedVerbs = new Set();
   while (items.length < size) {
     const cell = pickWeightedCell(cells, attempts, types, verbs, items[items.length - 1], rng);
     const type = pickTypeForCell(types, verbsByType, cell, attempts, rng);

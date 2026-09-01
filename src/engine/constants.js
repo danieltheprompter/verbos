@@ -63,6 +63,10 @@ export const PERSONS = [
 export const BOARD_NOTE =
   "This board is this round. A square fills when you answer. Right or wrong shows on what you typed.";
 
+export const PIP_SLOTS = 5;
+export const RECAP_HEAD = "You lit the board.";
+export const RECAP_SUB = "Next 10: same squares. Those hits fill the pips.";
+
 export const FARM_NOTE =
   "These are forms you already know. Add another time or kind of verb.";
 

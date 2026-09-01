@@ -12,11 +12,12 @@ export function App() {
   const [screen, setScreen] = useState("home");
   const [items, setItems] = useState(null);
   const [playId, setPlayId] = useState(0);
+  const [lastCells, setLastCells] = useState([]);
 
   const settings = store.finishedRound ? store.settings : DEFAULT_SETTINGS;
 
   function start(nextSettings = settings, nextAttempts = store.attempts) {
-    setItems(buildRound(nextSettings, nextAttempts));
+    setItems(buildRound(nextSettings, nextAttempts, Math.random, undefined, lastCells));
     setPlayId((id) => id + 1);
     setScreen("play");
   }
@@ -37,8 +38,12 @@ export function App() {
           key={playId}
           settings={settings}
           items={items}
+          attempts={store.attempts}
           onAttempt={(attempt) => setStore((prev) => recordAttempt(prev, attempt))}
-          onDone={() => setStore((prev) => markFinished(prev))}
+          onDone={() => {
+            setLastCells(items.map((item) => ({ tense: item.tense, person: item.person })));
+            setStore((prev) => markFinished(prev));
+          }}
           onPlayAgain={() => start()}
           onCustomize={() => setScreen("customize")}
           onProgress={() => setScreen("progress")}

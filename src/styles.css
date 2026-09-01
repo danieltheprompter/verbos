@@ -211,6 +211,56 @@ p {
   border-color: #8d5f2a;
 }
 
+.cell-ok {
+  background: var(--ok);
+  border-color: var(--ok);
+}
+
+.cell-bad {
+  background: var(--bad);
+  border-color: var(--bad);
+}
+
+.recap-cell {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 5px 3px 4px;
+}
+
+.pips {
+  display: flex;
+  gap: 2px;
+}
+
+.pips i {
+  width: 5px;
+  height: 5px;
+  border-radius: 99px;
+  background: rgba(255, 255, 255, 0.32);
+}
+
+.pips i.is-on {
+  background: #fff6ec;
+}
+
+.recap-head {
+  font-family: Fraunces, Georgia, serif;
+  font-size: clamp(1.8rem, 7vw, 2.4rem);
+  font-weight: 650;
+  line-height: 1.1;
+}
+
+.recap-sub,
+.recap-state {
+  color: var(--ink-soft);
+  font-size: 0.95rem;
+}
+
+.recap-state {
+  font-weight: 600;
+}
+
 .cell-na {
   border-style: dotted;
   opacity: 0.35;

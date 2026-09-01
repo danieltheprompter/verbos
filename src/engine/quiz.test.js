@@ -7,11 +7,23 @@ import {
   FORM_COPY,
   MOODS,
   PERSONS,
+  PIP_SLOTS,
+  RECAP_HEAD,
+  RECAP_SUB,
   TENSES,
   VERB_BUCKETS,
 } from "./constants.js";
 import { allSelectedKnown, formCopy, formState, youKnowThis } from "./mastery.js";
-import { answeredCellKeys, cellsFor, personLabel, personsFor, roundCellState } from "./board.js";
+import {
+  answeredCellKeys,
+  cellsFor,
+  lastRoundResult,
+  personLabel,
+  personsFor,
+  recapStillNotEnough,
+  roundCellState,
+  typedPips,
+} from "./board.js";
 import { atlasCopyAt, buildAtlas } from "./progress.js";
 import { mulberry32 } from "./random.js";
 import { buildRound, makeDistractors } from "./round.js";
@@ -142,6 +154,32 @@ describe("round board ignores mastery", () => {
     expect(answeredCellKeys(history).size).toBe(2);
     expect(answeredCellKeys([]).size).toBe(0);
     expect(answeredCellKeys([{ tense: "presente", person: "yo", verb: "hablar" }]).size).toBe(0);
+  });
+});
+
+describe("recap hero", () => {
+  it("freezes this round as green/red and shows one pip after round 1", () => {
+    const items = [
+      { tense: "presente", person: "yo", correct: true },
+      { tense: "presente", person: "tu", correct: false },
+    ];
+    const attempts = [
+      typed("presente", "yo", true),
+      typed("presente", "tu", false),
+    ];
+    expect(lastRoundResult(items, "presente", "yo")).toBe(true);
+    expect(lastRoundResult(items, "presente", "tu")).toBe(false);
+    expect(typedPips(attempts, "presente", "yo")).toBe(1);
+    expect(typedPips(attempts, "presente", "el")).toBe(0);
+    expect(PIP_SLOTS).toBe(5);
+    expect(recapStillNotEnough(attempts, items)).toBe(true);
+    expect(formCopy(attempts, spec())).toBe("not enough yet");
+  });
+
+  it("uses the recap headline and never says 5 of last 7", () => {
+    expect(RECAP_HEAD).toBe("You lit the board.");
+    expect(RECAP_SUB).toBe("Next 10: same squares. Those hits fill the pips.");
+    expect(`${RECAP_HEAD} ${RECAP_SUB}`).not.toMatch(/5 of last 7/i);
   });
 });
 
@@ -436,23 +474,21 @@ describe("round builder", () => {
     expect(allSelectedKnown(DEFAULT_SETTINGS, known)).toBe(false);
   });
 
-  it("after a complete pass, overweights weak cells", () => {
-    const cells = cellsFor(DEFAULT_SETTINGS);
-    const attempts = cells.flatMap((cell) => [
-      typed(cell.tense, cell.person, true),
-      typed(cell.tense, cell.person, cell.person === "yo"),
-    ]);
-    const knownYo = Array.from({ length: 5 }, () => typed("presente", "yo", true));
-    const all = [...attempts, ...knownYo];
-    const counts = {};
-    for (let i = 0; i < 80; i += 1) {
-      const items = buildRound(DEFAULT_SETTINGS, all, mulberry32(100 + i));
-      for (const item of items) {
-        const key = `${item.tense}:${item.person}`;
-        counts[key] = (counts[key] || 0) + 1;
-      }
-    }
-    expect(counts["presente:yo"]).toBeLessThan(counts["preterito:tu"]);
+  it("round 2 hits the same 10 squares so the pips can move", () => {
+    const first = buildRound(DEFAULT_SETTINGS, [], mulberry32(7));
+    const attempts = first.map((item) => typed(item.tense, item.person, true, { verb: item.verb }));
+    const prior = first.map((item) => ({ tense: item.tense, person: item.person }));
+    const second = buildRound(DEFAULT_SETTINGS, attempts, mulberry32(11), 10, prior);
+    const firstKeys = first.map((item) => `${item.tense}:${item.person}`).sort();
+    const secondKeys = second.map((item) => `${item.tense}:${item.person}`).sort();
+    expect(second).toHaveLength(10);
+    expect(new Set(secondKeys).size).toBe(10);
+    expect(secondKeys).toEqual(firstKeys);
+    expect(secondKeys).toEqual(
+      cellsFor(DEFAULT_SETTINGS)
+        .map((cell) => `${cell.tense}:${cell.person}`)
+        .sort(),
+    );
   });
 
   it("builds four MC options including the key", () => {
