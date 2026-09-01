@@ -117,26 +117,23 @@ export function Customize({ settings, attempts = [], onSave, onBack, onProgress 
         </label>
       </fieldset>
 
-      <fieldset className="times">
-        <legend>Times</legend>
-        {pack.targetGroups.map((group) => (
-          <div key={group.id} className="times-group">
-            <p className="times-mood">{group.label}</p>
-            <div className="chips">
-              {group.items.map((item) => (
-                <button
-                  key={item.id}
-                  type="button"
-                  className={`chip ${draft.tenses.includes(item.id) ? "is-on" : ""}`}
-                  onClick={() => toggleTense(item.id)}
-                >
-                  {item.label}
-                </button>
-              ))}
-            </div>
+      {pack.targetGroups.map((group) => (
+        <fieldset key={group.id} className="times">
+          <legend>{group.label}</legend>
+          <div className="chips">
+            {group.items.map((item) => (
+              <button
+                key={item.id}
+                type="button"
+                className={`chip ${draft.tenses.includes(item.id) ? "is-on" : ""}`}
+                onClick={() => toggleTense(item.id)}
+              >
+                {item.label}
+              </button>
+            ))}
           </div>
-        ))}
-      </fieldset>
+        </fieldset>
+      ))}
 
       <fieldset>
         <legend>Pronouns</legend>

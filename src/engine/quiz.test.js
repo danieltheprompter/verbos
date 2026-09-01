@@ -207,6 +207,12 @@ describe("pedagogy freeze", () => {
       "Afirmativo",
       "Negativo",
     ]);
+    const customize = readFileSync(
+      join(dirname(fileURLToPath(import.meta.url)), "../components/Customize.jsx"),
+      "utf8",
+    );
+    expect(customize).not.toMatch(/<legend>Times<\/legend>/);
+    expect(customize).not.toMatch(/imperative/i);
   });
 
   it("keeps imperfect subjunctive on -ra only, with no -se picker", () => {
