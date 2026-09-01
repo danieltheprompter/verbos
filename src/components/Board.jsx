@@ -1,6 +1,13 @@
 import { BOARD_NOTE, PIP_SLOTS } from "../engine/config.js";
 import { tenses as packTenses } from "../engine/pack.js";
-import { answeredCellKeys, cellAllowed, cellPips, columnLabels, roundCellState } from "../engine/board.js";
+import {
+  answeredCellKeys,
+  cellAllowed,
+  cellPips,
+  columnLabels,
+  recapCellTone,
+  roundCellState,
+} from "../engine/board.js";
 
 function Pips({ count, slots = PIP_SLOTS }) {
   return (
@@ -41,10 +48,11 @@ export function Board({ settings, items = [], current, attempts = [], showPips =
               }
               const state = roundCellState(row.id, column.id, current, answered);
               const pips = showPips ? cellPips(attempts, row.id, column.id) : 0;
+              const tone = showPips ? recapCellTone(items, row.id, column.id) : "";
               return (
                 <div
                   key={column.id}
-                  className={`cell cell-${state}`}
+                  className={`cell cell-${state}${tone ? ` cell-${tone}` : ""}`}
                   title={`${row.label} · ${column.label}`}
                 >
                   {showPips ? <Pips count={pips} /> : null}

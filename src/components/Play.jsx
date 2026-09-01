@@ -66,7 +66,7 @@ export function Play({
     setResult({
       ok,
       expected: item.expected,
-      miss: ok ? null : explainMiss(item.expected, raw),
+      miss: ok ? null : explainMiss(item.expected, raw, item),
     });
     const verb_type = item.type || item.verb_type || verbType(item.verb);
     const ending_pattern = item.ending_pattern || endingPattern(item.verb);
@@ -124,37 +124,24 @@ export function Play({
 
   if (finished) {
     const story = recapStory(items, attempts);
-    const playFirst = story.action !== "map";
     return (
       <section className="play play-done">
         <header className="play-bar">
           <p className="wordmark-mini">VERBOS</p>
         </header>
         <h1 className="recap-head">{story.head}</h1>
-        <p className="recap-sub">{story.line}</p>
         <Board settings={settings} items={items} attempts={attempts} showPips />
+        <p className="recap-sub">{story.line}</p>
         <div className="home-actions">
-          {playFirst ? (
-            <button className="btn btn-primary" type="button" onClick={onPlayAgain}>
-              Play again
-            </button>
-          ) : (
-            <button className="btn btn-primary" type="button" onClick={onProgress}>
-              What you know
-            </button>
-          )}
+          <button className="btn btn-primary" type="button" onClick={onPlayAgain}>
+            Play again
+          </button>
+          <button className="btn btn-ghost" type="button" onClick={onProgress}>
+            What you know
+          </button>
           <button className="btn btn-ghost" type="button" onClick={onCustomize}>
             Customize
           </button>
-          {playFirst ? (
-            <button className="btn btn-ghost" type="button" onClick={onProgress}>
-              What you know
-            </button>
-          ) : (
-            <button className="btn btn-ghost" type="button" onClick={onPlayAgain}>
-              Play again
-            </button>
-          )}
         </div>
       </section>
     );

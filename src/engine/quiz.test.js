@@ -30,6 +30,7 @@ import {
   itemsToCells,
   lastRoundResult,
   personLabel,
+  recapCellTone,
   personsFor,
   recapStillNotEnough,
   roundCellState,
@@ -107,6 +108,19 @@ describe("miss feedback names the miss", () => {
     expect(explainMiss("hablo", "")).toMatchObject({ message: "Type a form" });
     expect(explainMiss("hablo", "hablas").message).not.toMatch(/incorrect|wrong/i);
     expect(explainMiss("hablo", "hablo")).toBe(null);
+  });
+
+  it("names the person or time when that is the miss", () => {
+    const yoPreterite = { verb: "hablar", tense: "preterito", person: "yo" };
+    expect(explainMiss("hablé", "hablaste", yoPreterite)).toMatchObject({
+      kind: "person",
+      message: "That's tú",
+    });
+    expect(explainMiss("hablé", "hablaba", yoPreterite)).toMatchObject({
+      kind: "time",
+      message: "Pretérito, not Imperfecto",
+    });
+    expect(explainMiss("hablé", "hablaste", yoPreterite).message).not.toMatch(/incorrect|shame/i);
   });
 });
 
@@ -293,6 +307,8 @@ describe("recap hero", () => {
     const attempts = [typed("presente", "yo", true), typed("presente", "tu", false)];
     expect(lastRoundResult(items, "presente", "yo")).toBe(true);
     expect(lastRoundResult(items, "presente", "tu")).toBe(false);
+    expect(recapCellTone(items, "presente", "yo")).toBe("hit");
+    expect(recapCellTone(items, "presente", "tu")).toBe("miss");
     expect(typedPips(attempts, "presente", "yo")).toBe(1);
     expect(cellPips(attempts, "presente", "el")).toBe(0);
     expect(PIP_SLOTS).toBe(5);

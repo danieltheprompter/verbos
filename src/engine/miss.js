@@ -23,13 +23,13 @@ function oneOff(want, got) {
   return diffs === 1;
 }
 
-export function explainMiss(expected, given) {
+export function explainMiss(expected, given, item) {
   if (answersMatch(expected, given)) return null;
   const want = stripPronoun(fold(expected));
   const got = stripPronoun(fold(given));
   if (!got) return { kind: "empty", message: "Type a form" };
 
-  const fromPack = pack.explainMiss?.(expected, given, { want, got });
+  const fromPack = pack.explainMiss?.(expected, given, { want, got, item });
   if (fromPack) return fromPack;
 
   if (stripMarks(want) === stripMarks(got)) {

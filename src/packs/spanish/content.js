@@ -1,3 +1,5 @@
+import { conjugate } from "./verbs.js";
+
 export const accents = ["á", "é", "í", "ó", "ú", "ü", "ñ"];
 
 export const leadingPronouns = [
@@ -97,9 +99,46 @@ export const defaultSettings = {
   mc: false,
 };
 
-export function explainMiss(expected, given, { want, got }) {
-  if (got.endsWith("stes") && want.endsWith("ste")) {
+function sameFolded(form, got) {
+  return String(form || "")
+    .trim()
+    .toLowerCase()
+    .normalize("NFC") === got;
+}
+
+export function explainMiss(expected, given, { want, got, item } = {}) {
+  if (got?.endsWith("stes") && want?.endsWith("ste")) {
     return { kind: "extra_s", message: "Extra s" };
+  }
+  if (!item?.verb || !item?.tense || !item?.person) return null;
+
+  for (const person of persons) {
+    if (person.id === item.person) continue;
+    try {
+      const form = conjugate(item.verb, item.tense, person.id);
+      if (form && sameFolded(form, got)) {
+        return { kind: "person", message: `That's ${person.label}` };
+      }
+    } catch {
+      /* skip impossible person */
+    }
+  }
+
+  const tenses = targetGroups.flatMap((group) => group.items);
+  const here = tenses.find((tense) => tense.id === item.tense);
+  for (const tense of tenses) {
+    if (tense.id === item.tense) continue;
+    try {
+      const form = conjugate(item.verb, tense.id, item.person);
+      if (form && sameFolded(form, got)) {
+        return {
+          kind: "time",
+          message: `${here?.label ?? "This time"}, not ${tense.label}`,
+        };
+      }
+    } catch {
+      /* skip */
+    }
   }
   return null;
 }

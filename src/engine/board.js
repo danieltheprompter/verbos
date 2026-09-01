@@ -114,6 +114,13 @@ export function lastRoundResult(items, tense, person) {
   return last.correct;
 }
 
+export function recapCellTone(items, tense, person) {
+  const hit = lastRoundResult(items, tense, person);
+  if (hit === true) return "hit";
+  if (hit === false) return "miss";
+  return "";
+}
+
 export function recapStillNotEnough(attempts, items) {
   return items.every((item) => cellPips(attempts, item.tense, item.person) < PIP_SLOTS);
 }
