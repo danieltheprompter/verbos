@@ -25,6 +25,7 @@ import {
   cellKey,
   cellPips,
   cellsFor,
+  columnLabels,
   commandPersons,
   itemsToCells,
   lastRoundResult,
@@ -740,5 +741,14 @@ describe("teaching + UX freeze", () => {
       "vosotros",
       "ellos / ellas / ustedes",
     ]);
+    const defaultCols = columnLabels(DEFAULT_SETTINGS).map((column) => column.label);
+    expect(defaultCols).toEqual([
+      "yo",
+      "tú",
+      "él / ella / usted",
+      "nosotros",
+      "ellos / ellas / ustedes",
+    ]);
+    expect(defaultCols.at(-1)).not.toBe("ustedes");
   });
 });
