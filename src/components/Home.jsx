@@ -11,6 +11,7 @@ import {
 export function Home({
   finishedRound,
   hasClassSet,
+  nextPlay,
   onPlay,
   onWarmup,
   onCustomize,
@@ -22,7 +23,7 @@ export function Home({
   return (
     <section className="home">
       <h1 className="wordmark">{WORDMARK}</h1>
-      <p className="lede">{LEDE}</p>
+      <p className="lede">{nextPlay || LEDE}</p>
       <div className="home-actions">
         <button className="btn btn-primary" type="button" onClick={onPlay}>
           {finishedRound ? "Play again" : "Play"}

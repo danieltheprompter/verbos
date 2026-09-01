@@ -7,6 +7,8 @@ import { Profile } from "./components/Profile.jsx";
 import { Progress } from "./components/Progress.jsx";
 import { sameBoard } from "./engine/board.js";
 import { DEFAULT_SETTINGS, WARMUP_BELL_SEC } from "./engine/constants.js";
+import { allSelectedKnown } from "./engine/mastery.js";
+import { nextPlayLine } from "./engine/levels.js";
 import { buildRound } from "./engine/round.js";
 import { warmupSettings } from "./engine/warmup.js";
 import {
@@ -68,6 +70,15 @@ export function App() {
         <Home
           finishedRound={profile.finishedRound}
           hasClassSet={store.hasClassSet}
+          nextPlay={
+            profile.finishedRound
+              ? nextPlayLine(
+                  profile.attempts,
+                  !allSelectedKnown(playSettings, profile.attempts),
+                  playSettings,
+                )
+              : ""
+          }
           onPlay={() => start({ replay: profile.finishedRound })}
           onWarmup={(bell) =>
             start({

@@ -8,6 +8,7 @@ import {
   LEVEL_FILL_NEED,
   LEVEL_LIT,
   MASTERY_MIN,
+  NEXT_PLAY_LEGEND,
   NEXT_PLAY_SUGGEST,
   PROFILE_TITLE,
   RECAP_CLEAN,
@@ -24,8 +25,9 @@ import {
   encodeClassSet,
   parseClassSet,
 } from "./classSet.js";
-import { customizeLockedByLevels, namedLevels, nextPlayLine } from "./levels.js";
+import { customizeLockedByLevels, namedLevels, nextPlayFocus, nextPlayLine } from "./levels.js";
 import { formCopy } from "./mastery.js";
+import { personLabel, tenseLabel } from "./pack.js";
 import { recapStory } from "./recap.js";
 import { buildRound } from "./round.js";
 import { mulberry32 } from "./random.js";
@@ -174,6 +176,7 @@ describe("warm-up and class set", () => {
   it("keeps first Play one tap and Warm-up only after a class set", () => {
     const home = readFileSync(join(root, "components/Home.jsx"), "utf8");
     expect(home).toMatch(/finishedRound \? "Play again" : "Play"/);
+    expect(home).toMatch(/nextPlay \|\| LEDE/);
     expect(home).toMatch(/hasClassSet/);
     expect(home).toMatch(/WARMUP/);
     expect(home).toMatch(/onWarmup/);
@@ -226,6 +229,13 @@ describe("Next Play and projector recap", () => {
   it("points Next Play at leftover weak spots, not random easy present", () => {
     expect(nextPlayLine([], true)).toBe(RECAP_NEXT_REST);
     const board = cellsFor(DEFAULT_SETTINGS);
+    const missRound = board.map((cell) =>
+      typed(cell.tense, cell.person, !(cell.tense === "preterito" && cell.person === "nos")),
+    );
+    expect(nextPlayFocus(missRound)).toEqual({ tense: "preterito", person: "nos" });
+    expect(nextPlayLine(missRound, true)).toBe(
+      `${NEXT_PLAY_LEGEND}: ${tenseLabel("preterito")} · ${personLabel("nos")}`,
+    );
     const contrast = [
       ...knownAt("presente", "yo"),
       ...knownAt("presente", "yo", "comer"),
@@ -233,7 +243,8 @@ describe("Next Play and projector recap", () => {
       ...knownAt("preterito", "tu", "comer"),
     ];
     expect(namedLevels(contrast).find((level) => level.id === "contrast").checked).toBe(true);
-    expect(nextPlayLine(contrast, true)).toBe(NEXT_PLAY_SUGGEST);
+    expect(namedLevels(contrast).find((level) => level.id === "contrast").lock).toBe(false);
+    expect(nextPlayLine(contrast, true)).toMatch(new RegExp(`^${NEXT_PLAY_LEGEND}:`));
     expect(NEXT_PLAY_SUGGEST).toMatch(/not you know this/);
     expect(NEXT_PLAY_SUGGEST).toMatch(/Customize/);
     const visits = board.map((cell) => typed(cell.tense, cell.person, true));

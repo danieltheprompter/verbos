@@ -1,4 +1,3 @@
-import { useState } from "react";
 import {
   ADD_PERSON,
   CLEAR_ATLAS,
@@ -11,7 +10,7 @@ import {
   PROFILE_LEDE,
   PROFILE_TITLE,
 } from "../engine/config.js";
-import { customizeLockedByLevels, namedLevels, nextPlayLine } from "../engine/levels.js";
+import { namedLevels, nextPlayLine } from "../engine/levels.js";
 import { allSelectedKnown } from "../engine/mastery.js";
 import { profileName } from "../engine/storage.js";
 import { ClearProgress } from "./ClearProgress.jsx";
@@ -32,8 +31,7 @@ export function Profile({
 }) {
   const levels = namedLevels(profile.attempts);
   const leftover = !allSelectedKnown(settings, profile.attempts);
-  const nextLine = nextPlayLine(profile.attempts, leftover);
-  const locked = customizeLockedByLevels(levels);
+  const nextLine = nextPlayLine(profile.attempts, leftover, settings);
 
   return (
     <section className="panel">
@@ -118,7 +116,7 @@ export function Profile({
             What you know
           </button>
         ) : null}
-        {onCustomize && !locked ? (
+        {onCustomize ? (
           <button className="btn btn-ghost" type="button" onClick={onCustomize}>
             Customize
           </button>

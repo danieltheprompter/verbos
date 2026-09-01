@@ -1,6 +1,7 @@
 import { ROUND_SIZE } from "./config.js";
-import { cellKey, cellsFor, sameBoard } from "./board.js";
+import { cellKey, cellPips, cellsFor, sameBoard } from "./board.js";
 import { moodOf, pack, tenses as packTenses, timeOf } from "./pack.js";
+import { lastMiss, miniCellState } from "./levels.js";
 import {
   allSelectedKnown,
   completePassDone,
@@ -56,10 +57,18 @@ function pickWeightedCell(cells, attempts, types, verbs, prev, rng) {
   const empty = cells.filter((cell) => !isVisited(attempts, cell.tense, cell.person));
   const unknown = cells.filter((cell) => cellHasUnknown(cell, attempts, types, verbs));
   const board = empty.length ? empty : unknown.length ? unknown : cells;
+  const miss = lastMiss(attempts);
   const weights = board.map((cell) => {
-    if (empty.length) return 8;
-    const weak = types.some((type) => !typeKnownAtCell(attempts, cell.tense, cell.person, type));
-    return weak ? 5 : 1;
+    const pips = cellPips(attempts, cell.tense, cell.person);
+    const learning = miniCellState(attempts, cell.tense, cell.person) === "learning";
+    let weight = 1;
+    if (pips === 0) weight = 12;
+    else if (learning) weight = 8;
+    else if (types.some((type) => !typeKnownAtCell(attempts, cell.tense, cell.person, type))) {
+      weight = 5;
+    }
+    if (miss && (cell.person === miss.person || cell.tense === miss.tense)) weight += 3;
+    return weight;
   });
 
   for (let tryNo = 0; tryNo < 8; tryNo += 1) {

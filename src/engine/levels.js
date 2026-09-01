@@ -2,13 +2,15 @@ import {
   DEFAULT_SETTINGS,
   LEVEL_FILL_NEED,
   LEVEL_LIT,
+  NEXT_PLAY_LEGEND,
   NEXT_PLAY_SUGGEST,
+  RECAP_NEXT_AGAIN,
   RECAP_NEXT_MAP,
   RECAP_NEXT_REST,
 } from "./constants.js";
-import { cellsFor } from "./board.js";
+import { cellPips, cellsFor } from "./board.js";
 import { completePassDone, formState, isVisited, typedAttemptsFor, youKnowThis } from "./mastery.js";
-import { moodOf, pack, tenseLabel, timeOf } from "./pack.js";
+import { moodOf, pack, personLabel, tenseLabel, timeOf } from "./pack.js";
 import { atlasRank } from "./progress.js";
 
 export function defaultBoardCells() {
@@ -118,11 +120,52 @@ export function customizeLockedByLevels(_levels) {
   return false;
 }
 
-export function nextPlayLine(attempts = [], leftover = true) {
-  const levels = namedLevels(attempts);
-  const contrast = levels.find((level) => level.id === "contrast");
+export function lastMiss(attempts = []) {
+  for (let index = attempts.length - 1; index >= 0; index -= 1) {
+    if (attempts[index].correct === false) return attempts[index];
+  }
+  return null;
+}
+
+function pickFocused(list, miss) {
+  if (!list.length) return null;
+  if (miss) {
+    const hit = list.find((cell) => cell.tense === miss.tense && cell.person === miss.person);
+    if (hit) return hit;
+  }
+  return list[0];
+}
+
+export function nextPlayFocus(attempts = [], settings = DEFAULT_SETTINGS) {
+  if (!attempts.length) return null;
+  const cells = cellsFor(settings);
+  const miss = lastMiss(attempts);
+  const empty = cells.filter((cell) => cellPips(attempts, cell.tense, cell.person) === 0);
+  const learning = cells.filter(
+    (cell) => miniCellState(attempts, cell.tense, cell.person) === "learning",
+  );
+  const unknown = cells.filter((cell) => miniCellState(attempts, cell.tense, cell.person) !== "know");
+  return (
+    pickFocused(empty, miss) ||
+    pickFocused(learning, miss) ||
+    pickFocused(
+      unknown.filter((cell) => miss && cell.tense === miss.tense && cell.person === miss.person),
+      miss,
+    ) ||
+    null
+  );
+}
+
+export function nextPlayLine(attempts = [], leftover = true, settings = DEFAULT_SETTINGS) {
+  const focus = nextPlayFocus(attempts, settings);
+  if (focus) {
+    return `${NEXT_PLAY_LEGEND}: ${tenseLabel(focus.tense)} · ${personLabel(focus.person)}`;
+  }
+  const contrast = namedLevels(attempts).find((level) => level.id === "contrast");
   if (contrast?.checked) return NEXT_PLAY_SUGGEST;
-  if (leftover) return RECAP_NEXT_REST;
+  if (leftover) {
+    return completePassDone(attempts, cellsFor(settings)) ? RECAP_NEXT_AGAIN : RECAP_NEXT_REST;
+  }
   return RECAP_NEXT_MAP;
 }
 

@@ -1129,16 +1129,19 @@ p {
 }
 
 .play-done.is-glance {
+  min-height: calc(100dvh - 48px);
+  justify-content: center;
   text-align: center;
+  gap: 28px;
 }
 
 .play-done.is-glance .recap-head {
-  font-size: clamp(2.6rem, 12vw, 4.2rem);
+  font-size: clamp(3.2rem, 12vw, 6rem);
   text-align: center;
 }
 
 .play-done.is-glance .cell {
-  min-height: 54px;
+  min-height: clamp(56px, 10vw, 96px);
 }
 
 .sr-only {
