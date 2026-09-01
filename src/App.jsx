@@ -26,6 +26,10 @@ export function App() {
   function start({ nextSettings = settings, replay = false, from = store } = {}) {
     const replayCells = replay && sameBoard(from.lastCells, nextSettings) ? from.lastCells : null;
     const nextItems = buildRound(nextSettings, from.attempts, Math.random, undefined, replayCells);
+    if (!nextItems.length) {
+      setScreen("customize");
+      return;
+    }
     setStore(rememberCells(from, nextItems));
     setItems(nextItems);
     setPlayId((id) => id + 1);
@@ -43,7 +47,7 @@ export function App() {
         />
       ) : null}
 
-      {screen === "play" && items ? (
+      {screen === "play" && items?.length ? (
         <Play
           key={playId}
           settings={settings}

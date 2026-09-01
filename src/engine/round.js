@@ -1,7 +1,13 @@
 import { ROUND_SIZE } from "./config.js";
-import { cellsFor, sameBoard } from "./board.js";
+import { cellKey, cellsFor, sameBoard } from "./board.js";
 import { moodOf, pack, tenses as packTenses, timeOf } from "./pack.js";
-import { completePassDone, isVisited, typeKnownAtCell, youKnowThis } from "./mastery.js";
+import {
+  allSelectedKnown,
+  completePassDone,
+  isVisited,
+  typeKnownAtCell,
+  youKnowThis,
+} from "./mastery.js";
 import { pick, shuffle, weightedPick } from "./random.js";
 import { activeTypes, conjugate, endingPattern, verbsForSettings } from "./verbs.js";
 
@@ -83,6 +89,23 @@ function fillCells(cover, verbs, types, verbsByType, attempts, rng) {
   return items;
 }
 
+function pushItem(items, cell, verbs, types, verbsByType, attempts, usedVerbs, rng) {
+  const type = pickTypeForCell(types, verbsByType, cell, attempts, rng);
+  const verb = pickVerb(verbsByType[type] || verbs, usedVerbs, rng);
+  usedVerbs.add(verb.inf);
+  items.push(itemFrom(cell, verb));
+}
+
+function fillWeighted(board, verbs, types, verbsByType, attempts, rng, size, seed = []) {
+  const items = [...seed];
+  const usedVerbs = new Set(items.map((item) => item.verb));
+  while (items.length < size) {
+    const cell = pickWeightedCell(board, attempts, types, verbs, items[items.length - 1], rng);
+    pushItem(items, cell, verbs, types, verbsByType, attempts, usedVerbs, rng);
+  }
+  return items;
+}
+
 export function buildRound(settings, attempts, rng = Math.random, size = ROUND_SIZE, replayCells) {
   const cells = cellsFor(settings);
   const verbs = verbsForSettings(settings);
@@ -92,17 +115,17 @@ export function buildRound(settings, attempts, rng = Math.random, size = ROUND_S
   );
   const firstPass = !completePassDone(attempts, cells);
   const empty = cells.filter((cell) => !isVisited(attempts, cell.tense, cell.person));
+  const unknown = cells.filter((cell) => cellHasUnknown(cell, attempts, types, verbs));
+  const replay = replayCells?.length && sameBoard(replayCells, settings) ? replayCells : null;
+  const nothingKnown = unknown.length === cells.length;
 
   if (!verbs.length || !cells.length) return [];
+  if (allSelectedKnown(settings, attempts)) return [];
 
-  if (cells.length <= size) {
-    const order =
-      replayCells?.length && sameBoard(replayCells, settings) ? replayCells : shuffle(cells, rng);
+  // Round 1 / still nothing you-know-this: one visit per cell, no retries stuffed in.
+  if (nothingKnown && cells.length <= size) {
+    const order = replay || shuffle(cells, rng);
     return fillCells(order.slice(0, size), verbs, types, verbsByType, attempts, rng);
-  }
-
-  if (replayCells?.length && sameBoard(replayCells, settings)) {
-    return fillCells(replayCells.slice(0, size), verbs, types, verbsByType, attempts, rng);
   }
 
   if (firstPass && empty.length) {
@@ -110,17 +133,29 @@ export function buildRound(settings, attempts, rng = Math.random, size = ROUND_S
     return fillCells(cover, verbs, types, verbsByType, attempts, rng);
   }
 
-  const items = [];
-  const usedVerbs = new Set();
-  while (items.length < size) {
-    const cell = pickWeightedCell(cells, attempts, types, verbs, items[items.length - 1], rng);
-    const type = pickTypeForCell(types, verbsByType, cell, attempts, rng);
-    const verb = pickVerb(verbsByType[type] || verbs, usedVerbs, rng);
-    usedVerbs.add(verb.inf);
-    items.push(itemFrom(cell, verb));
+  // After the complete pass, stay on cells that are not you-know-this.
+  const open = unknown.length ? unknown : [];
+  if (!open.length) return [];
+  const replayOpen = replay
+    ? replay.filter((cell) => open.some((item) => cellKey(item) === cellKey(cell)))
+    : [];
+  const board = replayOpen.length ? replayOpen : open;
+
+  if (board.length <= size) {
+    const cover = shuffle(board, rng);
+    return fillWeighted(
+      board,
+      verbs,
+      types,
+      verbsByType,
+      attempts,
+      rng,
+      size,
+      fillCells(cover, verbs, types, verbsByType, attempts, rng),
+    );
   }
 
-  return items;
+  return fillWeighted(board, verbs, types, verbsByType, attempts, rng, size);
 }
 
 export function makeDistractors(item, rng = Math.random) {

@@ -115,6 +115,7 @@ export function Progress({ attempts, onBack, onCustomize, onClear }) {
 
       {onClear ? (
         <section className="clear-block">
+          <p className="times-mood">Atlas</p>
           <ClearProgress onClear={onClear} />
         </section>
       ) : null}

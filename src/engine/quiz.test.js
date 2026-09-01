@@ -8,6 +8,9 @@ import {
   CONTENT_VERSION,
   DEFAULT_SETTINGS,
   FORM_COPY,
+  MASTERY_MIN,
+  MASTERY_NEED,
+  MASTERY_WINDOW,
   MOODS,
   PERSONS,
   PIP_SLOTS,
@@ -22,6 +25,7 @@ import {
   cellKey,
   cellPips,
   cellsFor,
+  commandPersons,
   itemsToCells,
   lastRoundResult,
   personLabel,
@@ -32,7 +36,7 @@ import {
   typedPips,
 } from "./board.js";
 import { explainMiss } from "./miss.js";
-import { atlasCopyAt, buildAtlas } from "./progress.js";
+import { atlasCopyAt, atlasFillName, buildAtlas } from "./progress.js";
 import { mulberry32 } from "./random.js";
 import { buildRound, makeDistractors } from "./round.js";
 import { clearProgress, toLogAttempt } from "./storage.js";
@@ -590,6 +594,7 @@ describe("round builder", () => {
     ]);
     expect(allSelectedKnown(presentRegulars, known)).toBe(true);
     expect(allSelectedKnown(DEFAULT_SETTINGS, known)).toBe(false);
+    expect(buildRound(presentRegulars, known, mulberry32(1))).toEqual([]);
   });
 
   it("after a complete pass, overweights weak cells on a bigger board", () => {
@@ -650,5 +655,90 @@ describe("round builder", () => {
         cellPips(attempts, item.tense, item.person),
       );
     }
+  });
+});
+
+describe("teaching + UX freeze", () => {
+  it("never paints know / still learning on the round board", () => {
+    expect(roundCellState("presente", "yo", null, new Set(["presente:yo"]))).toBe("answered");
+    expect(["empty", "now", "answered", "answered-now"]).toContain(
+      roundCellState("presente", "yo", { tense: "presente", person: "yo" }, new Set()),
+    );
+    expect(BOARD_NOTE).toBe(
+      "This board is this round. A square fills when you answer. Right or wrong shows on what you typed.",
+    );
+  });
+
+  it("keeps commands off yo and uses the default four persons", () => {
+    expect(personsFor(DEFAULT_SETTINGS, "mandato_af")).toEqual(["tu", "el", "nos", "ellos"]);
+    expect(personsFor(DEFAULT_SETTINGS, "mandato_neg")).toEqual(["tu", "el", "nos", "ellos"]);
+    expect(commandPersons(DEFAULT_SETTINGS)).toEqual(["tu", "el", "nos", "ellos"]);
+    expect(commandPersons({ ...DEFAULT_SETTINGS, address: "vos" })).toEqual([
+      "vos",
+      "el",
+      "nos",
+      "ellos",
+    ]);
+    expect(commandPersons({ ...DEFAULT_SETTINGS, vosotros: true })).toEqual([
+      "tu",
+      "el",
+      "nos",
+      "vosotros",
+      "ellos",
+    ]);
+    expect(TENSES.filter((tense) => tense.mood === "commands").map((tense) => tense.time)).toEqual([
+      "affirmative",
+      "negative",
+    ]);
+    expect(TENSES.filter((tense) => tense.mood === "subjunctive").map((tense) => tense.time)).not.toContain(
+      "affirmative",
+    );
+  });
+
+  it("uses last-7 only and cannot mint you-know-this in one pass", () => {
+    expect(MASTERY_WINDOW).toBe(7);
+    expect(MASTERY_NEED).toBe(5);
+    expect(MASTERY_MIN).toBe(5);
+    const first = buildRound(DEFAULT_SETTINGS, [], mulberry32(7)).map((item) =>
+      typed(item.tense, item.person, true, { verb: item.verb }),
+    );
+    expect(first.every((attempt) => formCopy(first, {
+      mood: "indicative",
+      time: attempt.tense === "presente" ? "presente" : "preterito",
+      person: attempt.person,
+      type: "regular",
+      ending: endingPattern(attempt.verb),
+    }) === "not enough yet")).toBe(true);
+  });
+
+  it("after a complete pass, drops cells that are already you-know-this", () => {
+    const visits = cellsFor(DEFAULT_SETTINGS).map((cell) => typed(cell.tense, cell.person, true));
+    const knownPresenteYo = [
+      ...Array.from({ length: 5 }, () => typed("presente", "yo", true, { verb: "hablar" })),
+      ...Array.from({ length: 5 }, () => typed("presente", "yo", true, { verb: "comer" })),
+    ];
+    const items = buildRound(DEFAULT_SETTINGS, [...visits, ...knownPresenteYo], mulberry32(9));
+    expect(items).toHaveLength(10);
+    expect(items.every((item) => `${item.tense}:${item.person}` !== "presente:yo")).toBe(true);
+  });
+
+  it("names the atlas fill and keeps three states, no points", () => {
+    expect(atlasFillName("indicative", "regular", "ar")).toBe("Indicative · Regulars · -ar");
+    expect(FORM_COPY).toEqual({
+      not_enough: "not enough yet",
+      learning: "still learning",
+      know: "you know this",
+    });
+    const chrome = `${BOARD_NOTE} ${RECAP_HEAD} ${RECAP_SUB} ${Object.values(FORM_COPY).join(" ")}`;
+    expect(chrome).not.toMatch(/xp|streak|loot|points|\bscore\b/i);
+    expect(PERSONS.map((person) => person.label)).toEqual([
+      "yo",
+      "tú",
+      "vos",
+      "él / ella / usted",
+      "nosotros",
+      "vosotros",
+      "ellos / ellas / ustedes",
+    ]);
   });
 });
