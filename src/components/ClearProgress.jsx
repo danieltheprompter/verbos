@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { CLEAR_ATLAS } from "../engine/config.js";
 
 export function ClearProgress({ onClear }) {
   const [confirming, setConfirming] = useState(false);
@@ -6,7 +7,7 @@ export function ClearProgress({ onClear }) {
   if (!confirming) {
     return (
       <button className="btn btn-ghost" type="button" onClick={() => setConfirming(true)}>
-        Clear progress
+        {CLEAR_ATLAS}
       </button>
     );
   }

@@ -25,6 +25,32 @@ export const RECAP_NEXT_MAP = "Open What you know.";
 export const FARM_NOTE =
   "These are forms you already know. Add another time or kind of verb.";
 
+export const PROFILE_TITLE = "You, this device";
+export const PROFILE_LEDE = "This device. Not an account.";
+export const PEOPLE_LEGEND = "People";
+export const ADD_PERSON = "Add someone";
+export const DISPLAY_NAME = "Display name";
+export const DISPLAY_NAME_PLACEHOLDER = "You";
+export const NEXT_PLAY_LEGEND = "Next Play";
+export const LEVELS_LEGEND = "Atlas fill";
+export const LEVELS_NOTE = "Checks, not locks. Customize always opens.";
+export const LEVEL_LIT = "Lit the board";
+export const LEVEL_FILL_NEED = 6;
+export const LEVEL_FILL_TOTAL = 10;
+export const WARMUP = "Warm-up";
+export const WARMUP_BELL = "5:00";
+export const WARMUP_BELL_SEC = 300;
+export const WARMUP_BELL_NOTE = "Bell — finish this item";
+export const CLASS_SET = "Class set";
+export const CLASS_SET_COPY = "Copy class set";
+export const CLASS_SET_LOAD = "Load class set";
+export const CLASS_SET_NOTE = "Yesterday's set stays on this device.";
+export const CLASS_SET_BAD = "Could not load that class set.";
+export const CLASS_SET_OK = "Loaded on this device.";
+export const CLEAR_ATLAS = "Clear the atlas";
+export const NEXT_PLAY_SUGGEST =
+  "Play the ones that are not you know this — next mood is in Customize when the class is there.";
+
 export const FORM_STATE = {
   not_enough: "not_enough",
   learning: "learning",

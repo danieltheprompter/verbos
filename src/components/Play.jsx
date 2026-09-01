@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from "react";
-import { CONTENT_VERSION, RECAP_BEAT_MS, WORDMARK } from "../engine/config.js";
+import { CONTENT_VERSION, PROFILE_TITLE, RECAP_BEAT_MS, WARMUP_BELL_NOTE, WORDMARK } from "../engine/config.js";
 import { moodOf, pack, personLabel, tenseLabel, timeOf } from "../engine/pack.js";
 import { answersMatch, isBlankAnswer } from "../engine/check.js";
 import { explainMiss } from "../engine/miss.js";
 import { recapStory } from "../engine/recap.js";
 import { makeDistractors } from "../engine/round.js";
+import { formatBellClock, timerExpireAction, timerFailsItem } from "../engine/warmup.js";
 import { endingPattern, verbType } from "../engine/verbs.js";
 import { Board } from "./Board.jsx";
 
@@ -12,19 +13,27 @@ export function Play({
   settings,
   items,
   attempts = [],
+  mode = "play",
+  sessionSec = null,
   onAttempt,
   onDone,
   onPlayAgain,
   onCustomize,
   onProgress,
+  onHome,
 }) {
   const [index, setIndex] = useState(0);
   const [value, setValue] = useState("");
   const [result, setResult] = useState(null);
   const [choices, setChoices] = useState(() =>
-    settings.mc ? makeDistractors(items[0]) : [],
+    settings.mc && mode !== "warmup" ? makeDistractors(items[0]) : [],
   );
-  const [left, setLeft] = useState(settings.timer ? settings.timerSec : null);
+  const warmup = mode === "warmup";
+  const useMc = settings.mc && !warmup;
+  const useItemTimer = settings.timer && !warmup;
+  const [left, setLeft] = useState(useItemTimer ? settings.timerSec : null);
+  const [sessionLeft, setSessionLeft] = useState(sessionSec);
+  const [bell, setBell] = useState(false);
   const [land, setLand] = useState(null);
   const [flick, setFlick] = useState(null);
   const [lockIn, setLockIn] = useState(false);
@@ -46,10 +55,10 @@ export function Play({
 
   useEffect(() => {
     if (!finished) inputRef.current?.focus();
-  }, [index, finished, settings.mc]);
+  }, [index, finished, useMc]);
 
   useEffect(() => {
-    if (!settings.timer || finished || result) return undefined;
+    if (!useItemTimer || finished || result) return undefined;
     setLeft(settings.timerSec);
     const started = Date.now();
     const tick = window.setInterval(() => {
@@ -57,12 +66,28 @@ export function Play({
       setLeft(Math.max(0, remain));
       if (remain <= 0) {
         window.clearInterval(tick);
-        judge("", { force: true });
+        const action = timerExpireAction({ session: false });
+        if (timerFailsItem(action)) judge("", { force: true });
       }
     }, 80);
     return () => window.clearInterval(tick);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [index, settings.timer, settings.timerSec, finished, result]);
+  }, [index, useItemTimer, settings.timerSec, finished, result]);
+
+  useEffect(() => {
+    if (!sessionSec || finished) return undefined;
+    const started = Date.now();
+    const tick = window.setInterval(() => {
+      const remain = sessionSec - (Date.now() - started) / 1000;
+      setSessionLeft(Math.max(0, remain));
+      if (remain <= 0) {
+        window.clearInterval(tick);
+        const action = timerExpireAction({ session: true });
+        if (!timerFailsItem(action)) setBell(true);
+      }
+    }, 80);
+    return () => window.clearInterval(tick);
+  }, [sessionSec, finished]);
 
   useEffect(() => {
     if (!finished) {
@@ -148,7 +173,7 @@ export function Play({
       expected: item.expected,
       given: raw,
       correct: ok,
-      typed: !settings.mc,
+      typed: !useMc,
       latency_ms: Date.now() - startedAt.current,
       content_version: CONTENT_VERSION,
     });
@@ -156,7 +181,7 @@ export function Play({
 
   function next() {
     if (!result) return;
-    if (index + 1 >= items.length) {
+    if (bell || index + 1 >= items.length) {
       finishRound();
       return;
     }
@@ -165,7 +190,7 @@ export function Play({
     setShowMiss(false);
     setValue("");
     setLand(null);
-    setChoices(settings.mc ? makeDistractors(items[index + 1]) : []);
+    setChoices(useMc ? makeDistractors(items[index + 1]) : []);
     startedAt.current = Date.now();
     setIndex((prev) => prev + 1);
   }
@@ -190,14 +215,14 @@ export function Play({
   if (finished) {
     const story = recapStory(items, attempts);
     return (
-      <section className={`play play-done is-recap-${beat}`}>
+      <section className={`play play-done is-glance is-recap-${beat}`}>
         <h1 className="recap-head">{story.head}</h1>
         <Board
           settings={settings}
           items={items}
           recap
         />
-        <p className="recap-sub">{story.line}</p>
+        {warmup ? null : <p className="recap-sub">{story.line}</p>}
         {beat === "go" ? (
           <div className="home-actions">
             <button
@@ -217,12 +242,20 @@ export function Play({
             >
               Play again
             </button>
-            <button className="btn btn-ghost" type="button" onClick={onProgress}>
-              What you know
-            </button>
-            <button className="btn btn-ghost" type="button" onClick={onCustomize}>
-              Customize
-            </button>
+            {warmup ? (
+              <button className="btn btn-ghost" type="button" onClick={onHome}>
+                Done
+              </button>
+            ) : (
+              <>
+                <button className="btn btn-ghost" type="button" onClick={onProgress}>
+                  {PROFILE_TITLE}
+                </button>
+                <button className="btn btn-ghost" type="button" onClick={onCustomize}>
+                  Customize
+                </button>
+              </>
+            )}
           </div>
         ) : null}
       </section>
@@ -244,10 +277,16 @@ export function Play({
         lockIn={lockIn}
       />
 
-      {settings.timer ? (
+      {useItemTimer ? (
         <div className="timer" aria-hidden="true">
           <i style={{ transform: `scaleX(${left / settings.timerSec})` }} />
         </div>
+      ) : null}
+
+      {sessionSec ? (
+        <p className={`session-bell${bell ? " is-rang" : ""}`}>
+          {bell ? WARMUP_BELL_NOTE : formatBellClock(sessionLeft)}
+        </p>
       ) : null}
 
       <div className="prompt">
@@ -257,7 +296,7 @@ export function Play({
         </p>
       </div>
 
-      {settings.mc ? (
+      {useMc ? (
         <div className="mc">
           {choices.map((choice) => {
             const show = Boolean(result);
@@ -324,8 +363,8 @@ export function Play({
         <button
           className="btn btn-primary"
           type="button"
-          onClick={() => (settings.mc ? null : judge(value))}
-          hidden={settings.mc}
+          onClick={() => (useMc ? null : judge(value))}
+          hidden={useMc}
         >
           Check
         </button>

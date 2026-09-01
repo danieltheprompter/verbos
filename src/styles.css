@@ -1023,6 +1023,126 @@ p {
   color: var(--ink-soft);
 }
 
+.home .text-back {
+  align-self: center;
+}
+
+.name-field {
+  width: 100%;
+  border: 1.5px solid var(--color-ink);
+  border-radius: var(--radius-field);
+  background: #fffaf2;
+  padding: 14px 16px;
+  font-family: var(--type-display);
+  font-size: 1.35rem;
+}
+
+.next-play-line,
+.levels-note {
+  margin: 0;
+  color: var(--ink-soft);
+  font-size: 0.95rem;
+  line-height: 1.4;
+}
+
+.level-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.level-list li {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 10px 12px;
+  border: 1px solid var(--rule);
+  border-radius: 14px;
+  background: rgba(255, 250, 242, 0.72);
+}
+
+.level-list li.is-checked {
+  border-color: var(--ink);
+}
+
+.level-list i {
+  font-style: normal;
+  font-weight: 700;
+  width: 1.1rem;
+}
+
+.level-list strong {
+  display: block;
+}
+
+.level-list em {
+  display: block;
+  font-style: normal;
+  color: var(--ink-soft);
+  font-size: 0.86rem;
+}
+
+.mini-board {
+  --cols: 5;
+  display: grid;
+  grid-template-columns: 4.2rem repeat(var(--cols), minmax(0, 1fr));
+  gap: 5px 4px;
+  padding: 12px 10px;
+  background: linear-gradient(180deg, #2c241b 0%, #211a14 100%);
+  border: 1px solid #1a1510;
+  border-radius: 18px;
+}
+
+.mini-board .board-col,
+.mini-board .board-row-label {
+  color: #d8cbb6;
+  font-size: 0.52rem;
+}
+
+.mini-cell {
+  min-height: 22px;
+  aspect-ratio: 1;
+}
+
+.session-bell {
+  margin: 0;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  font-family: var(--type-display);
+  font-size: 1.35rem;
+}
+
+.session-bell.is-rang {
+  font-weight: 650;
+}
+
+.warmup-bell {
+  text-align: left;
+}
+
+.play-done.is-glance {
+  text-align: center;
+}
+
+.play-done.is-glance .recap-head {
+  font-size: clamp(2.6rem, 12vw, 4.2rem);
+  text-align: center;
+}
+
+.play-done.is-glance .cell {
+  min-height: 54px;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+}
+
 @media (min-width: 720px) {
   body {
     background:

@@ -1,10 +1,24 @@
 import { useState } from "react";
-import { FARM_NOTE } from "../engine/config.js";
+import {
+  CLASS_SET,
+  CLASS_SET_BAD,
+  CLASS_SET_COPY,
+  CLASS_SET_LOAD,
+  CLASS_SET_NOTE,
+  CLASS_SET_OK,
+  FARM_NOTE,
+} from "../engine/config.js";
+import {
+  applyClassSet,
+  classSetFromSettings,
+  encodeClassSet,
+  parseClassSet,
+} from "../engine/classSet.js";
 import { pack } from "../engine/pack.js";
 import { allSelectedKnown } from "../engine/mastery.js";
 import { verbsInBucket } from "../engine/verbs.js";
 
-export function Customize({ settings, attempts = [], onSave, onBack, onProgress }) {
+export function Customize({ settings, attempts = [], onSave, onBack, onProgress, onApplySet }) {
   const [draft, setDraft] = useState({
     ...settings,
     tenses: [...settings.tenses],
@@ -14,6 +28,10 @@ export function Customize({ settings, attempts = [], onSave, onBack, onProgress 
     address: settings.address || pack.defaultSettings.address,
   });
   const [showPicker, setShowPicker] = useState(Boolean(draft.pickedVerbs.length));
+  const [setDraftText, setSetDraftText] = useState(() =>
+    encodeClassSet(classSetFromSettings(settings)),
+  );
+  const [setNote, setSetNote] = useState("");
   const farmingKnown = allSelectedKnown(draft, attempts);
 
   function toggleTense(id) {
@@ -209,6 +227,56 @@ export function Customize({ settings, attempts = [], onSave, onBack, onProgress 
           </div>
         ) : null}
       </fieldset>
+
+      {onApplySet ? (
+        <fieldset>
+          <legend>{CLASS_SET}</legend>
+          <p className="farm-note">{CLASS_SET_NOTE}</p>
+          <label className="custom-list">
+            <span>{CLASS_SET}</span>
+            <textarea
+              value={setDraftText}
+              onChange={(event) => setSetDraftText(event.target.value)}
+              rows={4}
+              spellCheck="false"
+            />
+          </label>
+          {setNote ? <p className="farm-note">{setNote}</p> : null}
+          <div className="chips">
+            <button
+              className="chip"
+              type="button"
+              onClick={() => {
+                const payload = parseClassSet(setDraftText);
+                if (!payload) {
+                  setSetNote(CLASS_SET_BAD);
+                  return;
+                }
+                const next = applyClassSet(draft, payload);
+                setDraft(next);
+                onApplySet(next);
+                setSetNote(CLASS_SET_OK);
+              }}
+            >
+              {CLASS_SET_LOAD}
+            </button>
+            <button
+              className="chip"
+              type="button"
+              onClick={() => {
+                const text = encodeClassSet(classSetFromSettings(draft));
+                setSetDraftText(text);
+                if (navigator.clipboard?.writeText) {
+                  navigator.clipboard.writeText(text).catch(() => {});
+                }
+                setSetNote(CLASS_SET_OK);
+              }}
+            >
+              {CLASS_SET_COPY}
+            </button>
+          </div>
+        </fieldset>
+      ) : null}
 
       <div className="home-actions">
         {farmingKnown ? <p className="farm-note">{FARM_NOTE}</p> : null}

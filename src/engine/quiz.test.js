@@ -188,6 +188,9 @@ describe("content pack stays out of the quiz shell", () => {
       "components/Progress.jsx",
       "components/Customize.jsx",
       "components/ClearProgress.jsx",
+      "components/Profile.jsx",
+      "components/MiniBoard.jsx",
+      "components/ClassSet.jsx",
       "engine/round.js",
       "engine/check.js",
       "engine/miss.js",
@@ -195,6 +198,9 @@ describe("content pack stays out of the quiz shell", () => {
       "engine/progress.js",
       "engine/mastery.js",
       "engine/storage.js",
+      "engine/classSet.js",
+      "engine/levels.js",
+      "engine/warmup.js",
       "engine/config.js",
       "engine/constants.js",
       "engine/recap.js",
@@ -626,11 +632,12 @@ describe("clear progress", () => {
       finishedRound: true,
     };
     const next = clearProgress(state);
-    expect(next.attempts).toEqual([]);
-    expect(next.finishedRound).toBe(true);
+    const who = next.profiles.find((profile) => profile.id === next.activeProfileId);
+    expect(who.attempts).toEqual([]);
+    expect(who.finishedRound).toBe(true);
     expect(next.settings.types).toEqual(["stem"]);
-    expect(youKnowThis(next.attempts, spec())).toBe(false);
-    expect(formCopy(next.attempts, spec())).toBe("not enough yet");
+    expect(youKnowThis(who.attempts, spec())).toBe(false);
+    expect(formCopy(who.attempts, spec())).toBe("not enough yet");
   });
 
   it("lets the pack rename a legacy extra-column setting", () => {
@@ -647,6 +654,7 @@ describe("clear progress", () => {
     );
     expect(next.settings.extraColumn).toBe(true);
     expect(next.settings.vosotros).toBeUndefined();
+    expect(next.hasClassSet).toBe(true);
   });
 });
 
