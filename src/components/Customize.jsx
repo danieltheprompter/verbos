@@ -56,7 +56,7 @@ export function Customize({ settings, attempts = [], onSave, onBack, onProgress 
         <button className="text-back" type="button" onClick={onBack}>
           Back
         </button>
-        <h1>Customize</h1>
+        <h1>Tweak</h1>
         <p>Next round uses these.</p>
       </header>
 

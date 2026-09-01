@@ -140,7 +140,7 @@ export function Play({
             What you know
           </button>
           <button className="btn btn-ghost" type="button" onClick={onCustomize}>
-            Customize
+            Tweak
           </button>
         </div>
       </section>

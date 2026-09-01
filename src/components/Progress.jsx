@@ -126,7 +126,7 @@ export function Progress({ attempts, onBack, onCustomize, onClear }) {
 
       <div className="home-actions">
         <button className="btn btn-ghost" type="button" onClick={onCustomize}>
-          Customize
+          Tweak
         </button>
         <button className="btn btn-ghost" type="button" onClick={onBack}>
           Back

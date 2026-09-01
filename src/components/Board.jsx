@@ -5,7 +5,6 @@ import {
   cellAllowed,
   cellPips,
   columnLabels,
-  recapCellTone,
   roundCellState,
 } from "../engine/board.js";
 
@@ -48,11 +47,10 @@ export function Board({ settings, items = [], current, attempts = [], showPips =
               }
               const state = roundCellState(row.id, column.id, current, answered);
               const pips = showPips ? cellPips(attempts, row.id, column.id) : 0;
-              const tone = showPips ? recapCellTone(items, row.id, column.id) : "";
               return (
                 <div
                   key={column.id}
-                  className={`cell cell-${state}${tone ? ` cell-${tone}` : ""}`}
+                  className={`cell cell-${state}`}
                   title={`${row.label} · ${column.label}`}
                 >
                   {showPips ? <Pips count={pips} /> : null}

@@ -124,6 +124,27 @@ describe("miss feedback names the miss", () => {
   });
 });
 
+describe("visual tokens", () => {
+  it("names visit, owned, and motion for a later iOS port", () => {
+    const tokens = readFileSync(
+      join(dirname(fileURLToPath(import.meta.url)), "../tokens.css"),
+      "utf8",
+    );
+    expect(tokens).toMatch(/--color-visit/);
+    expect(tokens).toMatch(/--color-owned/);
+    expect(tokens).toMatch(/--color-empty/);
+    expect(tokens).toMatch(/--motion-visit/);
+    expect(tokens).toMatch(/--type-display/);
+    expect(tokens).not.toMatch(/xp|streak|loot/i);
+    const home = readFileSync(
+      join(dirname(fileURLToPath(import.meta.url)), "../components/Home.jsx"),
+      "utf8",
+    );
+    expect(home).toMatch(/Tweak/);
+    expect(home).toMatch(/finishedRound/);
+  });
+});
+
 describe("content pack stays out of the quiz shell", () => {
   it("keeps Spanish literals in the pack, not the loop or screens", () => {
     const root = join(dirname(fileURLToPath(import.meta.url)), "..");

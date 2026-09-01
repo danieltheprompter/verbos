@@ -1,0 +1,63 @@
+/* VERBOS tokens — web and iOS share these names.
+   Light-first. Do not encode language here. */
+
+:root {
+  /* Color */
+  --color-paper: #f3ecdf;
+  --color-paper-2: #e7dcc8;
+  --color-ink: #1a1612;
+  --color-ink-soft: #5f564c;
+  --color-rule: #d2c4ad;
+  --color-well: #241c16;
+  --color-empty: #2c241c;
+  --color-visit: #c9843c;
+  --color-owned: #e39a45;
+  --color-now: #5a4a38;
+  --color-now-ring: #f3ecdf;
+  --color-ok: #1d6a44;
+  --color-ok-wash: #d7eee1;
+  --color-bad: #9f1d28;
+  --color-bad-wash: #f4d5d2;
+  --color-board: #211a14;
+  --color-board-lift: #3a3026;
+  --color-label: #d8cbb6;
+
+  /* Type */
+  --type-display: Fraunces, Georgia, serif;
+  --type-ui: Sora, "Segoe UI", system-ui, sans-serif;
+  --type-wordmark-size: clamp(3.2rem, 13vw, 4.4rem);
+  --type-wordmark-track: 0.28em;
+  --type-infinitive-size: clamp(2.6rem, 11vw, 3.4rem);
+  --type-clue-size: 1.02rem;
+  --type-board-size: 0.72rem;
+  --type-progress-size: 0.88rem;
+
+  /* Space */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 36px;
+  --space-shell: 28px 20px 36px;
+  --space-board: 20px 16px 16px;
+  --space-cell: 48px;
+
+  /* Radius */
+  --radius-cell: 16px;
+  --radius-board: 28px;
+  --radius-field: 20px;
+  --radius-pill: 999px;
+  --radius-chip: 12px;
+
+  /* Motion */
+  --motion-visit: 180ms;
+  --motion-owned: 220ms;
+  --motion-now: 1.6s;
+  --motion-ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+
+  /* Shadows */
+  --shadow-paper: 0 18px 50px rgba(48, 32, 16, 0.08);
+  --shadow-visit: 0 6px 16px rgba(201, 132, 60, 0.35);
+  --shadow-owned: 0 0 14px rgba(227, 154, 69, 0.32);
+}
