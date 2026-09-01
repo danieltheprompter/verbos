@@ -34,7 +34,6 @@ export function Play({
   const inputRef = useRef(null);
   const playAgainRef = useRef(null);
   const playAgainReady = useRef(false);
-  const finishFromKeyboard = useRef(false);
   const submitted = useRef(false);
   const startedAt = useRef(Date.now());
 
@@ -71,39 +70,26 @@ export function Play({
       return undefined;
     }
     setBeat("hold");
-    let enterUp = null;
-    let focusAt = 0;
-    const fromKeyboard = finishFromKeyboard.current;
-    const pipsAt = window.setTimeout(() => setBeat("pips"), 420);
-    const goAt = window.setTimeout(() => {
-      setBeat("go");
-      const armPlayAgain = () => {
-        playAgainReady.current = true;
-        playAgainRef.current?.focus();
-      };
-      if (!fromKeyboard) {
-        armPlayAgain();
-        return;
-      }
-      enterUp = (event) => {
-        if (event.key !== "Enter") return;
+    const swallow = (event) => {
+      if (!playAgainReady.current && (event.key === "Enter" || event.key === " ")) {
         event.preventDefault();
-        window.removeEventListener("keyup", enterUp);
-        enterUp = null;
-        window.setTimeout(armPlayAgain, 0);
-      };
-      window.addEventListener("keyup", enterUp);
-      focusAt = window.setTimeout(() => {
-        if (enterUp) window.removeEventListener("keyup", enterUp);
-        enterUp = null;
-        armPlayAgain();
-      }, 500);
-    }, Math.min(1100, RECAP_BEAT_MS - 200));
+        event.stopImmediatePropagation();
+      }
+    };
+    window.addEventListener("keydown", swallow, true);
+    window.addEventListener("keyup", swallow, true);
+    const pipsAt = window.setTimeout(() => setBeat("pips"), 420);
+    const goAt = window.setTimeout(() => setBeat("go"), Math.min(1100, RECAP_BEAT_MS - 200));
+    const armAt = window.setTimeout(() => {
+      playAgainReady.current = true;
+      playAgainRef.current?.focus();
+    }, Math.min(1100, RECAP_BEAT_MS - 200) + 500);
     return () => {
+      window.removeEventListener("keydown", swallow, true);
+      window.removeEventListener("keyup", swallow, true);
       window.clearTimeout(pipsAt);
       window.clearTimeout(goAt);
-      window.clearTimeout(focusAt);
-      if (enterUp) window.removeEventListener("keyup", enterUp);
+      window.clearTimeout(armAt);
     };
   }, [finished]);
 
@@ -222,7 +208,10 @@ export function Play({
               type="button"
               onClick={onPlayAgain}
               onKeyDown={(event) => {
-                if (event.key === "Enter" && !playAgainReady.current) {
+                if (
+                  !playAgainReady.current &&
+                  (event.key === "Enter" || event.key === " ")
+                ) {
                   event.preventDefault();
                   event.stopPropagation();
                 }
@@ -295,7 +284,6 @@ export function Play({
           onSubmit={(event) => {
             event.preventDefault();
             event.stopPropagation();
-            finishFromKeyboard.current = true;
             if (result) next();
             else judge(value);
           }}
@@ -330,14 +318,7 @@ export function Play({
         <div className="reveal">
           {showMiss && result.miss ? <p className="miss">{result.miss.message}</p> : null}
           <p className="reveal-form">{result.expected}</p>
-          <button
-            className="btn btn-primary"
-            type="button"
-            onClick={() => {
-              finishFromKeyboard.current = false;
-              next();
-            }}
-          >
+          <button className="btn btn-primary" type="button" onClick={next}>
             Next
           </button>
         </div>
