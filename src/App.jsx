@@ -5,7 +5,7 @@ import { Customize } from "./components/Customize.jsx";
 import { Progress } from "./components/Progress.jsx";
 import { DEFAULT_SETTINGS } from "./engine/constants.js";
 import { buildRound } from "./engine/round.js";
-import { loadState, markFinished, recordAttempt, saveSettings } from "./engine/storage.js";
+import { clearProgress, loadState, markFinished, recordAttempt, saveSettings } from "./engine/storage.js";
 
 export function App() {
   const [store, setStore] = useState(loadState);
@@ -50,6 +50,7 @@ export function App() {
           settings={store.settings}
           onBack={() => setScreen("home")}
           onProgress={() => setScreen("progress")}
+          onClear={() => setStore((prev) => clearProgress(prev))}
           onSave={(next) => {
             const saved = saveSettings(store, next);
             setStore(saved);
@@ -63,6 +64,7 @@ export function App() {
           attempts={store.attempts}
           onBack={() => setScreen("home")}
           onCustomize={() => setScreen("customize")}
+          onClear={() => setStore((prev) => clearProgress(prev))}
         />
       ) : null}
     </main>

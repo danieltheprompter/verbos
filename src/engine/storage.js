@@ -110,3 +110,12 @@ export function saveSettings(state, settings) {
   saveState(next);
   return next;
 }
+
+export function clearProgress(state) {
+  const next = {
+    ...state,
+    attempts: [],
+  };
+  saveState(next);
+  return next;
+}

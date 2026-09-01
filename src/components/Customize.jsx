@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { TARGET_GROUPS, VERB_BUCKETS } from "../engine/constants.js";
 import { verbsInBucket } from "../engine/verbs.js";
+import { ClearProgress } from "./ClearProgress.jsx";
 
-export function Customize({ settings, onSave, onBack, onProgress }) {
+export function Customize({ settings, onSave, onBack, onProgress, onClear }) {
   const [draft, setDraft] = useState({
     ...settings,
     tenses: [...settings.tenses],
@@ -219,6 +220,7 @@ export function Customize({ settings, onSave, onBack, onProgress }) {
             What you know
           </button>
         ) : null}
+        {onClear ? <ClearProgress onClear={onClear} /> : null}
         <button className="btn btn-ghost" type="button" onClick={onBack}>
           Back
         </button>

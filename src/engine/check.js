@@ -1,29 +1,28 @@
-const MARKS = /[\u0300-\u036f]/g;
-
 export function fold(value) {
   return String(value)
     .trim()
     .toLowerCase()
-    .normalize("NFD")
-    .replace(MARKS, "")
+    .normalize("NFC")
     .replace(/[¡!¿?.,;:']/g, "")
     .replace(/\s+/g, " ");
 }
 
 const PRONOUNS = [
-  "yo",
-  "tu",
-  "vos",
-  "el",
-  "ella",
-  "usted",
   "nosotros",
   "nosotras",
   "vosotros",
   "vosotras",
+  "ustedes",
+  "usted",
   "ellos",
   "ellas",
-  "ustedes",
+  "ella",
+  "tú",
+  "vos",
+  "él",
+  "yo",
+  "tu",
+  "el",
   "nos",
 ];
 

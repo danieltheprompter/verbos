@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { ENDING_PATTERNS, FORM_COPY, MOODS, VERB_BUCKETS } from "../engine/constants.js";
 import { atlasPersons, buildAtlas } from "../engine/progress.js";
+import { ClearProgress } from "./ClearProgress.jsx";
 
-export function Progress({ attempts, onBack, onCustomize }) {
+export function Progress({ attempts, onBack, onCustomize, onClear }) {
   const [mood, setMood] = useState("indicative");
   const [type, setType] = useState("regular");
   const [ending, setEnding] = useState("ar");
@@ -103,6 +104,7 @@ export function Progress({ attempts, onBack, onCustomize }) {
         <button className="btn btn-ghost" type="button" onClick={onCustomize}>
           Customize
         </button>
+        {onClear ? <ClearProgress onClear={onClear} /> : null}
         <button className="btn btn-ghost" type="button" onClick={onBack}>
           Back
         </button>

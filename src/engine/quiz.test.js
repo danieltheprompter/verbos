@@ -1,17 +1,19 @@
 import { describe, expect, it } from "vitest";
 import { answersMatch } from "./check.js";
 import {
+  BOARD_NOTE,
   CONTENT_VERSION,
   DEFAULT_SETTINGS,
   FORM_COPY,
+  PERSONS,
   VERB_BUCKETS,
 } from "./constants.js";
 import { formCopy, formState, youKnowThis } from "./mastery.js";
-import { answeredCellKeys, cellsFor, personsFor, roundCellState } from "./board.js";
+import { answeredCellKeys, cellsFor, personLabel, personsFor, roundCellState } from "./board.js";
 import { atlasCopyAt, buildAtlas } from "./progress.js";
 import { mulberry32 } from "./random.js";
 import { buildRound, makeDistractors } from "./round.js";
-import { toLogAttempt } from "./storage.js";
+import { clearProgress, toLogAttempt } from "./storage.js";
 import {
   endingPattern,
   parseCustomList,
@@ -46,13 +48,35 @@ function typed(tense, person, correct, extra = {}) {
 }
 
 describe("answer checking", () => {
-  it("accepts missing accents and optional pronouns", () => {
-    expect(answersMatch("hablé", "hable")).toBe(true);
+  it("requires accents and still allows an optional pronoun", () => {
+    expect(answersMatch("estás", "estas")).toBe(false);
+    expect(answersMatch("estás", "estás")).toBe(true);
+    expect(answersMatch("hablé", "hable")).toBe(false);
+    expect(answersMatch("hablé", "hablé")).toBe(true);
     expect(answersMatch("hablé", " yo  Hablé ")).toBe(true);
-    expect(answersMatch("comí", "comi")).toBe(true);
-    expect(answersMatch("sé", "se")).toBe(true);
+    expect(answersMatch("comí", "comi")).toBe(false);
+    expect(answersMatch("sé", "se")).toBe(false);
+    expect(answersMatch("sé", "sé")).toBe(true);
     expect(answersMatch("hablo", "hablas")).toBe(false);
     expect(answersMatch("hablo", "")).toBe(false);
+  });
+});
+
+describe("subject labels", () => {
+  it("uses full subject pronouns, never nos for nosotros", () => {
+    expect(PERSONS.map((person) => person.label)).toEqual([
+      "yo",
+      "tú",
+      "vos",
+      "él/usted",
+      "nosotros",
+      "vosotros",
+      "ellos/ustedes",
+    ]);
+    expect(PERSONS.some((person) => person.label === "nos")).toBe(false);
+    expect(personLabel("nos")).toBe("nosotros");
+    expect(personLabel("el")).toBe("él/usted");
+    expect(personLabel("ellos")).toBe("ellos/ustedes");
   });
 });
 
@@ -72,6 +96,20 @@ describe("round board ignores mastery", () => {
     ).toBe("answered-now");
     expect(roundCellState("preterito", "tu", { tense: "presente", person: "yo" }, new Set(["presente:yo"]))).toBe(
       "empty",
+    );
+  });
+
+  it("lights every answered cell this round, right or wrong", () => {
+    const items = [
+      { tense: "presente", person: "yo", correct: true },
+      { tense: "presente", person: "tu", correct: false },
+    ];
+    const keys = answeredCellKeys(items);
+    expect(keys.has("presente:yo")).toBe(true);
+    expect(keys.has("presente:tu")).toBe(true);
+    expect(roundCellState("presente", "tu", null, keys)).toBe("answered");
+    expect(BOARD_NOTE).toBe(
+      "This board is this round — it marks squares you already answered, not what you know.",
     );
   });
 
@@ -226,6 +264,29 @@ describe("multiple choice never counts toward knowing a form", () => {
     }));
     expect(formCopy(mc, spec())).toBe("not enough yet");
     expect(youKnowThis(mc, spec())).toBe(false);
+  });
+});
+
+describe("clear progress", () => {
+  it("wipes the atlas log and keeps settings", () => {
+    const memory = {};
+    globalThis.localStorage = {
+      getItem: (key) => memory[key] ?? null,
+      setItem: (key, value) => {
+        memory[key] = String(value);
+      },
+    };
+    const state = {
+      settings: { ...DEFAULT_SETTINGS, types: ["stem"] },
+      attempts: [typed("presente", "yo", true)],
+      finishedRound: true,
+    };
+    const next = clearProgress(state);
+    expect(next.attempts).toEqual([]);
+    expect(next.finishedRound).toBe(true);
+    expect(next.settings.types).toEqual(["stem"]);
+    expect(youKnowThis(next.attempts, spec())).toBe(false);
+    expect(formCopy(next.attempts, spec())).toBe("not enough yet");
   });
 });
 

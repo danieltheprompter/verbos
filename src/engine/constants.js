@@ -54,11 +54,14 @@ export const PERSONS = [
   { id: "yo", label: "yo", column: "yo" },
   { id: "tu", label: "tú", column: "tu" },
   { id: "vos", label: "vos", column: "vos" },
-  { id: "el", label: "él", column: "el" },
-  { id: "nos", label: "nos", column: "nos" },
+  { id: "el", label: "él/usted", column: "el" },
+  { id: "nos", label: "nosotros", column: "nos" },
   { id: "vosotros", label: "vosotros", column: "vosotros" },
-  { id: "ellos", label: "ellos", column: "ellos" },
+  { id: "ellos", label: "ellos/ustedes", column: "ellos" },
 ];
+
+export const BOARD_NOTE =
+  "This board is this round — it marks squares you already answered, not what you know.";
 
 export const DEFAULT_TENSES = ["presente", "preterito"];
 export const DEFAULT_PERSONS = ["yo", "tu", "el", "nos", "ellos"];
