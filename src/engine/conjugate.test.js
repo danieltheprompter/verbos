@@ -90,7 +90,8 @@ describe("verb pools", () => {
     expect(regulars.every((verb) => verb.pool === POOL.REGULARS)).toBe(true);
     expect(irreg.some((verb) => verb.inf === "ser")).toBe(true);
     expect(irreg.every((verb) => verb.pool <= POOL.IRREGULARS)).toBe(true);
-    expect(stem.some((verb) => verb.inf === "pensar")).toBe(true);
+    expect(stem.some((verb) => verb.inf === "pensar" && verb.type === "stem")).toBe(true);
+    expect(stem.some((verb) => verb.inf === "buscar" && verb.type === "spelling")).toBe(true);
     expect(stem.length).toBeGreaterThan(irreg.length);
     expect(irreg.length).toBeGreaterThan(regulars.length);
   });

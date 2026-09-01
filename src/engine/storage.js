@@ -1,4 +1,5 @@
 import { DEFAULT_SETTINGS, STORAGE_KEY } from "./constants.js";
+import { verbType } from "./verbs.js";
 
 function blank() {
   return {
@@ -17,7 +18,12 @@ export function loadState() {
       ...blank(),
       ...parsed,
       settings: { ...blank().settings, ...parsed.settings },
-      attempts: Array.isArray(parsed.attempts) ? parsed.attempts : [],
+      attempts: Array.isArray(parsed.attempts)
+        ? parsed.attempts.map((attempt) => ({
+            ...attempt,
+            type: attempt.type || verbType(attempt.verb),
+          }))
+        : [],
     };
   } catch {
     return blank();
@@ -44,6 +50,7 @@ export function recordAttempt(state, attempt) {
         tense: attempt.tense,
         person: attempt.person,
         verb: attempt.verb,
+        type: attempt.type || verbType(attempt.verb),
         correct: Boolean(attempt.correct),
         typed: Boolean(attempt.typed),
         ts: Date.now(),

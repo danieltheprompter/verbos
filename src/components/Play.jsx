@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from "react";
-import { TENSES } from "../engine/constants.js";
+import { TENSES, isSingleTypePool } from "../engine/constants.js";
 import { personLabel } from "../engine/board.js";
 import { answersMatch } from "../engine/check.js";
 import { makeDistractors } from "../engine/round.js";
-import { Board, BoardLegend } from "./Board.jsx";
+import { verbType } from "../engine/verbs.js";
+import { Board, BoardLegend, TypeReadout } from "./Board.jsx";
 
 const ACCENTS = ["á", "é", "í", "ó", "ú", "ü", "ñ"];
 
@@ -63,6 +64,7 @@ export function Play({
       tense: item.tense,
       person: item.person,
       verb: item.verb,
+      type: item.type || verbType(item.verb),
       correct: ok,
       typed: !settings.mc,
     });
@@ -110,8 +112,11 @@ export function Play({
           </p>
         </header>
         <Board settings={settings} attempts={attempts} />
-        <BoardLegend />
-        <p className="done-note">Visit is not owned. Owned is the only strength color.</p>
+        <BoardLegend paintOwned={isSingleTypePool(settings)} />
+        <TypeReadout settings={settings} attempts={attempts} />
+        {isSingleTypePool(settings) ? (
+          <p className="done-note">Visit is not owned. Owned is the only strength color.</p>
+        ) : null}
         <div className="home-actions">
           <button className="btn btn-primary" type="button" onClick={onPlayAgain}>
             Play again

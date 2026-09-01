@@ -27,6 +27,21 @@ export const POOL = {
   STEM: 3,
 };
 
+export const VERB_TYPES = [
+  { id: "regular", label: "regulars", pool: POOL.REGULARS },
+  { id: "irregular", label: "high-freq irregulars", pool: POOL.IRREGULARS },
+  { id: "stem", label: "stem-changers", pool: POOL.STEM },
+  { id: "spelling", label: "spelling", pool: POOL.STEM },
+];
+
+export function isSingleTypePool(settings) {
+  return settings.pool === POOL.REGULARS;
+}
+
+export function typesInPool(pool) {
+  return VERB_TYPES.filter((type) => type.pool <= pool).map((type) => type.id);
+}
+
 export const DEFAULT_SETTINGS = {
   pool: POOL.REGULARS,
   tenses: [...DEFAULT_TENSES],

@@ -1,29 +1,12 @@
-import { ROUND_SIZE } from "./constants.js";
+import { ROUND_SIZE, typesInPool } from "./constants.js";
 import { cellsFor } from "./board.js";
 import { completePassDone, isOwned, isVisited } from "./mastery.js";
 import { pick, shuffle, weightedPick } from "./random.js";
-import { conjugate, verbsInPool } from "./verbs.js";
+import { conjugate, verbsOfType, verbsInPool } from "./verbs.js";
 
 function avoidRepeat(prev, candidate) {
   if (!prev) return true;
   return prev.tense !== candidate.tense || prev.person !== candidate.person;
-}
-
-function pickCell(cells, attempts, prev, rng) {
-  const empty = cells.filter((cell) => !isVisited(attempts, cell.tense, cell.person));
-  const weak = cells.filter((cell) => !isOwned(attempts, cell.tense, cell.person));
-  const pool = empty.length ? empty : cells;
-  const weights = pool.map((cell) => {
-    if (empty.length) return 8;
-    if (isOwned(attempts, cell.tense, cell.person)) return 1;
-    return weak.length ? 5 : 1;
-  });
-
-  for (let tryNo = 0; tryNo < 8; tryNo += 1) {
-    const next = weightedPick(pool, weights, rng);
-    if (avoidRepeat(prev, next) || pool.length === 1) return next;
-  }
-  return weightedPick(pool, weights, rng);
 }
 
 function pickVerb(verbs, used, rng) {
@@ -31,9 +14,47 @@ function pickVerb(verbs, used, rng) {
   return pick(fresh.length ? fresh : verbs, rng);
 }
 
+function itemFrom(cell, verb) {
+  return {
+    tense: cell.tense,
+    person: cell.person,
+    verb: verb.inf,
+    type: verb.type,
+    expected: conjugate(verb.inf, cell.tense, cell.person),
+  };
+}
+
+function pickWeightedCell(cells, attempts, types, prev, rng) {
+  const empty = cells.filter((cell) => !isVisited(attempts, cell.tense, cell.person));
+  const board = empty.length ? empty : cells;
+  const weights = board.map((cell) => {
+    if (empty.length) return 8;
+    const weak = types.some((type) => !isOwned(attempts, cell.tense, cell.person, type));
+    return weak ? 5 : 1;
+  });
+
+  for (let tryNo = 0; tryNo < 8; tryNo += 1) {
+    const next = weightedPick(board, weights, rng);
+    if (avoidRepeat(prev, next) || board.length === 1) return next;
+  }
+  return weightedPick(board, weights, rng);
+}
+
+function pickTypeForCell(types, verbsByType, cell, attempts, rng) {
+  const open = types.filter((type) => verbsByType[type]?.length);
+  const weights = open.map((type) =>
+    isOwned(attempts, cell.tense, cell.person, type) ? 1 : 5,
+  );
+  return weightedPick(open, weights, rng);
+}
+
 export function buildRound(settings, attempts, rng = Math.random, size = ROUND_SIZE) {
   const cells = cellsFor(settings);
+  const types = typesInPool(settings.pool);
   const verbs = verbsInPool(settings.pool);
+  const verbsByType = Object.fromEntries(
+    types.map((type) => [type, verbsOfType(settings.pool, type)]),
+  );
   const items = [];
   const usedVerbs = new Set();
   const firstPass = !completePassDone(attempts, cells);
@@ -42,27 +63,19 @@ export function buildRound(settings, attempts, rng = Math.random, size = ROUND_S
   if (firstPass && empty.length) {
     const cover = shuffle(empty, rng).slice(0, size);
     for (const cell of cover) {
-      const verb = pickVerb(verbs, usedVerbs, rng);
+      const type = pickTypeForCell(types, verbsByType, cell, attempts, rng);
+      const verb = pickVerb(verbsByType[type] || verbs, usedVerbs, rng);
       usedVerbs.add(verb.inf);
-      items.push({
-        tense: cell.tense,
-        person: cell.person,
-        verb: verb.inf,
-        expected: conjugate(verb.inf, cell.tense, cell.person),
-      });
+      items.push(itemFrom(cell, verb));
     }
   }
 
   while (items.length < size) {
-    const cell = pickCell(cells, attempts, items[items.length - 1], rng);
-    const verb = pickVerb(verbs, usedVerbs, rng);
+    const cell = pickWeightedCell(cells, attempts, types, items[items.length - 1], rng);
+    const type = pickTypeForCell(types, verbsByType, cell, attempts, rng);
+    const verb = pickVerb(verbsByType[type] || verbs, usedVerbs, rng);
     usedVerbs.add(verb.inf);
-    items.push({
-      tense: cell.tense,
-      person: cell.person,
-      verb: verb.inf,
-      expected: conjugate(verb.inf, cell.tense, cell.person),
-    });
+    items.push(itemFrom(cell, verb));
   }
 
   return items;
@@ -72,9 +85,14 @@ export function makeDistractors(item, rng = Math.random) {
   const others = ["yo", "tu", "vos", "el", "nos", "vosotros", "ellos"].filter(
     (person) => person !== item.person,
   );
-  const tenses = ["presente", "preterito", "imperfecto", "futuro", "condicional", "subjuntivo"].filter(
-    (tense) => tense !== item.tense,
-  );
+  const tenses = [
+    "presente",
+    "preterito",
+    "imperfecto",
+    "futuro",
+    "condicional",
+    "subjuntivo",
+  ].filter((tense) => tense !== item.tense);
   const pool = new Set();
   for (const person of others) {
     pool.add(conjugate(item.verb, item.tense, person));

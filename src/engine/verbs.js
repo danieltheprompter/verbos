@@ -61,7 +61,17 @@ export const REGULAR_VERBS = [
   inf,
   group: inf.slice(-2),
   pool: POOL.REGULARS,
+  type: "regular",
 }));
+
+const SPELLING_INFS = new Set(["buscar", "llegar", "conocer", "construir", "creer"]);
+
+export function typeFromPool(infinitive, pool) {
+  if (pool === POOL.REGULARS) return "regular";
+  if (pool === POOL.IRREGULARS) return "irregular";
+  if (SPELLING_INFS.has(infinitive)) return "spelling";
+  return "stem";
+}
 
 const FUTURO = {
   yo: "é",
@@ -537,9 +547,17 @@ export const SPECIAL_VERBS = [
   },
 ];
 
-const SPECIAL_BY_INF = Object.fromEntries(SPECIAL_VERBS.map((verb) => [verb.inf, verb]));
+const SPECIAL_BY_INF = Object.fromEntries(
+  SPECIAL_VERBS.map((verb) => [
+    verb.inf,
+    { ...verb, type: typeFromPool(verb.inf, verb.pool) },
+  ]),
+);
 
-export const ALL_VERBS = [...REGULAR_VERBS, ...SPECIAL_VERBS];
+export const ALL_VERBS = [
+  ...REGULAR_VERBS,
+  ...SPECIAL_VERBS.map((verb) => ({ ...verb, type: typeFromPool(verb.inf, verb.pool) })),
+];
 
 export function verbsInPool(level) {
   return ALL_VERBS.filter((verb) => verb.pool <= level);
@@ -547,6 +565,15 @@ export function verbsInPool(level) {
 
 export function getVerb(infinitive) {
   return SPECIAL_BY_INF[infinitive] || REGULAR_VERBS.find((verb) => verb.inf === infinitive);
+}
+
+export function verbType(infinitive) {
+  const verb = getVerb(infinitive);
+  return verb?.type || typeFromPool(infinitive, POOL.REGULARS);
+}
+
+export function verbsOfType(level, type) {
+  return verbsInPool(level).filter((verb) => verb.type === type);
 }
 
 export function conjugate(infinitive, tense, person) {

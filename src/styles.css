@@ -225,6 +225,29 @@ p {
   margin-right: 5px;
 }
 
+.type-line {
+  color: var(--ink-soft);
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+
+.type-state {
+  font-style: normal;
+  font-weight: 600;
+}
+
+.type-state.is-visit {
+  color: #8a7350;
+}
+
+.type-state.is-owned {
+  color: var(--owned);
+}
+
+.type-state.is-empty {
+  font-weight: 400;
+}
+
 .timer {
   height: 3px;
   background: var(--rule);
