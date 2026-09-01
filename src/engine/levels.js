@@ -1,8 +1,6 @@
 import {
   DEFAULT_SETTINGS,
-  FORM_COPY,
   LEVEL_FILL_NEED,
-  LEVEL_FILL_TOTAL,
   LEVEL_LIT,
   NEXT_PLAY_SUGGEST,
   RECAP_NEXT_MAP,
@@ -11,6 +9,7 @@ import {
 import { cellsFor } from "./board.js";
 import { completePassDone, formState, isVisited, typedAttemptsFor, youKnowThis } from "./mastery.js";
 import { moodOf, pack, tenseLabel, timeOf } from "./pack.js";
+import { atlasRank } from "./progress.js";
 
 export function defaultBoardCells() {
   return cellsFor(DEFAULT_SETTINGS);
@@ -65,7 +64,7 @@ function playMoodId() {
 
 function boardLevelName() {
   const mood = pack.moods.find((item) => item.id === playMoodId());
-  return `${mood?.label ?? "Board"} 2×5`;
+  return `${mood?.label ?? "Board"} board`;
 }
 
 function contrastName() {
@@ -98,7 +97,7 @@ export function namedLevels(attempts = []) {
     {
       id: "fill",
       name: boardLevelName(),
-      detail: `${known}/${LEVEL_FILL_TOTAL} ${FORM_COPY.know}`,
+      detail: atlasRank({ known, opened, allowed: board.length }).label,
       checked: known >= LEVEL_FILL_NEED,
       lock: false,
       known,

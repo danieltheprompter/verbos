@@ -1089,23 +1089,26 @@ p {
 
 .mini-board {
   --cols: 5;
+  --row-label: 7.2rem;
   display: grid;
-  grid-template-columns: 4.2rem repeat(var(--cols), minmax(0, 1fr));
-  gap: 5px 4px;
-  padding: 12px 10px;
-  background: linear-gradient(180deg, #2c241b 0%, #211a14 100%);
-  border: 1px solid #1a1510;
-  border-radius: 18px;
+  grid-template-columns: var(--row-label) repeat(var(--cols), minmax(0, 1fr));
+  gap: 8px 6px;
+  padding: var(--space-board);
+  background:
+    radial-gradient(120% 80% at 50% 0%, var(--color-board-lift) 0%, transparent 55%),
+    linear-gradient(180deg, #2c241b 0%, var(--color-board) 100%);
+  border: 1px solid #140f0c;
+  border-radius: var(--radius-board);
 }
 
 .mini-board .board-col,
 .mini-board .board-row-label {
-  color: #d8cbb6;
-  font-size: 0.52rem;
+  color: var(--color-label);
+  font-size: clamp(0.7rem, 1.5vw, 0.95rem);
 }
 
 .mini-cell {
-  min-height: 22px;
+  min-height: 40px;
   aspect-ratio: 1;
 }
 
