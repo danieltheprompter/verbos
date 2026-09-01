@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { CONTENT_VERSION, RECAP_BEAT_MS } from "../engine/config.js";
+import { CONTENT_VERSION, RECAP_BEAT_MS, WORDMARK } from "../engine/config.js";
 import { moodOf, pack, personLabel, tenseLabel, timeOf } from "../engine/pack.js";
 import { answersMatch } from "../engine/check.js";
 import { explainMiss } from "../engine/miss.js";
@@ -209,7 +209,7 @@ export function Play({
   return (
     <section className="play">
       <header className="play-bar">
-        <p className="wordmark-mini">VERBOS</p>
+        <p className="wordmark-mini">{WORDMARK}</p>
       </header>
 
       <Board

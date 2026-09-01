@@ -4,20 +4,22 @@ import { moodOf, pack, timeOf } from "./pack.js";
 import { endingPattern, verbType } from "./verbs.js";
 
 function normalizeSettings(raw = {}) {
-  const tenses = Array.isArray(raw.tenses) && raw.tenses.length
-    ? raw.tenses
+  const fromPack = pack.normalizeSettings?.(raw) ?? raw;
+  const tenses = Array.isArray(fromPack.tenses) && fromPack.tenses.length
+    ? fromPack.tenses
     : [...DEFAULT_SETTINGS.tenses];
-  const types = Array.isArray(raw.types) && raw.types.length
-    ? raw.types
-    : typesFromLegacyPool(raw.pool);
+  const types = Array.isArray(fromPack.types) && fromPack.types.length
+    ? fromPack.types
+    : typesFromLegacyPool(fromPack.pool);
   return {
     ...DEFAULT_SETTINGS,
-    ...raw,
+    ...fromPack,
     tenses,
     types,
-    address: raw.address || (raw.vos ? pack.addressOptions[1]?.id : pack.addressOptions[0]?.id),
-    customList: raw.customList || "",
-    pickedVerbs: Array.isArray(raw.pickedVerbs) ? raw.pickedVerbs : [],
+    address: fromPack.address || pack.defaultSettings.address || pack.addressOptions[0]?.id,
+    extraColumn: Boolean(fromPack.extraColumn),
+    customList: fromPack.customList || "",
+    pickedVerbs: Array.isArray(fromPack.pickedVerbs) ? fromPack.pickedVerbs : [],
   };
 }
 

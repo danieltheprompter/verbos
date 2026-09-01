@@ -20,6 +20,8 @@ export {
   POOL,
   ROUND_SIZE,
   STORAGE_KEY,
+  WORDMARK,
+  LEDE,
 } from "./config.js";
 
 export {
@@ -44,11 +46,16 @@ export const ENDING_PATTERNS = pack.endingPatterns;
 export const DEFAULT_SETTINGS = pack.defaultSettings;
 export const DEFAULT_TENSES = pack.defaultSettings.tenses;
 export const DEFAULT_PERSONS = pack.persons
-  .filter((person) => ["yo", "tu", "el", "nos", "ellos"].includes(person.id))
+  .filter((person) => {
+    if (person.optionalColumn) return false;
+    if (person.address) return person.id === pack.defaultSettings.address;
+    return true;
+  })
   .map((person) => person.id);
 
 export function typesFromLegacyPool(level) {
-  if (level >= POOL.STEM) return pack.verbBuckets.map((bucket) => bucket.id);
-  if (level >= POOL.IRREGULARS) return ["regular", "irregular"];
-  return ["regular"];
+  const buckets = pack.verbBuckets.map((bucket) => bucket.id);
+  if (level >= POOL.STEM) return buckets;
+  if (level >= POOL.IRREGULARS) return buckets.slice(0, 2);
+  return buckets.slice(0, 1);
 }

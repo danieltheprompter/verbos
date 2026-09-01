@@ -1,8 +1,10 @@
+import { LEDE, WORDMARK } from "../engine/config.js";
+
 export function Home({ finishedRound, onPlay, onCustomize, onProgress }) {
   return (
     <section className="home">
-      <h1 className="wordmark">VERBOS</h1>
-      <p className="lede">The ultimate conjugation quiz.</p>
+      <h1 className="wordmark">{WORDMARK}</h1>
+      <p className="lede">{LEDE}</p>
       <div className="home-actions">
         <button className="btn btn-primary" type="button" onClick={onPlay}>
           {finishedRound ? "Play again" : "Play"}

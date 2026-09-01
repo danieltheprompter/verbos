@@ -44,3 +44,7 @@ export const MASTERY_NEED = 5;
 export const MASTERY_MIN = 5;
 
 export const STORAGE_KEY = "verbos.v1";
+
+/** Product chrome — not a language identity. */
+export const WORDMARK = "VERBOS";
+export const LEDE = "The ultimate conjugation quiz.";

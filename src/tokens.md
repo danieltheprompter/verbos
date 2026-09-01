@@ -1,6 +1,6 @@
 # VERBOS tokens
 
-Shared names for web (`src/tokens.css`) and later iOS. Light-first. Paper / ink / owned-rust.
+Shared names for web (`src/tokens.css`) and later iOS. Light-first. Paper / ink / owned-rust. Language-agnostic: no national marks, dialect colors, or pack literals.
 
 | Token | Use |
 | --- | --- |

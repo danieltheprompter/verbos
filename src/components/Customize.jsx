@@ -11,7 +11,7 @@ export function Customize({ settings, attempts = [], onSave, onBack, onProgress 
     types: [...(settings.types || ["regular"])],
     pickedVerbs: [...(settings.pickedVerbs || [])],
     customList: settings.customList || "",
-    address: settings.address || "tu",
+    address: settings.address || pack.defaultSettings.address,
   });
   const [showPicker, setShowPicker] = useState(Boolean(draft.pickedVerbs.length));
   const farmingKnown = allSelectedKnown(draft, attempts);
@@ -135,34 +135,40 @@ export function Customize({ settings, attempts = [], onSave, onBack, onProgress 
         </fieldset>
       ))}
 
-      <fieldset>
-        <legend>Pronouns</legend>
-        <div className="chips chips-3">
-          {pack.addressOptions.map((option) => (
-            <button
-              key={option.id}
-              type="button"
-              className={`chip ${draft.address === option.id ? "is-on" : ""}`}
-              onClick={() => setDraft((prev) => ({ ...prev, address: option.id }))}
-            >
-              {option.label}
-            </button>
-          ))}
-        </div>
-        <label className="switch">
-          <input
-            type="checkbox"
-            checked={draft.vosotros}
-            onChange={(event) =>
-              setDraft((prev) => ({ ...prev, vosotros: event.target.checked }))
-            }
-          />
-          <span>
-            <strong>{pack.persons.find((person) => person.optionalColumn)?.label}</strong>
-            Extra column
-          </span>
-        </label>
-      </fieldset>
+      {pack.addressOptions?.length || pack.persons.some((person) => person.optionalColumn) ? (
+        <fieldset>
+          <legend>{pack.chrome?.personLegend || "Persons"}</legend>
+          {pack.addressOptions?.length ? (
+            <div className="chips chips-3">
+              {pack.addressOptions.map((option) => (
+                <button
+                  key={option.id}
+                  type="button"
+                  className={`chip ${draft.address === option.id ? "is-on" : ""}`}
+                  onClick={() => setDraft((prev) => ({ ...prev, address: option.id }))}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+          ) : null}
+          {pack.persons.some((person) => person.optionalColumn) ? (
+            <label className="switch">
+              <input
+                type="checkbox"
+                checked={Boolean(draft.extraColumn)}
+                onChange={(event) =>
+                  setDraft((prev) => ({ ...prev, extraColumn: event.target.checked }))
+                }
+              />
+              <span>
+                <strong>{pack.persons.find((person) => person.optionalColumn)?.label}</strong>
+                {pack.chrome?.extraColumn || "Extra column"}
+              </span>
+            </label>
+          ) : null}
+        </fieldset>
+      ) : null}
 
       <fieldset className="play-options">
         <legend>Round</legend>

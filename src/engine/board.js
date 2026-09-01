@@ -18,7 +18,7 @@ export function personsFor(settings, tense) {
   return pack.persons
     .filter((person) => {
       if (person.skipMoods?.includes(mood)) return false;
-      if (person.optionalColumn && !settings.vosotros) return false;
+      if (person.optionalColumn && !settings.extraColumn) return false;
       if (person.address && !address.has(person.id)) return false;
       return true;
     })

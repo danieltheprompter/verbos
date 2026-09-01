@@ -33,13 +33,13 @@ export function explainMiss(expected, given, item) {
   if (fromPack) return fromPack;
 
   if (stripMarks(want) === stripMarks(got)) {
-    return { kind: "accent", message: "Missing the accent" };
+    return { kind: "accent", message: pack.missCopy?.mark || "Missing a mark" };
   }
 
   const wantStem = stripMarks(want).slice(0, Math.max(3, stripMarks(want).length - 3));
   const gotStem = stripMarks(got).slice(0, Math.max(3, stripMarks(got).length - 3));
   if (item?.verb && wantStem && gotStem && wantStem !== gotStem) {
-    return { kind: "stem", message: "Not that stem" };
+    return { kind: "stem", message: pack.missCopy?.stem || "Not that stem" };
   }
 
   const extra = extraLetter(want, got);

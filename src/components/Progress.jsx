@@ -53,21 +53,23 @@ export function Progress({ attempts, onBack, onCustomize, onClear }) {
         </div>
       </div>
 
-      <div className="atlas-filters">
-        <p className="times-mood">Ending</p>
-        <div className="chips chips-2">
-          {pack.endingPatterns.map((pattern) => (
-            <button
-              key={pattern.id}
-              type="button"
-              className={`chip ${ending === pattern.id ? "is-on" : ""}`}
-              onClick={() => setEnding(pattern.id)}
-            >
-              {pattern.label}
-            </button>
-          ))}
+      {pack.endingPatterns?.length ? (
+        <div className="atlas-filters">
+          <p className="times-mood">{pack.chrome?.endingFilter || "Ending"}</p>
+          <div className="chips chips-2">
+            {pack.endingPatterns.map((pattern) => (
+              <button
+                key={pattern.id}
+                type="button"
+                className={`chip ${ending === pattern.id ? "is-on" : ""}`}
+                onClick={() => setEnding(pattern.id)}
+              >
+                {pattern.label}
+              </button>
+            ))}
+          </div>
         </div>
-      </div>
+      ) : null}
 
       <div className="atlas-chrome">
         <p className="atlas-fill">{fill.name}</p>

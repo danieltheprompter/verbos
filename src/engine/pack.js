@@ -1,13 +1,13 @@
 /**
  * Active content pack. The quiz loop — round, board, check, miss, atlas —
- * reads this object. Spanish ships now. French / German / Latin later is
- * another pack with the same shape, not a change to the shell.
+ * reads this object. Swap the import to ship another language later.
+ * Do not put language literals in the shell.
  */
-import * as spanish from "../packs/spanish/index.js";
+import * as active from "../packs/spanish/index.js";
 
-export const pack = spanish;
+export const pack = active;
 
-export {
+export const {
   ALL_VERBS,
   SPECIAL_VERBS,
   activeTypes,
@@ -18,9 +18,9 @@ export {
   verbType,
   verbsForSettings,
   verbsInBucket,
-} from "../packs/spanish/index.js";
+} = pack;
 
-export const tenses = spanish.targetGroups.flatMap((group) => group.items);
+export const tenses = pack.targetGroups.flatMap((group) => group.items);
 
 export const tenseById = Object.fromEntries(tenses.map((tense) => [tense.id, tense]));
 
@@ -33,7 +33,7 @@ export function timeOf(tense) {
 }
 
 export function timesForMood(mood) {
-  return spanish.targetGroups.find((group) => group.id === mood)?.items ?? [];
+  return pack.targetGroups.find((group) => group.id === mood)?.items ?? [];
 }
 
 export function isCommand(tense) {
@@ -41,7 +41,7 @@ export function isCommand(tense) {
 }
 
 export function personById(id) {
-  return spanish.persons.find((person) => person.id === id);
+  return pack.persons.find((person) => person.id === id);
 }
 
 export function personLabel(person) {

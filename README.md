@@ -1,7 +1,7 @@
 # verbos
 The ultimate conjugation quiz.
 
-Spanish conjugation, one tap from Play. First round is ten typed forms — regular verbs, presente and pretérito — on a 2×5: yo, tú, él / ella / usted, nosotros, ellos / ellas / ustedes. Customize and What you know wait until a round is finished. Attempts stay on this device.
+The quiz shell is language-agnostic. This pass ships a Spanish content pack: one tap from Play, first round ten typed forms — regular verbs, presente and pretérito — on a 2×5 whose labels come from that pack (yo, tú, él / ella / usted, nosotros, ellos / ellas / ustedes). Tweak and What you know wait until a round is finished. Attempts stay on this device.
 
 ```bash
 npm install

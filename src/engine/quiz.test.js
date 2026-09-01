@@ -6,6 +6,7 @@ import { answersMatch } from "./check.js";
 import {
   BOARD_NOTE,
   CONTENT_VERSION,
+  DEFAULT_PERSONS,
   DEFAULT_SETTINGS,
   FORM_COPY,
   MASTERY_MIN,
@@ -20,6 +21,7 @@ import {
   RECAP_SUB,
   TENSES,
   VERB_BUCKETS,
+  WORDMARK,
 } from "./constants.js";
 import { allSelectedKnown, formCopy, formState, youKnowThis } from "./mastery.js";
 import {
@@ -28,6 +30,7 @@ import {
   cellPips,
   cellsFor,
   columnLabels,
+  columnPersons,
   commandPersons,
   itemsToCells,
   lastRoundResult,
@@ -44,7 +47,7 @@ import { atlasCopyAt, atlasFillName, atlasFillStats, buildAtlas } from "./progre
 import { recapStory } from "./recap.js";
 import { mulberry32 } from "./random.js";
 import { buildRound, makeDistractors } from "./round.js";
-import { clearProgress, toLogAttempt } from "./storage.js";
+import { clearProgress, saveSettings, toLogAttempt } from "./storage.js";
 import {
   conjugate,
   endingPattern,
@@ -162,15 +165,17 @@ describe("visual tokens", () => {
 });
 
 describe("content pack stays out of the quiz shell", () => {
-  it("keeps Spanish literals in the pack, not the loop or screens", () => {
+  it("keeps language literals in the pack, not the loop, screens, or tokens", () => {
     const root = join(dirname(fileURLToPath(import.meta.url)), "..");
     const shell = [
       "App.jsx",
+      "main.jsx",
       "components/Play.jsx",
       "components/Board.jsx",
       "components/Home.jsx",
       "components/Progress.jsx",
       "components/Customize.jsx",
+      "components/ClearProgress.jsx",
       "engine/round.js",
       "engine/check.js",
       "engine/miss.js",
@@ -178,10 +183,22 @@ describe("content pack stays out of the quiz shell", () => {
       "engine/progress.js",
       "engine/mastery.js",
       "engine/storage.js",
+      "engine/config.js",
+      "engine/constants.js",
+      "engine/recap.js",
+      "engine/pack.js",
+      "tokens.css",
+      "tokens.md",
+      "styles.css",
     ].map((file) => readFileSync(join(root, file), "utf8")).join("\n");
     expect(shell).not.toMatch(/[áéíóúüñ]/);
     expect(shell).not.toMatch(/hablar|Pretérito|estás|hablaste/);
     expect(shell).not.toMatch(/presente|preterito|mandato_/);
+    expect(shell).not.toMatch(/vosotros|Spanish|Español|flag|🇪🇸|🇫🇷|🇩🇪/);
+    expect(shell).not.toMatch(/\[\"yo\", \"tu\", \"el\"/);
+    expect(shell).not.toMatch(/spain|latam|dialect-color/i);
+    expect(WORDMARK).toBe("VERBOS");
+    expect(DEFAULT_PERSONS).toEqual(columnPersons(DEFAULT_SETTINGS));
   });
 });
 
@@ -541,7 +558,7 @@ describe("tú and vos stay separate", () => {
       "ellos",
     ]);
     expect(
-      personsFor({ ...DEFAULT_SETTINGS, address: "both", vosotros: true }, "mandato_af"),
+      personsFor({ ...DEFAULT_SETTINGS, address: "both", extraColumn: true }, "mandato_af"),
     ).toEqual(["tu", "vos", "el", "nos", "vosotros", "ellos"]);
   });
 });
@@ -583,6 +600,22 @@ describe("clear progress", () => {
     expect(next.settings.types).toEqual(["stem"]);
     expect(youKnowThis(next.attempts, spec())).toBe(false);
     expect(formCopy(next.attempts, spec())).toBe("not enough yet");
+  });
+
+  it("lets the pack rename a legacy extra-column setting", () => {
+    const memory = {};
+    globalThis.localStorage = {
+      getItem: (key) => memory[key] ?? null,
+      setItem: (key, value) => {
+        memory[key] = String(value);
+      },
+    };
+    const next = saveSettings(
+      { settings: DEFAULT_SETTINGS, attempts: [], finishedRound: false, lastCells: [] },
+      { ...DEFAULT_SETTINGS, vosotros: true },
+    );
+    expect(next.settings.extraColumn).toBe(true);
+    expect(next.settings.vosotros).toBeUndefined();
   });
 });
 
@@ -784,7 +817,7 @@ describe("teaching + UX freeze", () => {
       "nos",
       "ellos",
     ]);
-    expect(commandPersons({ ...DEFAULT_SETTINGS, vosotros: true })).toEqual([
+    expect(commandPersons({ ...DEFAULT_SETTINGS, extraColumn: true })).toEqual([
       "tu",
       "el",
       "nos",

@@ -1,13 +1,17 @@
 export {
   accents,
   addressOptions,
+  chrome,
   defaultSettings,
   endingPatterns,
   explainMiss,
   leadingPronouns,
+  missCopy,
   moods,
+  normalizeSettings,
   pastePlaceholder,
   persons,
+  stripPunct,
   targetGroups,
   verbBuckets,
 } from "./content.js";

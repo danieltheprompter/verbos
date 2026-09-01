@@ -1,11 +1,14 @@
 import { pack } from "./pack.js";
 
+const MARKS = /[!?.,;:'"""''-]/g;
+
 export function fold(value) {
+  const extra = pack.stripPunct || MARKS;
   return String(value)
     .trim()
     .toLowerCase()
     .normalize("NFC")
-    .replace(/[¡!¿?.,;:']/g, "")
+    .replace(extra, "")
     .replace(/\s+/g, " ");
 }
 

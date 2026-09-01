@@ -87,17 +87,39 @@ export const addressOptions = [
 
 export const pastePlaceholder = "hablar, ser, pedir";
 
+export const chrome = {
+  personLegend: "Pronouns",
+  extraColumn: "Extra column",
+  endingFilter: "Ending",
+};
+
+export const missCopy = {
+  mark: "Missing the accent",
+  stem: "Not that stem",
+};
+
+export const stripPunct = /[¡!¿?.,;:']/g;
+
 export const defaultSettings = {
   types: ["regular"],
   tenses: ["presente", "preterito"],
   address: "tu",
-  vosotros: false,
+  extraColumn: false,
   pickedVerbs: [],
   customList: "",
   timer: false,
   timerSec: 12,
   mc: false,
 };
+
+export function normalizeSettings(raw = {}) {
+  const { vosotros, vos, ...rest } = raw;
+  return {
+    ...rest,
+    extraColumn: Boolean(raw.extraColumn || vosotros),
+    address: raw.address || (vos ? "vos" : raw.address),
+  };
+}
 
 function sameFolded(form, got) {
   return String(form || "")
