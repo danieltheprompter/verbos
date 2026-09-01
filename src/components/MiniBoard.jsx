@@ -1,6 +1,6 @@
 import { DEFAULT_SETTINGS } from "../engine/constants.js";
 import { columnLabels } from "../engine/board.js";
-import { miniCellState } from "../engine/levels.js";
+import { miniCellPaint } from "../engine/levels.js";
 import { tenses as packTenses } from "../engine/pack.js";
 
 export function MiniBoard({ attempts = [] }) {
@@ -21,13 +21,12 @@ export function MiniBoard({ attempts = [] }) {
         <div className="board-row-wrap" key={row.id}>
           <div className="board-row-label">{row.boardLabel}</div>
           {columns.map((column) => {
-            const state = miniCellState(attempts, row.id, column.id);
-            const paint = state === "empty" ? "not_enough" : state;
-            const open = state === "learning" || state === "know";
+            const paint = miniCellPaint(attempts, row.id, column.id);
+            const know = paint === "know";
             return (
               <div
                 key={column.id}
-                className={`atlas-cell mini-cell is-${paint}${open ? " is-open" : ""}`}
+                className={`atlas-cell mini-cell${know ? " is-know is-open" : ""}`}
                 title={`${row.label} · ${column.label}`}
               />
             );

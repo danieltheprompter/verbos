@@ -61,6 +61,10 @@ export function miniCellState(attempts, tense, person) {
   return "empty";
 }
 
+export function miniCellPaint(attempts, tense, person) {
+  return miniCellState(attempts, tense, person) === "know" ? "know" : "empty";
+}
+
 function playMoodId() {
   return moodOf(DEFAULT_SETTINGS.tenses[0]);
 }

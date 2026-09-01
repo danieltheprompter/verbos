@@ -29,6 +29,7 @@ import {
 } from "./classSet.js";
 import {
   customizeLockedByLevels,
+  miniCellPaint,
   miniCellState,
   namedLevels,
   nextPlayFocus,
@@ -144,6 +145,38 @@ describe("named levels do not lock Customize", () => {
     expect(customizeLockedByLevels(namedLevels(knownAt("presente", "yo")))).toBe(false);
   });
 
+  it("does not paint profile mini-board visits as you know this", () => {
+    const board = cellsFor(DEFAULT_SETTINGS);
+    const visits = board.map((cell) => typed(cell.tense, cell.person, true));
+    const fill = namedLevels(visits).find((level) => level.id === "fill");
+    expect(fill.known).toBe(0);
+    expect(fill.detail).toBe(`0/${LEVEL_FILL_TOTAL} ${FORM_COPY.know}`);
+    expect(fill.opened).toBe(board.length);
+    for (const cell of board) {
+      expect(miniCellState(visits, cell.tense, cell.person)).toBe("not_enough");
+      expect(miniCellPaint(visits, cell.tense, cell.person)).toBe("empty");
+    }
+    const learning = [
+      ...Array.from({ length: 3 }, () => typed("presente", "yo", true)),
+      ...Array.from({ length: 4 }, () => typed("presente", "yo", false)),
+    ];
+    expect(miniCellState(learning, "presente", "yo")).toBe("learning");
+    expect(miniCellPaint(learning, "presente", "yo")).toBe("empty");
+    const knownYo = [...knownAt("presente", "yo"), ...knownAt("presente", "yo", "comer")];
+    expect(miniCellPaint(knownYo, "presente", "yo")).toBe("know");
+    expect(miniCellPaint(knownYo, "presente", "tu")).toBe("empty");
+    expect(namedLevels(knownYo).find((level) => level.id === "fill").known).toBe(1);
+
+    const mini = readFileSync(join(root, "components/MiniBoard.jsx"), "utf8");
+    expect(mini).toMatch(/miniCellPaint/);
+    expect(mini).toMatch(/is-know/);
+    expect(mini).not.toMatch(/is-not_enough|color-visit|cell-visit/);
+    const css = readFileSync(join(root, "styles.css"), "utf8");
+    const miniCss = css.slice(css.indexOf(".mini-cell"), css.indexOf(".session-bell"));
+    expect(miniCss).not.toMatch(/--color-visit|--color-owned|#c9843c|#e39a45|#d8a35a/);
+    expect(miniCss).not.toMatch(/is-not_enough|is-learning/);
+  });
+
   it("does not gate Customize or Subjunctive on levels", () => {
     const customize = readFileSync(join(root, "components/Customize.jsx"), "utf8");
     expect(customize).not.toMatch(/namedLevels|customizeLockedByLevels|LEVEL_FILL/);
@@ -169,11 +202,7 @@ describe("named levels do not lock Customize", () => {
     expect(`${RECAP_HEAD} ${RECAP_CLEAN} ${RECAP_SUB}`).not.toMatch(/6\/10/);
     const visited = first[0];
     expect(miniCellState(round1, visited.tense, visited.person)).toBe("not_enough");
-    expect(miniCellState(round1, visited.tense, visited.person)).not.toBe("know");
-    const mini = readFileSync(join(root, "components/MiniBoard.jsx"), "utf8");
-    expect(mini).toMatch(/miniCellState/);
-    expect(mini).toMatch(/state === "learning" \|\| state === "know"/);
-    expect(mini).not.toMatch(/color-visit|cell-visit|is-visit/);
+    expect(miniCellPaint(round1, visited.tense, visited.person)).toBe("empty");
     const styles = readFileSync(join(root, "styles.css"), "utf8");
     expect(styles).not.toMatch(/\.mini-cell\.is-not_enough[\s\S]{0,80}color-visit/);
     expect(styles).toMatch(/\.cell-visit/);
