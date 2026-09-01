@@ -3,21 +3,31 @@ import { Home } from "./components/Home.jsx";
 import { Play } from "./components/Play.jsx";
 import { Customize } from "./components/Customize.jsx";
 import { Progress } from "./components/Progress.jsx";
+import { sameBoard } from "./engine/board.js";
 import { DEFAULT_SETTINGS } from "./engine/constants.js";
 import { buildRound } from "./engine/round.js";
-import { clearProgress, loadState, markFinished, recordAttempt, saveSettings } from "./engine/storage.js";
+import {
+  clearProgress,
+  loadState,
+  markFinished,
+  recordAttempt,
+  rememberCells,
+  saveSettings,
+} from "./engine/storage.js";
 
 export function App() {
   const [store, setStore] = useState(loadState);
   const [screen, setScreen] = useState("home");
   const [items, setItems] = useState(null);
   const [playId, setPlayId] = useState(0);
-  const [lastCells, setLastCells] = useState([]);
 
   const settings = store.finishedRound ? store.settings : DEFAULT_SETTINGS;
 
-  function start(nextSettings = settings, nextAttempts = store.attempts) {
-    setItems(buildRound(nextSettings, nextAttempts, Math.random, undefined, lastCells));
+  function start({ nextSettings = settings, replay = false, from = store } = {}) {
+    const replayCells = replay && sameBoard(from.lastCells, nextSettings) ? from.lastCells : null;
+    const nextItems = buildRound(nextSettings, from.attempts, Math.random, undefined, replayCells);
+    setStore(rememberCells(from, nextItems));
+    setItems(nextItems);
     setPlayId((id) => id + 1);
     setScreen("play");
   }
@@ -27,7 +37,7 @@ export function App() {
       {screen === "home" ? (
         <Home
           finishedRound={store.finishedRound}
-          onPlay={() => start()}
+          onPlay={() => start({ replay: store.finishedRound })}
           onCustomize={() => setScreen("customize")}
           onProgress={() => setScreen("progress")}
         />
@@ -40,11 +50,8 @@ export function App() {
           items={items}
           attempts={store.attempts}
           onAttempt={(attempt) => setStore((prev) => recordAttempt(prev, attempt))}
-          onDone={() => {
-            setLastCells(items.map((item) => ({ tense: item.tense, person: item.person })));
-            setStore((prev) => markFinished(prev));
-          }}
-          onPlayAgain={() => start()}
+          onDone={() => setStore((prev) => markFinished(prev))}
+          onPlayAgain={() => start({ replay: true })}
           onCustomize={() => setScreen("customize")}
           onProgress={() => setScreen("progress")}
         />
@@ -56,11 +63,13 @@ export function App() {
           attempts={store.attempts}
           onBack={() => setScreen("home")}
           onProgress={() => setScreen("progress")}
-          onClear={() => setStore((prev) => clearProgress(prev))}
           onSave={(next) => {
             const saved = saveSettings(store, next);
-            setStore(saved);
-            start(next, saved.attempts);
+            start({
+              nextSettings: next,
+              replay: sameBoard(saved.lastCells, next),
+              from: saved,
+            });
           }}
         />
       ) : null}

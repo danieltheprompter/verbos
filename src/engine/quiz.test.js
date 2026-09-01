@@ -1,3 +1,6 @@
+import { readFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { answersMatch } from "./check.js";
 import {
@@ -16,14 +19,19 @@ import {
 import { allSelectedKnown, formCopy, formState, youKnowThis } from "./mastery.js";
 import {
   answeredCellKeys,
+  cellKey,
+  cellPips,
   cellsFor,
+  itemsToCells,
   lastRoundResult,
   personLabel,
   personsFor,
   recapStillNotEnough,
   roundCellState,
+  sameBoard,
   typedPips,
 } from "./board.js";
+import { explainMiss } from "./miss.js";
 import { atlasCopyAt, buildAtlas } from "./progress.js";
 import { mulberry32 } from "./random.js";
 import { buildRound, makeDistractors } from "./round.js";
@@ -73,6 +81,49 @@ describe("answer checking", () => {
     expect(answersMatch("sé", "sé")).toBe(true);
     expect(answersMatch("hablo", "hablas")).toBe(false);
     expect(answersMatch("hablo", "")).toBe(false);
+  });
+});
+
+describe("miss feedback names the miss", () => {
+  it("calls missing accent and extra s, not a generic incorrect", () => {
+    expect(explainMiss("estás", "estas")).toMatchObject({
+      kind: "accent",
+      message: "Missing the accent",
+    });
+    expect(explainMiss("hablé", "hable")).toMatchObject({ message: "Missing the accent" });
+    expect(explainMiss("aprendí", "aprendi")).toMatchObject({ message: "Missing the accent" });
+    expect(explainMiss("hablaste", "hablastes")).toMatchObject({
+      kind: "extra_s",
+      message: "Extra s",
+    });
+    expect(explainMiss("ayudaste", "ayudastes").message).toBe("Extra s");
+    expect(explainMiss("hablo", "")).toMatchObject({ message: "Type a form" });
+    expect(explainMiss("hablo", "hablas").message).not.toMatch(/incorrect|wrong/i);
+    expect(explainMiss("hablo", "hablo")).toBe(null);
+  });
+});
+
+describe("content pack stays out of the quiz shell", () => {
+  it("keeps Spanish literals in the pack, not the loop or screens", () => {
+    const root = join(dirname(fileURLToPath(import.meta.url)), "..");
+    const shell = [
+      "App.jsx",
+      "components/Play.jsx",
+      "components/Board.jsx",
+      "components/Home.jsx",
+      "components/Progress.jsx",
+      "components/Customize.jsx",
+      "engine/round.js",
+      "engine/check.js",
+      "engine/miss.js",
+      "engine/board.js",
+      "engine/progress.js",
+      "engine/mastery.js",
+      "engine/storage.js",
+    ].map((file) => readFileSync(join(root, file), "utf8")).join("\n");
+    expect(shell).not.toMatch(/[áéíóúüñ]/);
+    expect(shell).not.toMatch(/hablar|Pretérito|estás|hablaste/);
+    expect(shell).not.toMatch(/presente|preterito|mandato_/);
   });
 });
 
@@ -158,19 +209,16 @@ describe("round board ignores mastery", () => {
 });
 
 describe("recap hero", () => {
-  it("freezes this round as green/red and shows one pip after round 1", () => {
+  it("keeps this-round lights and shows one pip after round 1", () => {
     const items = [
       { tense: "presente", person: "yo", correct: true },
       { tense: "presente", person: "tu", correct: false },
     ];
-    const attempts = [
-      typed("presente", "yo", true),
-      typed("presente", "tu", false),
-    ];
+    const attempts = [typed("presente", "yo", true), typed("presente", "tu", false)];
     expect(lastRoundResult(items, "presente", "yo")).toBe(true);
     expect(lastRoundResult(items, "presente", "tu")).toBe(false);
     expect(typedPips(attempts, "presente", "yo")).toBe(1);
-    expect(typedPips(attempts, "presente", "el")).toBe(0);
+    expect(cellPips(attempts, "presente", "el")).toBe(0);
     expect(PIP_SLOTS).toBe(5);
     expect(recapStillNotEnough(attempts, items)).toBe(true);
     expect(formCopy(attempts, spec())).toBe("not enough yet");
@@ -474,21 +522,24 @@ describe("round builder", () => {
     expect(allSelectedKnown(DEFAULT_SETTINGS, known)).toBe(false);
   });
 
-  it("round 2 hits the same 10 squares so the pips can move", () => {
-    const first = buildRound(DEFAULT_SETTINGS, [], mulberry32(7));
-    const attempts = first.map((item) => typed(item.tense, item.person, true, { verb: item.verb }));
-    const prior = first.map((item) => ({ tense: item.tense, person: item.person }));
-    const second = buildRound(DEFAULT_SETTINGS, attempts, mulberry32(11), 10, prior);
-    const firstKeys = first.map((item) => `${item.tense}:${item.person}`).sort();
-    const secondKeys = second.map((item) => `${item.tense}:${item.person}`).sort();
-    expect(second).toHaveLength(10);
-    expect(new Set(secondKeys).size).toBe(10);
-    expect(secondKeys).toEqual(firstKeys);
-    expect(secondKeys).toEqual(
-      cellsFor(DEFAULT_SETTINGS)
-        .map((cell) => `${cell.tense}:${cell.person}`)
-        .sort(),
-    );
+  it("after a complete pass, overweights weak cells on a bigger board", () => {
+    const wide = { ...DEFAULT_SETTINGS, tenses: ["presente", "preterito", "imperfecto"] };
+    const cells = cellsFor(wide);
+    const attempts = cells.flatMap((cell) => [
+      typed(cell.tense, cell.person, true),
+      typed(cell.tense, cell.person, cell.person === "yo"),
+    ]);
+    const knownYo = Array.from({ length: 5 }, () => typed("presente", "yo", true));
+    const all = [...attempts, ...knownYo];
+    const counts = {};
+    for (let i = 0; i < 80; i += 1) {
+      const items = buildRound(wide, all, mulberry32(100 + i));
+      for (const item of items) {
+        const key = `${item.tense}:${item.person}`;
+        counts[key] = (counts[key] || 0) + 1;
+      }
+    }
+    expect(counts["presente:yo"]).toBeLessThan(counts["preterito:tu"]);
   });
 
   it("builds four MC options including the key", () => {
@@ -506,5 +557,28 @@ describe("round builder", () => {
       mulberry32(2),
     );
     expect(items.every((item) => item.verb === "hablar")).toBe(true);
+  });
+
+  it("replays the same 10 cells so recap pips can move", () => {
+    const first = buildRound(DEFAULT_SETTINGS, [], mulberry32(7));
+    expect(first).toHaveLength(10);
+    const cells = itemsToCells(first);
+    expect(sameBoard(cells, DEFAULT_SETTINGS)).toBe(true);
+    const attempts = first.map((item) => typed(item.tense, item.person, true, { verb: item.verb }));
+    for (const item of first) {
+      expect(cellPips(attempts, item.tense, item.person)).toBe(1);
+    }
+    const second = buildRound(DEFAULT_SETTINGS, attempts, mulberry32(11), 10, cells);
+    expect(second.map(cellKey).sort()).toEqual(cells.map(cellKey).sort());
+    const after = [
+      ...attempts,
+      ...second.map((item) => typed(item.tense, item.person, true, { verb: item.verb })),
+    ];
+    for (const item of first) {
+      expect(cellPips(after, item.tense, item.person)).toBe(2);
+      expect(cellPips(after, item.tense, item.person)).toBeGreaterThan(
+        cellPips(attempts, item.tense, item.person),
+      );
+    }
   });
 });

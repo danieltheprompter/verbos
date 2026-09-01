@@ -1,10 +1,10 @@
 import { useState } from "react";
-import { FARM_NOTE, TARGET_GROUPS, VERB_BUCKETS } from "../engine/constants.js";
+import { FARM_NOTE } from "../engine/config.js";
+import { pack } from "../engine/pack.js";
 import { allSelectedKnown } from "../engine/mastery.js";
 import { verbsInBucket } from "../engine/verbs.js";
-import { ClearProgress } from "./ClearProgress.jsx";
 
-export function Customize({ settings, attempts = [], onSave, onBack, onProgress, onClear }) {
+export function Customize({ settings, attempts = [], onSave, onBack, onProgress }) {
   const [draft, setDraft] = useState({
     ...settings,
     tenses: [...settings.tenses],
@@ -57,13 +57,13 @@ export function Customize({ settings, attempts = [], onSave, onBack, onProgress,
           Back
         </button>
         <h1>Customize</h1>
-        <p>Next round uses these. First play stays one tap.</p>
+        <p>Next round uses these.</p>
       </header>
 
       <fieldset>
-        <legend>Verb set</legend>
+        <legend>Verbs</legend>
         <div className="buckets">
-          {VERB_BUCKETS.map((bucket) => (
+          {pack.verbBuckets.map((bucket) => (
             <button
               key={bucket.id}
               type="button"
@@ -80,11 +80,11 @@ export function Customize({ settings, attempts = [], onSave, onBack, onProgress,
           type="button"
           onClick={() => setShowPicker((open) => !open)}
         >
-          {showPicker ? "Hide verb picker" : "Pick verbs"}
+          {showPicker ? "Hide picker" : "Pick verbs"}
         </button>
         {showPicker ? (
           <div className="verb-picker">
-            {VERB_BUCKETS.map((bucket) => (
+            {pack.verbBuckets.map((bucket) => (
               <div key={bucket.id} className="picker-group">
                 <p className="picker-label">{bucket.label}</p>
                 <div className="chips">
@@ -110,40 +110,38 @@ export function Customize({ settings, attempts = [], onSave, onBack, onProgress,
             onChange={(event) =>
               setDraft((prev) => ({ ...prev, customList: event.target.value }))
             }
-            rows={3}
-            placeholder="hablar, ser, pedir"
+            rows={2}
+            placeholder={pack.pastePlaceholder}
             spellCheck="false"
           />
-          <em>Picked and pasted verbs become the set for the next round.</em>
         </label>
       </fieldset>
 
-      {TARGET_GROUPS.map((group) => (
-        <fieldset key={group.id}>
-          <legend>{group.label}</legend>
-          <div className="chips">
-            {group.items.map((item) => (
-              <button
-                key={item.id}
-                type="button"
-                className={`chip ${draft.tenses.includes(item.id) ? "is-on" : ""}`}
-                onClick={() => toggleTense(item.id)}
-              >
-                {item.label}
-              </button>
-            ))}
+      <fieldset className="times">
+        <legend>Times</legend>
+        {pack.targetGroups.map((group) => (
+          <div key={group.id} className="times-group">
+            <p className="times-mood">{group.label}</p>
+            <div className="chips">
+              {group.items.map((item) => (
+                <button
+                  key={item.id}
+                  type="button"
+                  className={`chip ${draft.tenses.includes(item.id) ? "is-on" : ""}`}
+                  onClick={() => toggleTense(item.id)}
+                >
+                  {item.label}
+                </button>
+              ))}
+            </div>
           </div>
-        </fieldset>
-      ))}
+        ))}
+      </fieldset>
 
       <fieldset>
         <legend>Pronouns</legend>
         <div className="chips chips-3">
-          {[
-            { id: "tu", label: "tú" },
-            { id: "vos", label: "vos" },
-            { id: "both", label: "both" },
-          ].map((option) => (
+          {pack.addressOptions.map((option) => (
             <button
               key={option.id}
               type="button"
@@ -163,14 +161,14 @@ export function Customize({ settings, attempts = [], onSave, onBack, onProgress,
             }
           />
           <span>
-            <strong>vosotros</strong>
-            Adds a column. Off by default.
+            <strong>{pack.persons.find((person) => person.optionalColumn)?.label}</strong>
+            Extra column
           </span>
         </label>
       </fieldset>
 
-      <fieldset>
-        <legend>Answer</legend>
+      <fieldset className="play-options">
+        <legend>Round</legend>
         <label className="switch">
           <input
             type="checkbox"
@@ -179,13 +177,9 @@ export function Customize({ settings, attempts = [], onSave, onBack, onProgress,
           />
           <span>
             <strong>Multiple choice</strong>
-            Crutch only. Does not count toward knowing a form.
+            Does not count toward knowing a form
           </span>
         </label>
-      </fieldset>
-
-      <fieldset>
-        <legend>Timer</legend>
         <label className="switch">
           <input
             type="checkbox"
@@ -193,8 +187,8 @@ export function Customize({ settings, attempts = [], onSave, onBack, onProgress,
             onChange={(event) => setDraft((prev) => ({ ...prev, timer: event.target.checked }))}
           />
           <span>
-            <strong>Per-item timer</strong>
-            Hidden until you turn it on.
+            <strong>Timer</strong>
+            Per item
           </span>
         </label>
         {draft.timer ? (
@@ -228,7 +222,6 @@ export function Customize({ settings, attempts = [], onSave, onBack, onProgress,
             What you know
           </button>
         ) : null}
-        {onClear ? <ClearProgress onClear={onClear} /> : null}
         <button className="btn btn-ghost" type="button" onClick={onBack}>
           Back
         </button>

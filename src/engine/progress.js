@@ -1,9 +1,10 @@
-import { ENDING_PATTERNS, FORM_COPY, MOODS, PERSONS, VERB_BUCKETS, timesForMood } from "./constants.js";
+import { ENDING_PATTERNS, FORM_COPY, MOODS, VERB_BUCKETS, timesForMood } from "./constants.js";
+import { pack } from "./pack.js";
 import { cellAllowed } from "./board.js";
 import { formCopy, formState } from "./mastery.js";
 
 export function atlasPersons(mood) {
-  return mood === "commands" ? PERSONS.filter((person) => person.id !== "yo") : PERSONS;
+  return pack.persons.filter((person) => !person.skipMoods?.includes(mood));
 }
 
 export function atlasSpec(mood, time, person, type, ending) {

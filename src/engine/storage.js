@@ -1,11 +1,6 @@
-import {
-  CONTENT_VERSION,
-  DEFAULT_SETTINGS,
-  STORAGE_KEY,
-  moodOf,
-  timeOf,
-  typesFromLegacyPool,
-} from "./constants.js";
+import { CONTENT_VERSION, STORAGE_KEY } from "./config.js";
+import { DEFAULT_SETTINGS, typesFromLegacyPool } from "./constants.js";
+import { moodOf, pack, timeOf } from "./pack.js";
 import { endingPattern, verbType } from "./verbs.js";
 
 function normalizeSettings(raw = {}) {
@@ -20,7 +15,7 @@ function normalizeSettings(raw = {}) {
     ...raw,
     tenses,
     types,
-    address: raw.address || (raw.vos ? "vos" : "tu"),
+    address: raw.address || (raw.vos ? pack.addressOptions[1]?.id : pack.addressOptions[0]?.id),
     customList: raw.customList || "",
     pickedVerbs: Array.isArray(raw.pickedVerbs) ? raw.pickedVerbs : [],
   };
@@ -31,6 +26,7 @@ function blank() {
     settings: normalizeSettings(),
     attempts: [],
     finishedRound: false,
+    lastCells: [],
   };
 }
 
@@ -73,6 +69,7 @@ export function loadState() {
       attempts: Array.isArray(parsed.attempts)
         ? parsed.attempts.map((attempt) => toLogAttempt(attempt, attempt.ts || Date.now()))
         : [],
+      lastCells: Array.isArray(parsed.lastCells) ? parsed.lastCells : [],
     };
   } catch {
     return blank();
@@ -86,6 +83,7 @@ export function saveState(state) {
       settings: state.settings,
       attempts: state.attempts.slice(-400),
       finishedRound: state.finishedRound,
+      lastCells: Array.isArray(state.lastCells) ? state.lastCells : [],
     }),
   );
 }
@@ -107,6 +105,15 @@ export function markFinished(state) {
 
 export function saveSettings(state, settings) {
   const next = { ...state, settings: normalizeSettings(settings) };
+  saveState(next);
+  return next;
+}
+
+export function rememberCells(state, cells) {
+  const next = {
+    ...state,
+    lastCells: (cells || []).map((cell) => ({ tense: cell.tense, person: cell.person })),
+  };
   saveState(next);
   return next;
 }

@@ -1,3 +1,5 @@
+import { pack } from "./pack.js";
+
 export function fold(value) {
   return String(value)
     .trim()
@@ -7,27 +9,14 @@ export function fold(value) {
     .replace(/\s+/g, " ");
 }
 
-const PRONOUNS = [
-  "nosotros",
-  "nosotras",
-  "vosotros",
-  "vosotras",
-  "ustedes",
-  "usted",
-  "ellos",
-  "ellas",
-  "ella",
-  "tú",
-  "vos",
-  "él",
-  "yo",
-  "tu",
-  "el",
-  "nos",
-];
+export function stripMarks(value) {
+  return String(value)
+    .normalize("NFD")
+    .replace(/\p{M}/gu, "");
+}
 
-export function stripPronoun(folded) {
-  for (const pronoun of PRONOUNS) {
+export function stripPronoun(folded, pronouns = pack.leadingPronouns) {
+  for (const pronoun of pronouns) {
     if (folded === pronoun) continue;
     if (folded.startsWith(`${pronoun} `)) {
       return folded.slice(pronoun.length + 1);

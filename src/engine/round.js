@@ -1,6 +1,6 @@
-import { ROUND_SIZE } from "./constants.js";
-import { cellsFor } from "./board.js";
-import { moodOf, timeOf } from "./constants.js";
+import { ROUND_SIZE } from "./config.js";
+import { cellsFor, sameBoard } from "./board.js";
+import { moodOf, pack, tenses as packTenses, timeOf } from "./pack.js";
 import { completePassDone, isVisited, typeKnownAtCell, youKnowThis } from "./mastery.js";
 import { pick, shuffle, weightedPick } from "./random.js";
 import { activeTypes, conjugate, endingPattern, verbsForSettings } from "./verbs.js";
@@ -71,7 +71,7 @@ function pickTypeForCell(types, verbsByType, cell, attempts, rng) {
   return weightedPick(open, weights, rng);
 }
 
-function coverCells(cover, types, verbsByType, verbs, attempts, rng) {
+function fillCells(cover, verbs, types, verbsByType, attempts, rng) {
   const items = [];
   const usedVerbs = new Set();
   for (const cell of cover) {
@@ -83,7 +83,7 @@ function coverCells(cover, types, verbsByType, verbs, attempts, rng) {
   return items;
 }
 
-export function buildRound(settings, attempts, rng = Math.random, size = ROUND_SIZE, priorCells = []) {
+export function buildRound(settings, attempts, rng = Math.random, size = ROUND_SIZE, replayCells) {
   const cells = cellsFor(settings);
   const verbs = verbsForSettings(settings);
   const types = activeTypes(settings);
@@ -96,17 +96,18 @@ export function buildRound(settings, attempts, rng = Math.random, size = ROUND_S
   if (!verbs.length || !cells.length) return [];
 
   if (cells.length <= size) {
-    return coverCells(shuffle(cells, rng), types, verbsByType, verbs, attempts, rng);
+    const order =
+      replayCells?.length && sameBoard(replayCells, settings) ? replayCells : shuffle(cells, rng);
+    return fillCells(order.slice(0, size), verbs, types, verbsByType, attempts, rng);
+  }
+
+  if (replayCells?.length && sameBoard(replayCells, settings)) {
+    return fillCells(replayCells.slice(0, size), verbs, types, verbsByType, attempts, rng);
   }
 
   if (firstPass && empty.length) {
-    return coverCells(shuffle(empty, rng).slice(0, size), types, verbsByType, verbs, attempts, rng);
-  }
-
-  const board = new Set(cells.map((cell) => `${cell.tense}:${cell.person}`));
-  const replay = priorCells.filter((cell) => board.has(`${cell.tense}:${cell.person}`));
-  if (replay.length) {
-    return coverCells(shuffle(replay, rng).slice(0, size), types, verbsByType, verbs, attempts, rng);
+    const cover = shuffle(empty, rng).slice(0, size);
+    return fillCells(cover, verbs, types, verbsByType, attempts, rng);
   }
 
   const items = [];
@@ -123,18 +124,10 @@ export function buildRound(settings, attempts, rng = Math.random, size = ROUND_S
 }
 
 export function makeDistractors(item, rng = Math.random) {
-  const others = ["yo", "tu", "vos", "el", "nos", "vosotros", "ellos"].filter(
-    (person) => person !== item.person,
-  );
-  const tenses = [
-    "presente",
-    "preterito",
-    "imperfecto",
-    "futuro",
-    "condicional",
-    "subjuntivo",
-    "subjuntivo_imp",
-  ].filter((tense) => tense !== item.tense);
+  const others = pack.persons.map((person) => person.id).filter((person) => person !== item.person);
+  const tenses = packTenses
+    .filter((tense) => tense.id !== item.tense && tense.mood !== "commands")
+    .map((tense) => tense.id);
   const pool = new Set();
   for (const person of others) {
     try {

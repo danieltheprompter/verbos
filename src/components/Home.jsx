@@ -1,7 +1,6 @@
 export function Home({ finishedRound, onPlay, onCustomize, onProgress }) {
   return (
     <section className="home">
-      <p className="eyebrow">v1</p>
       <h1 className="wordmark">VERBOS</h1>
       <p className="lede">The ultimate conjugation quiz.</p>
       <div className="home-actions">
@@ -10,11 +9,11 @@ export function Home({ finishedRound, onPlay, onCustomize, onProgress }) {
         </button>
         {finishedRound ? (
           <>
-            <button className="btn btn-ghost" type="button" onClick={onProgress}>
-              What you know
-            </button>
             <button className="btn btn-ghost" type="button" onClick={onCustomize}>
               Customize
+            </button>
+            <button className="btn btn-ghost" type="button" onClick={onProgress}>
+              What you know
             </button>
           </>
         ) : null}

@@ -1,12 +1,13 @@
 import { useState } from "react";
-import { ENDING_PATTERNS, FORM_COPY, MOODS, VERB_BUCKETS } from "../engine/constants.js";
+import { pack } from "../engine/pack.js";
+import { FORM_COPY } from "../engine/config.js";
 import { atlasFillName, atlasPersons, buildAtlas } from "../engine/progress.js";
 import { ClearProgress } from "./ClearProgress.jsx";
 
 export function Progress({ attempts, onBack, onCustomize, onClear }) {
-  const [mood, setMood] = useState("indicative");
-  const [type, setType] = useState("regular");
-  const [ending, setEnding] = useState("ar");
+  const [mood, setMood] = useState(pack.moods[0]?.id);
+  const [type, setType] = useState(pack.verbBuckets[0]?.id);
+  const [ending, setEnding] = useState(pack.endingPatterns[0]?.id);
   const rows = buildAtlas(attempts, { mood, type, ending });
   const persons = atlasPersons(mood);
 
@@ -17,11 +18,11 @@ export function Progress({ attempts, onBack, onCustomize, onClear }) {
           Back
         </button>
         <h1>What you know</h1>
-        <p>An atlas of forms. Typed answers only.</p>
+        <p>A map of forms. Typed answers only.</p>
       </header>
 
       <div className="atlas-tabs" role="tablist" aria-label="Mood">
-        {MOODS.map((item) => (
+        {pack.moods.map((item) => (
           <button
             key={item.id}
             type="button"
@@ -35,10 +36,10 @@ export function Progress({ attempts, onBack, onCustomize, onClear }) {
         ))}
       </div>
 
-      <fieldset className="atlas-filters">
-        <legend>Kind of verb</legend>
+      <div className="atlas-filters">
+        <p className="times-mood">Kind of verb</p>
         <div className="chips">
-          {VERB_BUCKETS.map((bucket) => (
+          {pack.verbBuckets.map((bucket) => (
             <button
               key={bucket.id}
               type="button"
@@ -49,12 +50,12 @@ export function Progress({ attempts, onBack, onCustomize, onClear }) {
             </button>
           ))}
         </div>
-      </fieldset>
+      </div>
 
-      <fieldset className="atlas-filters">
-        <legend>Ending</legend>
+      <div className="atlas-filters">
+        <p className="times-mood">Ending</p>
         <div className="chips chips-2">
-          {ENDING_PATTERNS.map((pattern) => (
+          {pack.endingPatterns.map((pattern) => (
             <button
               key={pattern.id}
               type="button"
@@ -65,7 +66,7 @@ export function Progress({ attempts, onBack, onCustomize, onClear }) {
             </button>
           ))}
         </div>
-      </fieldset>
+      </div>
 
       <p className="atlas-fill">{atlasFillName(mood, type, ending)}</p>
 
@@ -73,7 +74,9 @@ export function Progress({ attempts, onBack, onCustomize, onClear }) {
         <div className="board-corner" />
         {persons.map((person) => (
           <div className="board-col" key={person.id}>
-            {person.label}
+            {(person.lines || [person.label]).map((line) => (
+              <span key={line}>{line}</span>
+            ))}
           </div>
         ))}
         {rows.map((row) => (
@@ -85,9 +88,8 @@ export function Progress({ attempts, onBack, onCustomize, onClear }) {
                   key={cell.person}
                   className={`atlas-cell is-${cell.state}`}
                   title={`${row.label} · ${cell.label}`}
-                >
-                  {cell.copy}
-                </div>
+                  aria-label={`${row.label} · ${cell.label}: ${cell.copy}`}
+                />
               ) : (
                 <div key={cell.person} className="atlas-cell is-na" />
               ),
@@ -97,14 +99,22 @@ export function Progress({ attempts, onBack, onCustomize, onClear }) {
       </div>
 
       <ul className="atlas-key">
-        <li>{FORM_COPY.not_enough}</li>
-        <li>{FORM_COPY.learning}</li>
-        <li>{FORM_COPY.know}</li>
+        <li>
+          <i className="key-swatch is-not_enough" />
+          {FORM_COPY.not_enough}
+        </li>
+        <li>
+          <i className="key-swatch is-learning" />
+          {FORM_COPY.learning}
+        </li>
+        <li>
+          <i className="key-swatch is-know" />
+          {FORM_COPY.know}
+        </li>
       </ul>
 
       {onClear ? (
         <section className="clear-block">
-          <h2 className="slice-title">Reset</h2>
           <ClearProgress onClear={onClear} />
         </section>
       ) : null}

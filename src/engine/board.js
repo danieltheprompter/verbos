@@ -1,28 +1,39 @@
-import { PERSONS, PIP_SLOTS, isCommand } from "./constants.js";
+import { PIP_SLOTS } from "./config.js";
+import { isCommand, moodOf, pack, personById, personLabel } from "./pack.js";
+
+export { personLabel };
 
 export function addressPersons(settings) {
-  const address = settings.address || (settings.vos ? "vos" : "tu");
-  if (address === "both") return ["tu", "vos"];
-  if (address === "vos") return ["vos"];
-  return ["tu"];
+  const addressed = pack.persons.filter((person) => person.address).map((person) => person.id);
+  const fallback = addressed[0];
+  const address = settings.address || (settings.vos ? addressed[1] : fallback);
+  if (address === "both") return addressed;
+  if (addressed.includes(address)) return [address];
+  return fallback ? [fallback] : [];
 }
 
 export function personsFor(settings, tense) {
-  const people = [];
-  if (!isCommand(tense)) people.push("yo");
-  people.push(...addressPersons(settings));
-  people.push("el", "nos");
-  if (settings.vosotros) people.push("vosotros");
-  people.push("ellos");
-  return people;
+  const address = new Set(addressPersons(settings));
+  const mood = moodOf(tense);
+  return pack.persons
+    .filter((person) => {
+      if (person.skipMoods?.includes(mood)) return false;
+      if (person.optionalColumn && !settings.vosotros) return false;
+      if (person.address && !address.has(person.id)) return false;
+      return true;
+    })
+    .map((person) => person.id);
 }
 
 export function commandPersons(settings) {
-  return personsFor(settings, "mandato_af");
+  const command = pack.targetGroups.find((group) =>
+    group.items.some((item) => isCommand(item.id)),
+  )?.items[0];
+  return personsFor(settings, command?.id);
 }
 
 export function columnPersons(settings) {
-  const order = ["yo", "tu", "vos", "el", "nos", "vosotros", "ellos"];
+  const order = pack.persons.map((person) => person.id);
   const present = new Set();
   for (const tense of settings.tenses) {
     for (const person of personsFor(settings, tense)) present.add(person);
@@ -40,26 +51,38 @@ export function cellsFor(settings) {
   return cells;
 }
 
+export function cellKey(cell) {
+  return `${cell.tense}:${cell.person}`;
+}
+
+export function itemsToCells(items = []) {
+  return items.map((item) => ({ tense: item.tense, person: item.person }));
+}
+
+export function sameBoard(cells, settings) {
+  if (!cells?.length) return false;
+  const now = cellsFor(settings).map(cellKey).sort();
+  const last = cells.map(cellKey).sort();
+  return now.length === last.length && now.every((key, index) => key === last[index]);
+}
+
 export function columnLabels(settings) {
   return columnPersons(settings).map((id) => {
-    const meta = PERSONS.find((person) => person.id === id);
-    return { id, label: meta.label };
+    const meta = personById(id);
+    return { id, label: meta?.label ?? id, lines: meta?.lines || [meta?.label ?? id] };
   });
 }
 
-export function personLabel(person) {
-  return PERSONS.find((entry) => entry.id === person)?.label ?? person;
-}
-
 export function cellAllowed(tense, person) {
-  return !(isCommand(tense) && person === "yo");
+  const meta = personById(person);
+  return !meta?.skipMoods?.includes(moodOf(tense));
 }
 
 export function answeredCellKeys(items = []) {
   return new Set(
     items
       .filter((item) => typeof item.correct === "boolean")
-      .map((item) => `${item.tense}:${item.person}`),
+      .map((item) => cellKey(item)),
   );
 }
 
@@ -72,9 +95,17 @@ export function roundCellState(tense, person, current, answered = new Set()) {
   return "empty";
 }
 
-export function cellKey(tense, person) {
-  return `${tense}:${person}`;
+export function cellPipCount(attempts = [], tense, person) {
+  return attempts.filter(
+    (attempt) => attempt.typed && attempt.tense === tense && attempt.person === person,
+  ).length;
 }
+
+export function cellPips(attempts, tense, person, slots = PIP_SLOTS) {
+  return Math.min(slots, cellPipCount(attempts, tense, person));
+}
+
+export const typedPips = cellPips;
 
 export function lastRoundResult(items, tense, person) {
   const hits = items.filter((item) => item.tense === tense && item.person === person);
@@ -83,13 +114,6 @@ export function lastRoundResult(items, tense, person) {
   return last.correct;
 }
 
-export function typedPips(attempts, tense, person) {
-  const n = attempts.filter(
-    (attempt) => attempt.typed && attempt.tense === tense && attempt.person === person,
-  ).length;
-  return Math.min(PIP_SLOTS, n);
-}
-
 export function recapStillNotEnough(attempts, items) {
-  return items.every((item) => typedPips(attempts, item.tense, item.person) < PIP_SLOTS);
+  return items.every((item) => cellPips(attempts, item.tense, item.person) < PIP_SLOTS);
 }

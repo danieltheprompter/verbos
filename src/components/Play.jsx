@@ -1,12 +1,12 @@
 import { useEffect, useRef, useState } from "react";
-import { CONTENT_VERSION, FORM_COPY, RECAP_HEAD, RECAP_SUB, TENSES, moodOf, timeOf } from "../engine/constants.js";
-import { personLabel, recapStillNotEnough } from "../engine/board.js";
+import { CONTENT_VERSION, FORM_COPY, RECAP_HEAD, RECAP_SUB } from "../engine/config.js";
+import { recapStillNotEnough } from "../engine/board.js";
+import { moodOf, pack, personLabel, tenseLabel, timeOf } from "../engine/pack.js";
 import { answersMatch } from "../engine/check.js";
+import { explainMiss } from "../engine/miss.js";
 import { makeDistractors } from "../engine/round.js";
 import { endingPattern, verbType } from "../engine/verbs.js";
 import { Board } from "./Board.jsx";
-
-const ACCENTS = ["á", "é", "í", "ó", "ú", "ü", "ñ"];
 
 export function Play({
   settings,
@@ -31,8 +31,6 @@ export function Play({
 
   const item = items[index];
   const finished = index >= items.length;
-  const tenseMeta = TENSES.find((tense) => tense.id === item?.tense);
-  const tenseLabel = tenseMeta?.boardLabel || tenseMeta?.label;
 
   useEffect(() => {
     startedAt.current = Date.now();
@@ -65,7 +63,11 @@ export function Play({
     const ok = answersMatch(item.expected, raw);
     item.correct = ok;
     item.given = raw;
-    setResult({ ok, expected: item.expected });
+    setResult({
+      ok,
+      expected: item.expected,
+      miss: ok ? null : explainMiss(item.expected, raw),
+    });
     const verb_type = item.type || item.verb_type || verbType(item.verb);
     const ending_pattern = item.ending_pattern || endingPattern(item.verb);
     onAttempt({
@@ -128,7 +130,7 @@ export function Play({
         </header>
         <h1 className="recap-head">{RECAP_HEAD}</h1>
         <p className="recap-sub">{RECAP_SUB}</p>
-        <Board recap settings={settings} items={items} attempts={attempts} />
+        <Board settings={settings} items={items} attempts={attempts} showPips />
         {recapStillNotEnough(attempts, items) ? (
           <p className="recap-state">{FORM_COPY.not_enough}</p>
         ) : null}
@@ -136,11 +138,11 @@ export function Play({
           <button className="btn btn-primary" type="button" onClick={onPlayAgain}>
             Play again
           </button>
-          <button className="btn btn-ghost" type="button" onClick={onProgress}>
-            What you know
-          </button>
           <button className="btn btn-ghost" type="button" onClick={onCustomize}>
             Customize
+          </button>
+          <button className="btn btn-ghost" type="button" onClick={onProgress}>
+            What you know
           </button>
         </div>
       </section>
@@ -167,7 +169,7 @@ export function Play({
       <div className="prompt">
         <p className="infinitive">{item.verb}</p>
         <p className="clue">
-          {tenseLabel} · {personLabel(item.person)}
+          {tenseLabel(item.tense)} · {personLabel(item.person)}
         </p>
       </div>
 
@@ -215,7 +217,7 @@ export function Play({
           />
           {result ? null : (
             <div className="accents">
-              {ACCENTS.map((glyph) => (
+              {pack.accents.map((glyph) => (
                 <button key={glyph} type="button" onClick={() => insertGlyph(glyph)}>
                   {glyph}
                 </button>
@@ -227,6 +229,7 @@ export function Play({
 
       {result ? (
         <div className="reveal">
+          {result.miss ? <p className="miss">{result.miss.message}</p> : null}
           <p className="reveal-form">{result.expected}</p>
           <button className="btn btn-primary" type="button" onClick={next}>
             {index + 1 >= items.length ? "See board" : "Next"}
