@@ -149,7 +149,7 @@ p {
 .board {
   --cols: 5;
   display: grid;
-  grid-template-columns: 7.2rem repeat(var(--cols), minmax(0, 1fr));
+  grid-template-columns: 5.2rem repeat(var(--cols), minmax(0, 1fr));
   gap: 7px 6px;
   align-items: stretch;
   padding: 14px 12px 12px;
@@ -174,12 +174,14 @@ p {
 
 .board-col,
 .board-row-label {
-  font-size: 0.62rem;
-  letter-spacing: 0.02em;
+  font-size: 0.58rem;
+  letter-spacing: 0;
   color: var(--ink-soft);
   text-align: center;
   line-height: 1.2;
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
+  word-break: keep-all;
+  hyphens: none;
 }
 
 .board-note {
