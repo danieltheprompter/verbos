@@ -1,4 +1,4 @@
-import { TENSES, VERB_TYPES, isSingleTypePool, typesInPool } from "../engine/constants.js";
+import { TENSES, TYPE_LINE_BUCKETS, isSingleTypePool, typesInPool } from "../engine/constants.js";
 import { cellsFor, columnLabels } from "../engine/board.js";
 import { toyCellState, typeReadout } from "../engine/mastery.js";
 
@@ -64,17 +64,14 @@ export function BoardLegend({ paintOwned = true }) {
 
 export function TypeReadout({ settings, attempts }) {
   if (isSingleTypePool(settings)) return null;
-  const rows = typeReadout(
-    attempts,
-    VERB_TYPES.map((type) => type.id),
-    cellsFor(settings),
-  );
+  const rows = typeReadout(attempts, TYPE_LINE_BUCKETS, cellsFor(settings));
   return (
     <p className="type-line" aria-label="Mastery by verb type">
       {rows.map((row, index) => (
         <span key={row.id}>
-          {index ? <span className="type-dot"> · </span> : null}
-          {row.label} <em className={`type-state is-${row.state}`}>{row.state}</em>
+          {index ? " / " : ""}
+          {row.label} {row.visits} visit ·{" "}
+          <em className={`type-state ${row.owned ? "is-owned" : ""}`}>{row.owned} owned</em>
         </span>
       ))}
     </p>

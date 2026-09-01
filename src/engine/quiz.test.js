@@ -1,10 +1,18 @@
 import { describe, expect, it } from "vitest";
 import { answersMatch } from "./check.js";
-import { DEFAULT_SETTINGS, POOL, typesInPool } from "./constants.js";
+import {
+  CONTENT_VERSION,
+  DEFAULT_SETTINGS,
+  POOL,
+  TYPE_LINE_BUCKETS,
+  isSingleTypePool,
+  typesInPool,
+} from "./constants.js";
 import { isOwned, toyCellState, typeReadout } from "./mastery.js";
 import { mulberry32 } from "./random.js";
 import { buildRound, makeDistractors } from "./round.js";
 import { cellsFor } from "./board.js";
+import { toLogAttempt } from "./storage.js";
 import { verbType } from "./verbs.js";
 
 function typed(tense, person, correct, extra = {}) {
@@ -38,12 +46,32 @@ describe("mastery key", () => {
     expect(isOwned(five, "presente", "yo", "regular")).toBe(true);
   });
 
-  it("does not let regular tú paint vos or another type", () => {
+  it("keeps regular and stem-changer as different cells at the same tense and person", () => {
+    const regulars = Array.from({ length: 5 }, () =>
+      typed("presente", "yo", true, { verb: "hablar" }),
+    );
+    const stems = Array.from({ length: 5 }, () =>
+      typed("presente", "yo", true, { verb: "pensar" }),
+    );
+    expect(isOwned(regulars, "presente", "yo", "regular")).toBe(true);
+    expect(isOwned(regulars, "presente", "yo", "stem")).toBe(false);
+    expect(isOwned(stems, "presente", "yo", "stem")).toBe(true);
+    expect(isOwned(stems, "presente", "yo", "regular")).toBe(false);
+    const split = [
+      ...Array.from({ length: 3 }, () => typed("presente", "yo", true, { verb: "hablar" })),
+      ...Array.from({ length: 3 }, () => typed("presente", "yo", true, { verb: "pensar" })),
+    ];
+    expect(isOwned(split, "presente", "yo", "regular")).toBe(false);
+    expect(isOwned(split, "presente", "yo", "stem")).toBe(false);
+  });
+
+  it("does not let regular tú share ownership with vos", () => {
     const tu = Array.from({ length: 5 }, () => typed("presente", "tu", true, { verb: "hablar" }));
     expect(isOwned(tu, "presente", "tu", "regular")).toBe(true);
     expect(isOwned(tu, "presente", "vos", "regular")).toBe(false);
-    expect(isOwned(tu, "presente", "tu", "stem")).toBe(false);
-    expect(isOwned(tu, "presente", "tu", "irregular")).toBe(false);
+    const vos = Array.from({ length: 5 }, () => typed("presente", "vos", true, { verb: "hablar" }));
+    expect(isOwned(vos, "presente", "vos", "regular")).toBe(true);
+    expect(isOwned(vos, "presente", "tu", "regular")).toBe(false);
   });
 
   it("never counts multiple-choice toward owned", () => {
@@ -81,27 +109,57 @@ describe("mastery key", () => {
     expect(typesInPool(POOL.STEM)).toEqual(["regular", "irregular", "stem", "spelling"]);
   });
 
-  it("rolls four type buckets under the board for a mixed pool", () => {
+  it("mixed-pool readout is four buckets with visit vs owned, hidden on first play", () => {
+    expect(isSingleTypePool(DEFAULT_SETTINGS)).toBe(true);
+    expect(isSingleTypePool({ pool: POOL.IRREGULARS })).toBe(false);
+    expect(TYPE_LINE_BUCKETS).toEqual(["regular", "irregular", "stem", "spelling"]);
     const cells = cellsFor(DEFAULT_SETTINGS);
     const regularOwned = cells.flatMap((cell) =>
       Array.from({ length: 5 }, () => typed(cell.tense, cell.person, true, { verb: "hablar" })),
     );
     const stemVisit = [typed("presente", "yo", false, { verb: "pensar" })];
-    const rows = typeReadout(
-      [...regularOwned, ...stemVisit],
-      typesInPool(POOL.STEM),
-      cells,
-    );
+    const rows = typeReadout([...regularOwned, ...stemVisit], TYPE_LINE_BUCKETS, cells);
     expect(rows.map((row) => row.label)).toEqual([
       "regulars",
       "high-freq irregulars",
       "stem-changers",
       "spelling",
     ]);
-    expect(rows.find((row) => row.id === "regular").state).toBe("owned");
-    expect(rows.find((row) => row.id === "stem").state).toBe("visit");
-    expect(rows.find((row) => row.id === "irregular").state).toBe("empty");
-    expect(rows.find((row) => row.id === "spelling").state).toBe("empty");
+    expect(rows.find((row) => row.id === "regular")).toMatchObject({ visits: 10, owned: 10 });
+    expect(rows.find((row) => row.id === "stem")).toMatchObject({ visits: 1, owned: 0 });
+    expect(rows.find((row) => row.id === "irregular")).toMatchObject({ visits: 0, owned: 0 });
+    expect(rows.find((row) => row.id === "spelling")).toMatchObject({ visits: 0, owned: 0 });
+  });
+});
+
+describe("attempt log", () => {
+  it("stores POST-ready fields without a user API", () => {
+    const entry = toLogAttempt({
+      attempt_id: "att_test",
+      tense: "presente",
+      person: "yo",
+      verb: "pensar",
+      expected: "pienso",
+      given: "pienso",
+      correct: true,
+      typed: true,
+      latency_ms: 842.2,
+    });
+    expect(entry).toMatchObject({
+      attempt_id: "att_test",
+      tense: "presente",
+      person: "yo",
+      verb: "pensar",
+      verb_type: "stem",
+      type: "stem",
+      expected: "pienso",
+      given: "pienso",
+      correct: true,
+      typed: true,
+      latency_ms: 842,
+      content_version: CONTENT_VERSION,
+    });
+    expect(entry.ts).toEqual(expect.any(Number));
   });
 });
 

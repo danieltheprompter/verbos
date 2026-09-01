@@ -1,10 +1,16 @@
 import { MASTERY_MIN, MASTERY_NEED, MASTERY_WINDOW, VERB_TYPES } from "./constants.js";
 import { verbType } from "./verbs.js";
 
+export function attemptType(attempt) {
+  return attempt.verb_type || attempt.type || verbType(attempt.verb);
+}
+
 export function normalizeAttempt(attempt) {
+  const type = attemptType(attempt);
   return {
     ...attempt,
-    type: attempt.type || verbType(attempt.verb),
+    type,
+    verb_type: attempt.verb_type || type,
   };
 }
 
@@ -28,14 +34,15 @@ export function visitsForType(attempts, type) {
   return attempts.map(normalizeAttempt).filter((attempt) => attempt.type === type);
 }
 
-export function visitsForCell(attempts, tense, person) {
-  return attempts
-    .map(normalizeAttempt)
-    .filter((attempt) => attempt.tense === tense && attempt.person === person);
+export function visitsForCell(attempts, tense, person, type) {
+  return attempts.map(normalizeAttempt).filter((attempt) => {
+    if (attempt.tense !== tense || attempt.person !== person) return false;
+    return type == null || attempt.type === type;
+  });
 }
 
-export function isVisited(attempts, tense, person) {
-  return visitsForCell(attempts, tense, person).length > 0;
+export function isVisited(attempts, tense, person, type) {
+  return visitsForCell(attempts, tense, person, type).length > 0;
 }
 
 export function isOwned(attempts, tense, person, type) {
@@ -56,16 +63,14 @@ export function completePassDone(attempts, cells) {
   return cells.every((cell) => isVisited(attempts, cell.tense, cell.person));
 }
 
-export function typeRollup(attempts, type, cells) {
-  const hits = visitsForType(attempts, type);
-  if (!hits.length) return "empty";
-  const owned = cells.every((cell) => isOwned(attempts, cell.tense, cell.person, type));
-  return owned ? "owned" : "visit";
-}
-
 export function typeReadout(attempts, typeIds, cells) {
   return typeIds.map((id) => {
     const meta = VERB_TYPES.find((type) => type.id === id);
-    return { id, label: meta.label, state: typeRollup(attempts, id, cells) };
+    return {
+      id,
+      label: meta.label,
+      visits: cells.filter((cell) => isVisited(attempts, cell.tense, cell.person, id)).length,
+      owned: cells.filter((cell) => isOwned(attempts, cell.tense, cell.person, id)).length,
+    };
   });
 }

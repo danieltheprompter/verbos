@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { TENSES, isSingleTypePool } from "../engine/constants.js";
+import { CONTENT_VERSION, TENSES, isSingleTypePool } from "../engine/constants.js";
 import { personLabel } from "../engine/board.js";
 import { answersMatch } from "../engine/check.js";
 import { makeDistractors } from "../engine/round.js";
@@ -26,11 +26,16 @@ export function Play({
   const [left, setLeft] = useState(settings.timer ? settings.timerSec : null);
   const inputRef = useRef(null);
   const submitted = useRef(false);
+  const startedAt = useRef(Date.now());
 
   const item = items[index];
   const finished = index >= items.length;
   const tenseLabel = TENSES.find((tense) => tense.id === item?.tense)?.label;
   const correctCount = items.filter((entry) => entry.correct).length;
+
+  useEffect(() => {
+    startedAt.current = Date.now();
+  }, [index]);
 
   useEffect(() => {
     if (!finished) inputRef.current?.focus();
@@ -60,13 +65,20 @@ export function Play({
     item.correct = ok;
     item.given = raw;
     setResult({ ok, expected: item.expected });
+    const verb_type = item.type || item.verb_type || verbType(item.verb);
     onAttempt({
+      attempt_id: globalThis.crypto?.randomUUID?.(),
       tense: item.tense,
       person: item.person,
       verb: item.verb,
-      type: item.type || verbType(item.verb),
+      verb_type,
+      type: verb_type,
+      expected: item.expected,
+      given: raw,
       correct: ok,
       typed: !settings.mc,
+      latency_ms: Date.now() - startedAt.current,
+      content_version: CONTENT_VERSION,
     });
   }
 
@@ -112,8 +124,8 @@ export function Play({
           </p>
         </header>
         <Board settings={settings} attempts={attempts} />
-        <BoardLegend paintOwned={isSingleTypePool(settings)} />
         <TypeReadout settings={settings} attempts={attempts} />
+        <BoardLegend paintOwned={isSingleTypePool(settings)} />
         {isSingleTypePool(settings) ? (
           <p className="done-note">Visit is not owned. Owned is the only strength color.</p>
         ) : null}

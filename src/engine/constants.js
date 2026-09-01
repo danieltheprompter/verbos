@@ -34,6 +34,10 @@ export const VERB_TYPES = [
   { id: "spelling", label: "spelling", pool: POOL.STEM },
 ];
 
+export const TYPE_LINE_BUCKETS = VERB_TYPES.map((type) => type.id);
+
+export const CONTENT_VERSION = "v1";
+
 export function isSingleTypePool(settings) {
   return settings.pool === POOL.REGULARS;
 }

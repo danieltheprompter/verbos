@@ -1,4 +1,4 @@
-import { DEFAULT_SETTINGS, STORAGE_KEY } from "./constants.js";
+import { CONTENT_VERSION, DEFAULT_SETTINGS, STORAGE_KEY } from "./constants.js";
 import { verbType } from "./verbs.js";
 
 function blank() {
@@ -6,6 +6,29 @@ function blank() {
     settings: { ...DEFAULT_SETTINGS, tenses: [...DEFAULT_SETTINGS.tenses] },
     attempts: [],
     finishedRound: false,
+  };
+}
+
+function newAttemptId() {
+  return globalThis.crypto?.randomUUID?.() ?? `att_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
+}
+
+export function toLogAttempt(attempt, now = Date.now()) {
+  const verb_type = attempt.verb_type || attempt.type || verbType(attempt.verb);
+  return {
+    attempt_id: attempt.attempt_id || newAttemptId(),
+    tense: attempt.tense,
+    person: attempt.person,
+    verb: attempt.verb,
+    verb_type,
+    type: verb_type,
+    expected: attempt.expected ?? null,
+    given: attempt.given ?? "",
+    correct: Boolean(attempt.correct),
+    typed: Boolean(attempt.typed),
+    latency_ms: Number.isFinite(attempt.latency_ms) ? Math.max(0, Math.round(attempt.latency_ms)) : null,
+    content_version: attempt.content_version || CONTENT_VERSION,
+    ts: now,
   };
 }
 
@@ -19,10 +42,7 @@ export function loadState() {
       ...parsed,
       settings: { ...blank().settings, ...parsed.settings },
       attempts: Array.isArray(parsed.attempts)
-        ? parsed.attempts.map((attempt) => ({
-            ...attempt,
-            type: attempt.type || verbType(attempt.verb),
-          }))
+        ? parsed.attempts.map((attempt) => toLogAttempt(attempt, attempt.ts || Date.now()))
         : [],
     };
   } catch {
@@ -44,18 +64,7 @@ export function saveState(state) {
 export function recordAttempt(state, attempt) {
   const next = {
     ...state,
-    attempts: [
-      ...state.attempts,
-      {
-        tense: attempt.tense,
-        person: attempt.person,
-        verb: attempt.verb,
-        type: attempt.type || verbType(attempt.verb),
-        correct: Boolean(attempt.correct),
-        typed: Boolean(attempt.typed),
-        ts: Date.now(),
-      },
-    ],
+    attempts: [...state.attempts, toLogAttempt(attempt)],
   };
   saveState(next);
   return next;
