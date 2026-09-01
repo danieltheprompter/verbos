@@ -152,8 +152,9 @@ p {
 
 .board {
   --cols: 5;
+  --row-label: 7.6rem;
   display: grid;
-  grid-template-columns: 5.2rem repeat(var(--cols), minmax(0, 1fr));
+  grid-template-columns: var(--row-label) repeat(var(--cols), minmax(0, 1fr));
   gap: var(--space-3) var(--space-2);
   align-items: stretch;
   padding: var(--space-board);
@@ -184,14 +185,14 @@ p {
 .board-col,
 .board-row-label {
   font-family: var(--type-display);
-  font-size: clamp(var(--type-board-size), 1.8vw, 1.05rem);
+  font-size: clamp(0.82rem, 1.8vw, 1.12rem);
   font-weight: 650;
   letter-spacing: 0;
   color: var(--ink-soft);
   text-align: center;
   line-height: 1.15;
-  overflow-wrap: break-word;
-  word-break: keep-all;
+  overflow-wrap: normal;
+  word-break: normal;
   hyphens: none;
 }
 
@@ -338,12 +339,13 @@ p {
 }
 
 .is-recap .board {
-  padding: 24px 20px 22px;
+  --row-label: 11rem;
+  padding: 28px 24px 24px;
 }
 
 .is-recap .board-col,
 .is-recap .board-row-label {
-  font-size: clamp(0.92rem, 2.4vw, 1.4rem);
+  font-size: clamp(1.05rem, 2.4vw, 1.45rem);
   color: var(--color-now-ring);
 }
 
@@ -850,8 +852,9 @@ p {
 
 .atlas {
   --cols: 7;
+  --row-label: 7.6rem;
   display: grid;
-  grid-template-columns: 5.8rem repeat(var(--cols), minmax(2.8rem, 1fr));
+  grid-template-columns: var(--row-label) repeat(var(--cols), minmax(2.8rem, 1fr));
   gap: 10px 8px;
   overflow-x: auto;
   padding: var(--space-board);
@@ -1171,7 +1174,8 @@ p {
   }
 
   .atlas {
-    grid-template-columns: 7.2rem repeat(var(--cols), minmax(3.4rem, 1fr));
+    --row-label: 8.4rem;
+    grid-template-columns: var(--row-label) repeat(var(--cols), minmax(3.4rem, 1fr));
     gap: 12px 10px;
   }
 
