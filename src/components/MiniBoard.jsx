@@ -23,10 +23,11 @@ export function MiniBoard({ attempts = [] }) {
           {columns.map((column) => {
             const state = miniCellState(attempts, row.id, column.id);
             const paint = state === "empty" ? "not_enough" : state;
+            const open = state === "learning" || state === "know";
             return (
               <div
                 key={column.id}
-                className={`atlas-cell mini-cell is-${paint}${state !== "empty" ? " is-open" : ""}`}
+                className={`atlas-cell mini-cell is-${paint}${open ? " is-open" : ""}`}
                 title={`${row.label} · ${column.label}`}
               />
             );

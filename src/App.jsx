@@ -34,6 +34,7 @@ export function App() {
   const [playId, setPlayId] = useState(0);
   const [playMode, setPlayMode] = useState("play");
   const [sessionSec, setSessionSec] = useState(null);
+  const [warmupBell, setWarmupBell] = useState(false);
 
   const profile = activeProfile(store);
   const playSettings =
@@ -77,6 +78,8 @@ export function App() {
                 )
               : ""
           }
+          warmupBell={warmupBell}
+          onWarmupBell={setWarmupBell}
           onPlay={() => start({ replay: profile.finishedRound })}
           onWarmup={(bell) =>
             start({

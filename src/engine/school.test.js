@@ -27,7 +27,13 @@ import {
   encodeClassSet,
   parseClassSet,
 } from "./classSet.js";
-import { customizeLockedByLevels, namedLevels, nextPlayFocus, nextPlayLine } from "./levels.js";
+import {
+  customizeLockedByLevels,
+  miniCellState,
+  namedLevels,
+  nextPlayFocus,
+  nextPlayLine,
+} from "./levels.js";
 import { formCopy } from "./mastery.js";
 import { personLabel, tenseLabel } from "./pack.js";
 import { recapStory } from "./recap.js";
@@ -161,6 +167,16 @@ describe("named levels do not lock Customize", () => {
       /6\/10/,
     );
     expect(`${RECAP_HEAD} ${RECAP_CLEAN} ${RECAP_SUB}`).not.toMatch(/6\/10/);
+    const visited = first[0];
+    expect(miniCellState(round1, visited.tense, visited.person)).toBe("not_enough");
+    expect(miniCellState(round1, visited.tense, visited.person)).not.toBe("know");
+    const mini = readFileSync(join(root, "components/MiniBoard.jsx"), "utf8");
+    expect(mini).toMatch(/miniCellState/);
+    expect(mini).toMatch(/state === "learning" \|\| state === "know"/);
+    expect(mini).not.toMatch(/color-visit|cell-visit|is-visit/);
+    const styles = readFileSync(join(root, "styles.css"), "utf8");
+    expect(styles).not.toMatch(/\.mini-cell\.is-not_enough[\s\S]{0,80}color-visit/);
+    expect(styles).toMatch(/\.cell-visit/);
 
     const board = cellsFor(DEFAULT_SETTINGS);
     const six = board.slice(0, 6).flatMap((cell) => [
@@ -183,6 +199,12 @@ describe("warm-up and class set", () => {
     expect(home).toMatch(/hasClassSet/);
     expect(home).toMatch(/WARMUP/);
     expect(home).toMatch(/onWarmup/);
+    expect(home).toMatch(/warmupBell/);
+    expect(home).toMatch(/onWarmupBell/);
+    expect(home).not.toMatch(/useState\(false\)/);
+    const app = readFileSync(join(root, "App.jsx"), "utf8");
+    expect(app).toMatch(/warmupBell/);
+    expect(app).toMatch(/setWarmupBell/);
     const play = readFileSync(join(root, "components/Play.jsx"), "utf8");
     const warmupRecap = play.split("{warmup ? (")[1]?.split(") : (")[0] || "";
     expect(warmupRecap).toMatch(/Done/);

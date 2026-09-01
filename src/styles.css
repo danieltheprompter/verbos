@@ -1121,11 +1121,6 @@ p {
   aspect-ratio: 1;
 }
 
-.mini-cell.is-not_enough.is-open {
-  background: var(--color-visit);
-  border-color: #d8a35a;
-}
-
 .session-bell {
   margin: 0;
   text-align: center;

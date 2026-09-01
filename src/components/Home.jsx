@@ -1,4 +1,3 @@
-import { useState } from "react";
 import {
   CLASS_SET_LOAD,
   LEDE,
@@ -12,14 +11,14 @@ export function Home({
   finishedRound,
   hasClassSet,
   nextPlay,
+  warmupBell = false,
+  onWarmupBell,
   onPlay,
   onWarmup,
   onCustomize,
   onProfile,
   onClassSet,
 }) {
-  const [bell, setBell] = useState(false);
-
   return (
     <section className="home">
       <h1 className="wordmark">{WORDMARK}</h1>
@@ -34,15 +33,15 @@ export function Home({
             <button
               className="btn btn-ghost"
               type="button"
-              onClick={() => onWarmup(bell)}
+              onClick={() => onWarmup(warmupBell)}
             >
               {WARMUP}
             </button>
             <label className="switch warmup-bell">
               <input
                 type="checkbox"
-                checked={bell}
-                onChange={(event) => setBell(event.target.checked)}
+                checked={warmupBell}
+                onChange={(event) => onWarmupBell?.(event.target.checked)}
               />
               <span>
                 <strong>{WARMUP_BELL}</strong>
