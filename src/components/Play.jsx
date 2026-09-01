@@ -187,7 +187,6 @@ export function Play({
           attempts={attempts}
           showPips
           pipTick={beat !== "hold"}
-          lockIn
         />
         <p className="recap-sub">{story.line}</p>
         <div className="home-actions">
