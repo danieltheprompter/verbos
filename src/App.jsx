@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { ClassSet } from "./components/ClassSet.jsx";
 import { Customize } from "./components/Customize.jsx";
 import { Home } from "./components/Home.jsx";
@@ -27,6 +27,8 @@ import {
 
 export function App() {
   const [store, setStore] = useState(loadState);
+  const storeRef = useRef(store);
+  storeRef.current = store;
   const [screen, setScreen] = useState("home");
   const [items, setItems] = useState(null);
   const [playId, setPlayId] = useState(0);
@@ -40,20 +42,16 @@ export function App() {
   function start({
     nextSettings = playSettings,
     replay = false,
-    from = store,
     mode = "play",
     session = null,
   } = {}) {
+    const from = storeRef.current;
     const roundSettings = mode === "warmup" ? warmupSettings(nextSettings) : nextSettings;
     const who = activeProfile(from);
     const replayCells = replay && sameBoard(who.lastCells, roundSettings) ? who.lastCells : null;
     const nextItems = buildRound(roundSettings, who.attempts, Math.random, undefined, replayCells);
     if (!nextItems.length) {
-      if (mode === "warmup") {
-        setScreen("home");
-        return;
-      }
-      setScreen("customize");
+      setScreen(mode === "warmup" ? "home" : "customize");
       return;
     }
     setStore(rememberCells(from, nextItems));
@@ -124,13 +122,12 @@ export function App() {
           attempts={profile.attempts}
           onBack={() => setScreen("home")}
           onProgress={() => setScreen("profile")}
-          onApplySet={(next) => setStore(saveSettings(store, next))}
+          onApplySet={(next) => setStore((prev) => saveSettings(prev, next))}
           onSave={(next) => {
-            const saved = saveSettings(store, next);
+            const saved = saveSettings(storeRef.current, next);
             start({
               nextSettings: next,
               replay: sameBoard(activeProfile(saved).lastCells, next),
-              from: saved,
             });
           }}
         />
@@ -150,7 +147,7 @@ export function App() {
               address: next.address,
               extraColumn: next.extraColumn,
             };
-            setStore(loadClassSet(store, payload));
+            setStore((prev) => loadClassSet(prev, payload));
             setScreen("home");
           }}
         />
@@ -165,9 +162,9 @@ export function App() {
           onCustomize={profile.finishedRound ? () => setScreen("customize") : null}
           onProgress={() => setScreen("progress")}
           onPlay={() => start({ replay: true })}
-          onSwitch={(id) => setStore(switchProfile(store, id))}
-          onAdd={() => setStore(addProfile(store))}
-          onRename={(name) => setStore(renameProfile(store, name))}
+          onSwitch={(id) => setStore((prev) => switchProfile(prev, id))}
+          onAdd={() => setStore((prev) => addProfile(prev))}
+          onRename={(name) => setStore((prev) => renameProfile(prev, name))}
           onClear={() => setStore((prev) => clearProgress(prev))}
         />
       ) : null}
