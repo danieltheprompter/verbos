@@ -5,10 +5,12 @@ import {
   CONTENT_VERSION,
   DEFAULT_SETTINGS,
   FORM_COPY,
+  MOODS,
   PERSONS,
+  TENSES,
   VERB_BUCKETS,
 } from "./constants.js";
-import { formCopy, formState, youKnowThis } from "./mastery.js";
+import { allSelectedKnown, formCopy, formState, youKnowThis } from "./mastery.js";
 import { answeredCellKeys, cellsFor, personLabel, personsFor, roundCellState } from "./board.js";
 import { atlasCopyAt, buildAtlas } from "./progress.js";
 import { mulberry32 } from "./random.js";
@@ -63,20 +65,39 @@ describe("answer checking", () => {
 });
 
 describe("subject labels", () => {
-  it("uses full subject pronouns, never nos for nosotros", () => {
+  it("uses full subject pronouns, never nos for nosotros or vos for vosotros", () => {
     expect(PERSONS.map((person) => person.label)).toEqual([
       "yo",
       "tú",
       "vos",
-      "él/usted",
+      "él / ella / usted",
       "nosotros",
       "vosotros",
-      "ellos/ustedes",
+      "ellos / ellas / ustedes",
     ]);
     expect(PERSONS.some((person) => person.label === "nos")).toBe(false);
+    expect(PERSONS.some((person) => person.label === "tu")).toBe(false);
+    expect(PERSONS.some((person) => person.label === "el")).toBe(false);
     expect(personLabel("nos")).toBe("nosotros");
-    expect(personLabel("el")).toBe("él/usted");
-    expect(personLabel("ellos")).toBe("ellos/ustedes");
+    expect(personLabel("tu")).toBe("tú");
+    expect(personLabel("el")).toBe("él / ella / usted");
+    expect(personLabel("ellos")).toBe("ellos / ellas / ustedes");
+    expect(personLabel("vos")).toBe("vos");
+    expect(personLabel("vosotros")).toBe("vosotros");
+  });
+
+  it("keeps Spanish teacher time names and no Pret./Imp./Subj. abbreviations", () => {
+    const labels = [
+      ...TENSES.flatMap((tense) => [tense.label, tense.boardLabel]),
+      ...MOODS.map((mood) => mood.label),
+    ].join(" ");
+    expect(labels).toMatch(/Pretérito/);
+    expect(labels).not.toMatch(/Pret\.|Imp\.|Subj\.|1sg|simple past|\bimperative\b/i);
+    expect(MOODS.map((mood) => mood.id)).toEqual(["indicative", "subjunctive", "commands"]);
+    expect(TENSES.filter((tense) => tense.mood === "commands").map((tense) => tense.time)).toEqual([
+      "affirmative",
+      "negative",
+    ]);
   });
 });
 
@@ -109,7 +130,7 @@ describe("round board ignores mastery", () => {
     expect(keys.has("presente:tu")).toBe(true);
     expect(roundCellState("presente", "tu", null, keys)).toBe("answered");
     expect(BOARD_NOTE).toBe(
-      "This board is this round — it marks squares you already answered, not what you know.",
+      "This board is this round. A square fills when you answer. Right or wrong shows on what you typed.",
     );
   });
 
@@ -247,6 +268,16 @@ describe("tú and vos stay separate", () => {
       "ellos",
     ]);
     expect(personsFor(DEFAULT_SETTINGS, "mandato_af")).not.toContain("yo");
+    expect(personsFor(DEFAULT_SETTINGS, "mandato_af")).toEqual(["tu", "el", "nos", "ellos"]);
+    expect(personsFor({ ...DEFAULT_SETTINGS, address: "vos" }, "mandato_neg")).toEqual([
+      "vos",
+      "el",
+      "nos",
+      "ellos",
+    ]);
+    expect(
+      personsFor({ ...DEFAULT_SETTINGS, address: "both", vosotros: true }, "mandato_af"),
+    ).toEqual(["tu", "vos", "el", "nos", "vosotros", "ellos"]);
   });
 });
 
@@ -342,6 +373,67 @@ describe("round builder", () => {
     expect(items.every((item) => item.ending_pattern === "ar" || item.ending_pattern === "er_ir")).toBe(
       true,
     );
+  });
+
+  it("does not stuff retries into the first complete pass", () => {
+    const presenteOnly = { ...DEFAULT_SETTINGS, tenses: ["presente"] };
+    const items = buildRound(presenteOnly, [], mulberry32(4));
+    expect(items).toHaveLength(5);
+    expect(new Set(items.map((item) => `${item.tense}:${item.person}`)).size).toBe(5);
+  });
+
+  it("cannot mint you know this from a first complete pass", () => {
+    const items = buildRound(DEFAULT_SETTINGS, [], mulberry32(7));
+    const attempts = items.map((item) => typed(item.tense, item.person, true, { verb: item.verb }));
+    for (const item of items) {
+      expect(
+        formCopy(attempts, {
+          mood: item.mood,
+          time: item.time,
+          person: item.person,
+          type: item.type,
+          ending: item.ending_pattern,
+        }),
+      ).toBe("not enough yet");
+    }
+  });
+
+  it("credits only the prompted cell, never a contrast neighbor", () => {
+    const yoPreterite = Array.from({ length: 5 }, () =>
+      typed("preterito", "yo", true, { verb: "hablar" }),
+    );
+    expect(
+      formCopy(yoPreterite, spec({ time: "preterito", person: "yo" })),
+    ).toBe("you know this");
+    expect(formCopy(yoPreterite, spec({ time: "preterito", person: "tu" }))).toBe("not enough yet");
+    expect(formCopy(yoPreterite, spec({ time: "presente", person: "yo" }))).toBe("not enough yet");
+  });
+
+  it("uses the last-7 window only, with no calendar rust", () => {
+    const old = Array.from({ length: 5 }, (_, i) => ({
+      ...typed("presente", "yo", true),
+      ts: i + 1,
+    }));
+    expect(formCopy(old, spec())).toBe("you know this");
+    const laterMisses = [
+      ...old,
+      ...Array.from({ length: 7 }, (_, i) => ({
+        ...typed("presente", "yo", false),
+        ts: 1_000 + i,
+      })),
+    ];
+    expect(formCopy(laterMisses, spec())).toBe("still learning");
+  });
+
+  it("refuses a customize set that only farms known present regulars", () => {
+    const presentRegulars = { ...DEFAULT_SETTINGS, tenses: ["presente"] };
+    const cells = cellsFor(presentRegulars);
+    const known = cells.flatMap((cell) => [
+      ...Array.from({ length: 5 }, () => typed(cell.tense, cell.person, true, { verb: "hablar" })),
+      ...Array.from({ length: 5 }, () => typed(cell.tense, cell.person, true, { verb: "comer" })),
+    ]);
+    expect(allSelectedKnown(presentRegulars, known)).toBe(true);
+    expect(allSelectedKnown(DEFAULT_SETTINGS, known)).toBe(false);
   });
 
   it("after a complete pass, overweights weak cells", () => {

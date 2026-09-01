@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { ENDING_PATTERNS, FORM_COPY, MOODS, VERB_BUCKETS } from "../engine/constants.js";
-import { atlasPersons, buildAtlas } from "../engine/progress.js";
+import { atlasFillName, atlasPersons, buildAtlas } from "../engine/progress.js";
 import { ClearProgress } from "./ClearProgress.jsx";
 
 export function Progress({ attempts, onBack, onCustomize, onClear }) {
@@ -67,6 +67,8 @@ export function Progress({ attempts, onBack, onCustomize, onClear }) {
         </div>
       </fieldset>
 
+      <p className="atlas-fill">{atlasFillName(mood, type, ending)}</p>
+
       <div className="atlas" style={{ "--cols": persons.length }} aria-label={`${mood} atlas`}>
         <div className="board-corner" />
         {persons.map((person) => (
@@ -76,7 +78,7 @@ export function Progress({ attempts, onBack, onCustomize, onClear }) {
         ))}
         {rows.map((row) => (
           <div className="board-row-wrap" key={row.tense}>
-            <div className="board-row-label">{row.short}</div>
+            <div className="board-row-label">{row.label}</div>
             {row.cells.map((cell) =>
               cell.allowed ? (
                 <div
@@ -100,11 +102,17 @@ export function Progress({ attempts, onBack, onCustomize, onClear }) {
         <li>{FORM_COPY.know}</li>
       </ul>
 
+      {onClear ? (
+        <section className="clear-block">
+          <h2 className="slice-title">Clear the atlas</h2>
+          <ClearProgress onClear={onClear} />
+        </section>
+      ) : null}
+
       <div className="home-actions">
         <button className="btn btn-ghost" type="button" onClick={onCustomize}>
           Customize
         </button>
-        {onClear ? <ClearProgress onClear={onClear} /> : null}
         <button className="btn btn-ghost" type="button" onClick={onBack}>
           Back
         </button>

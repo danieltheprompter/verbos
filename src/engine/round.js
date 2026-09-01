@@ -1,7 +1,7 @@
 import { ROUND_SIZE } from "./constants.js";
 import { cellsFor } from "./board.js";
 import { moodOf, timeOf } from "./constants.js";
-import { completePassDone, isVisited, typeKnownAtCell } from "./mastery.js";
+import { completePassDone, isVisited, typeKnownAtCell, youKnowThis } from "./mastery.js";
 import { pick, shuffle, weightedPick } from "./random.js";
 import { activeTypes, conjugate, endingPattern, verbsForSettings } from "./verbs.js";
 
@@ -28,9 +28,28 @@ function itemFrom(cell, verb) {
   };
 }
 
-function pickWeightedCell(cells, attempts, types, prev, rng) {
+function cellHasUnknown(cell, attempts, types, verbs) {
+  return types.some((type) => {
+    const endings = [
+      ...new Set(verbs.filter((verb) => verb.type === type).map((verb) => endingPattern(verb.inf))),
+    ];
+    return endings.some(
+      (ending) =>
+        !youKnowThis(attempts, {
+          mood: moodOf(cell.tense),
+          time: timeOf(cell.tense),
+          person: cell.person,
+          type,
+          ending,
+        }),
+    );
+  });
+}
+
+function pickWeightedCell(cells, attempts, types, verbs, prev, rng) {
   const empty = cells.filter((cell) => !isVisited(attempts, cell.tense, cell.person));
-  const board = empty.length ? empty : cells;
+  const unknown = cells.filter((cell) => cellHasUnknown(cell, attempts, types, verbs));
+  const board = empty.length ? empty : unknown.length ? unknown : cells;
   const weights = board.map((cell) => {
     if (empty.length) return 8;
     const weak = types.some((type) => !typeKnownAtCell(attempts, cell.tense, cell.person, type));
@@ -74,10 +93,11 @@ export function buildRound(settings, attempts, rng = Math.random, size = ROUND_S
       usedVerbs.add(verb.inf);
       items.push(itemFrom(cell, verb));
     }
+    return items;
   }
 
   while (items.length < size) {
-    const cell = pickWeightedCell(cells, attempts, types, items[items.length - 1], rng);
+    const cell = pickWeightedCell(cells, attempts, types, verbs, items[items.length - 1], rng);
     const type = pickTypeForCell(types, verbsByType, cell, attempts, rng);
     const verb = pickVerb(verbsByType[type] || verbs, usedVerbs, rng);
     usedVerbs.add(verb.inf);

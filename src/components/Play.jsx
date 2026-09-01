@@ -30,8 +30,8 @@ export function Play({
 
   const item = items[index];
   const finished = index >= items.length;
-  const tenseLabel = TENSES.find((tense) => tense.id === item?.tense)?.label;
-  const correctCount = items.filter((entry) => entry.correct).length;
+  const tenseMeta = TENSES.find((tense) => tense.id === item?.tense);
+  const tenseLabel = tenseMeta?.boardLabel || tenseMeta?.label;
 
   useEffect(() => {
     startedAt.current = Date.now();
@@ -124,9 +124,7 @@ export function Play({
       <section className="play play-done">
         <header className="play-bar">
           <p className="wordmark-mini">VERBOS</p>
-          <p className="progress">
-            {correctCount} / {items.length}
-          </p>
+          <p className="progress">This round</p>
         </header>
         <Board settings={settings} items={items} />
         <div className="home-actions">

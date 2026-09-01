@@ -149,7 +149,7 @@ p {
 .board {
   --cols: 5;
   display: grid;
-  grid-template-columns: 2.7rem repeat(var(--cols), minmax(0, 1fr));
+  grid-template-columns: 7.2rem repeat(var(--cols), minmax(0, 1fr));
   gap: 7px 6px;
   align-items: stretch;
   padding: 14px 12px 12px;
@@ -505,10 +505,27 @@ p {
   border-color: var(--ink);
 }
 
+.atlas-fill {
+  margin: 0;
+  font-family: Fraunces, Georgia, serif;
+  font-size: 1.05rem;
+}
+
+.farm-note {
+  margin: 0;
+  color: var(--ink-soft);
+  font-size: 0.9rem;
+}
+
+.btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
 .atlas {
   --cols: 7;
   display: grid;
-  grid-template-columns: 2.5rem repeat(var(--cols), minmax(3.4rem, 1fr));
+  grid-template-columns: 5.4rem repeat(var(--cols), minmax(3.4rem, 1fr));
   gap: 6px 4px;
   overflow-x: auto;
   padding: 12px 10px;
@@ -522,7 +539,10 @@ p {
   font-size: 0.58rem;
 }
 
-.clear-confirm {
+.clear-block {
+  display: grid;
+  gap: 10px;
+}
   display: grid;
   gap: 10px;
   padding: 12px 14px;

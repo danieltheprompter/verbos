@@ -1,9 +1,10 @@
 import { useState } from "react";
-import { TARGET_GROUPS, VERB_BUCKETS } from "../engine/constants.js";
+import { FARM_NOTE, TARGET_GROUPS, VERB_BUCKETS } from "../engine/constants.js";
+import { allSelectedKnown } from "../engine/mastery.js";
 import { verbsInBucket } from "../engine/verbs.js";
 import { ClearProgress } from "./ClearProgress.jsx";
 
-export function Customize({ settings, onSave, onBack, onProgress, onClear }) {
+export function Customize({ settings, attempts = [], onSave, onBack, onProgress, onClear }) {
   const [draft, setDraft] = useState({
     ...settings,
     tenses: [...settings.tenses],
@@ -13,6 +14,7 @@ export function Customize({ settings, onSave, onBack, onProgress, onClear }) {
     address: settings.address || "tu",
   });
   const [showPicker, setShowPicker] = useState(Boolean(draft.pickedVerbs.length));
+  const farmingKnown = allSelectedKnown(draft, attempts);
 
   function toggleTense(id) {
     setDraft((prev) => {
@@ -212,7 +214,13 @@ export function Customize({ settings, onSave, onBack, onProgress, onClear }) {
       </fieldset>
 
       <div className="home-actions">
-        <button className="btn btn-primary" type="button" onClick={() => onSave(draft)}>
+        {farmingKnown ? <p className="farm-note">{FARM_NOTE}</p> : null}
+        <button
+          className="btn btn-primary"
+          type="button"
+          disabled={farmingKnown}
+          onClick={() => onSave(draft)}
+        >
           Play
         </button>
         {onProgress ? (

@@ -39,6 +39,7 @@ describe("regular conjugations", () => {
     expect(conjugate("hablar", "futuro", "yo")).toBe("hablaré");
     expect(conjugate("comer", "condicional", "el")).toBe("comería");
     expect(conjugate("hablar", "subjuntivo_imp", "yo")).toBe("hablara");
+    expect(conjugate("hablar", "subjuntivo_imp", "yo")).not.toBe("hablase");
     expect(conjugate("hablar", "subjuntivo_imp", "nos")).toBe("habláramos");
     expect(conjugate("hablar", "mandato_af", "tu")).toBe("habla");
     expect(conjugate("hablar", "mandato_af", "vos")).toBe("hablá");

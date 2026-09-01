@@ -9,27 +9,27 @@ export const TARGET_GROUPS = [
     id: "indicative",
     label: "Indicative",
     items: [
-      { id: "presente", label: "Presente", short: "Pres.", mood: "indicative", time: "presente" },
-      { id: "preterito", label: "Pretérito", short: "Pret.", mood: "indicative", time: "preterito" },
-      { id: "imperfecto", label: "Imperfecto", short: "Imp.", mood: "indicative", time: "imperfecto" },
-      { id: "futuro", label: "Futuro", short: "Fut.", mood: "indicative", time: "futuro" },
-      { id: "condicional", label: "Condicional", short: "Cond.", mood: "indicative", time: "condicional" },
+      { id: "presente", label: "Presente", boardLabel: "Presente", mood: "indicative", time: "presente" },
+      { id: "preterito", label: "Pretérito", boardLabel: "Pretérito", mood: "indicative", time: "preterito" },
+      { id: "imperfecto", label: "Imperfecto", boardLabel: "Imperfecto", mood: "indicative", time: "imperfecto" },
+      { id: "futuro", label: "Futuro", boardLabel: "Futuro", mood: "indicative", time: "futuro" },
+      { id: "condicional", label: "Condicional", boardLabel: "Condicional", mood: "indicative", time: "condicional" },
     ],
   },
   {
     id: "subjunctive",
     label: "Subjunctive",
     items: [
-      { id: "subjuntivo", label: "Presente", short: "Subj.", mood: "subjunctive", time: "presente" },
-      { id: "subjuntivo_imp", label: "Imperfecto", short: "Imp. subj.", mood: "subjunctive", time: "imperfecto" },
+      { id: "subjuntivo", label: "Presente", boardLabel: "Presente de subjuntivo", mood: "subjunctive", time: "presente" },
+      { id: "subjuntivo_imp", label: "Imperfecto", boardLabel: "Imperfecto de subjuntivo", mood: "subjunctive", time: "imperfecto" },
     ],
   },
   {
     id: "commands",
     label: "Commands",
     items: [
-      { id: "mandato_af", label: "Affirmative", short: "Afirm.", mood: "commands", time: "affirmative" },
-      { id: "mandato_neg", label: "Negative", short: "Neg.", mood: "commands", time: "negative" },
+      { id: "mandato_af", label: "Afirmativo", boardLabel: "Afirmativo", mood: "commands", time: "affirmative" },
+      { id: "mandato_neg", label: "Negativo", boardLabel: "Negativo", mood: "commands", time: "negative" },
     ],
   },
 ];
@@ -54,14 +54,17 @@ export const PERSONS = [
   { id: "yo", label: "yo", column: "yo" },
   { id: "tu", label: "tú", column: "tu" },
   { id: "vos", label: "vos", column: "vos" },
-  { id: "el", label: "él/usted", column: "el" },
+  { id: "el", label: "él / ella / usted", column: "el" },
   { id: "nos", label: "nosotros", column: "nos" },
   { id: "vosotros", label: "vosotros", column: "vosotros" },
-  { id: "ellos", label: "ellos/ustedes", column: "ellos" },
+  { id: "ellos", label: "ellos / ellas / ustedes", column: "ellos" },
 ];
 
 export const BOARD_NOTE =
-  "This board is this round — it marks squares you already answered, not what you know.";
+  "This board is this round. A square fills when you answer. Right or wrong shows on what you typed.";
+
+export const FARM_NOTE =
+  "These are forms you already know. Add another time or kind of verb.";
 
 export const DEFAULT_TENSES = ["presente", "preterito"];
 export const DEFAULT_PERSONS = ["yo", "tu", "el", "nos", "ellos"];

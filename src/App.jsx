@@ -48,6 +48,7 @@ export function App() {
       {screen === "customize" ? (
         <Customize
           settings={store.settings}
+          attempts={store.attempts}
           onBack={() => setScreen("home")}
           onProgress={() => setScreen("progress")}
           onClear={() => setStore((prev) => clearProgress(prev))}

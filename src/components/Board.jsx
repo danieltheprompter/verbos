@@ -21,7 +21,7 @@ export function Board({ settings, items = [], current, compact = false }) {
         ))}
         {rows.map((row) => (
           <div className="board-row-wrap" key={row.id}>
-            <div className="board-row-label">{row.short}</div>
+            <div className="board-row-label">{row.boardLabel}</div>
             {columns.map((column) => {
               if (!cellAllowed(row.id, column.id)) {
                 return <div key={column.id} className="cell cell-na" />;

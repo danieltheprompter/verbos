@@ -1,5 +1,6 @@
 import { FORM_COPY, MASTERY_MIN, MASTERY_NEED, MASTERY_WINDOW, moodOf, timeOf } from "./constants.js";
-import { endingPattern, verbType } from "./verbs.js";
+import { cellsFor } from "./board.js";
+import { endingPattern, verbType, verbsForSettings } from "./verbs.js";
 
 export function attemptType(attempt) {
   return attempt.verb_type || attempt.type || verbType(attempt.verb);
@@ -80,4 +81,34 @@ export function completePassDone(attempts, cells) {
 export function typeKnownAtCell(attempts, tense, person, type) {
   const spec = { mood: moodOf(tense), time: timeOf(tense), person, type };
   return ["ar", "er_ir"].some((ending) => youKnowThis(attempts, { ...spec, ending }));
+}
+
+export function specsForSettings(settings) {
+  const verbs = verbsForSettings(settings);
+  const pairs = [];
+  const seen = new Set();
+  for (const verb of verbs) {
+    const pair = `${verb.type}:${endingPattern(verb.inf)}`;
+    if (seen.has(pair)) continue;
+    seen.add(pair);
+    pairs.push({ type: verb.type, ending: endingPattern(verb.inf) });
+  }
+  const specs = [];
+  for (const cell of cellsFor(settings)) {
+    for (const pair of pairs) {
+      specs.push({
+        mood: moodOf(cell.tense),
+        time: timeOf(cell.tense),
+        person: cell.person,
+        type: pair.type,
+        ending: pair.ending,
+      });
+    }
+  }
+  return specs;
+}
+
+export function allSelectedKnown(settings, attempts) {
+  const specs = specsForSettings(settings);
+  return specs.length > 0 && specs.every((spec) => youKnowThis(attempts, spec));
 }

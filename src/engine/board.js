@@ -17,6 +17,10 @@ export function personsFor(settings, tense) {
   return people;
 }
 
+export function commandPersons(settings) {
+  return personsFor(settings, "mandato_af");
+}
+
 export function columnPersons(settings) {
   const order = ["yo", "tu", "vos", "el", "nos", "vosotros", "ellos"];
   const present = new Set();
