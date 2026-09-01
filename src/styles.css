@@ -590,7 +590,6 @@ p {
   color: var(--bad);
   font-weight: 600;
   font-size: 1.05rem;
-  animation: miss-out 1000ms ease forwards;
 }
 
 .reveal-form {

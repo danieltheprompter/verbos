@@ -116,9 +116,6 @@ export function Play({
       pulse(null, "stem");
     }
     if (index + 1 >= items.length) setLockIn(true);
-    if (miss) {
-      window.setTimeout(() => setShowMiss(false), 1000);
-    }
     if (index + 1 >= items.length) {
       window.setTimeout(finishRound, ok ? 380 : 780);
     }
