@@ -543,6 +543,8 @@ p {
   display: grid;
   gap: 10px;
 }
+
+.clear-confirm {
   display: grid;
   gap: 10px;
   padding: 12px 14px;
