@@ -11,7 +11,10 @@ export const PIP_SLOTS = 5;
 export const BOARD_NOTE =
   "This board is this round. A square fills when you answer. Right or wrong shows on what you typed.";
 
-export const RECAP_HEAD = "You lit the board.";
+export const RECAP_HEAD = "Board lit";
+export const RECAP_CLEAN = "Clean board";
+export const RECAP_BEAT_MS = 1600;
+export const SOUND_MUTED = true;
 export const RECAP_SUB =
   "You lit the 2×5; those squares are on What you know as not enough yet — you know this takes 5 of last 7 typed.";
 export const RECAP_ROUND1 = RECAP_SUB;

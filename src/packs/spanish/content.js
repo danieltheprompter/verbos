@@ -134,6 +134,7 @@ export function explainMiss(expected, given, { want, got, item } = {}) {
         return {
           kind: "time",
           message: `${here?.label ?? "This time"}, not ${tense.label}`,
+          other: tense.id,
         };
       }
     } catch {

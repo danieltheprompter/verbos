@@ -36,6 +36,12 @@ export function explainMiss(expected, given, item) {
     return { kind: "accent", message: "Missing the accent" };
   }
 
+  const wantStem = stripMarks(want).slice(0, Math.max(3, stripMarks(want).length - 3));
+  const gotStem = stripMarks(got).slice(0, Math.max(3, stripMarks(got).length - 3));
+  if (item?.verb && wantStem && gotStem && wantStem !== gotStem) {
+    return { kind: "stem", message: "Not that stem" };
+  }
+
   const extra = extraLetter(want, got);
   if (extra) return { kind: "extra", message: `Extra ${extra}` };
 

@@ -14,6 +14,8 @@ import {
   MOODS,
   PERSONS,
   PIP_SLOTS,
+  RECAP_BEAT_MS,
+  RECAP_CLEAN,
   RECAP_HEAD,
   RECAP_SUB,
   TENSES,
@@ -119,6 +121,7 @@ describe("miss feedback names the miss", () => {
     expect(explainMiss("hablé", "hablaba", yoPreterite)).toMatchObject({
       kind: "time",
       message: "Pretérito, not Imperfecto",
+      other: "imperfecto",
     });
     expect(explainMiss("hablé", "hablaste", yoPreterite).message).not.toMatch(/incorrect|shame/i);
   });
@@ -338,15 +341,22 @@ describe("recap hero", () => {
   });
 
   it("tells the teacher what the first 2×5 means", () => {
-    expect(RECAP_HEAD).toBe("You lit the board.");
+    expect(RECAP_HEAD).toBe("Board lit");
+    expect(RECAP_CLEAN).toBe("Clean board");
+    expect(RECAP_BEAT_MS).toBe(1600);
+    expect(`${RECAP_HEAD} ${RECAP_CLEAN}`).not.toMatch(/8\/10/);
     const first = buildRound(DEFAULT_SETTINGS, [], mulberry32(7));
     const attempts = first.map((item) => typed(item.tense, item.person, true, { verb: item.verb }));
-    const story = recapStory(first, attempts);
+    const clean = first.map((item) => ({ ...item, correct: true }));
+    const story = recapStory(clean, attempts);
+    expect(story.head).toBe("Clean board");
     expect(story.line).toBe(RECAP_SUB);
     expect(story.line).toMatch(/not enough yet/);
     expect(story.line).toMatch(/5 of last 7 typed/);
     expect(story.action).toBe("again");
-    expect(story.line).not.toMatch(/xp|streak|loot/i);
+    expect(story.line).not.toMatch(/xp|streak|loot|8\/10/i);
+    const mixed = clean.map((item, index) => ({ ...item, correct: index !== 0 }));
+    expect(recapStory(mixed, attempts).head).toBe("Board lit");
   });
 
   it("names a cell that changed state and gives one next action", () => {

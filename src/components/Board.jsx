@@ -8,17 +8,31 @@ import {
   roundCellState,
 } from "../engine/board.js";
 
-function Pips({ count, slots = PIP_SLOTS }) {
+function Pips({ count, slots = PIP_SLOTS, tick = false }) {
   return (
     <span className="pips" aria-label={`${count} of ${slots}`}>
       {Array.from({ length: slots }, (_, index) => (
-        <i key={index} className={index < count ? "is-on" : ""} />
+        <i
+          key={index}
+          className={index < count ? `is-on${tick ? " is-tick" : ""}` : ""}
+          style={tick && index < count ? { animationDelay: `${index * 70}ms` } : undefined}
+        />
       ))}
     </span>
   );
 }
 
-export function Board({ settings, items = [], current, attempts = [], showPips = false }) {
+export function Board({
+  settings,
+  items = [],
+  current,
+  attempts = [],
+  showPips = false,
+  pipTick = false,
+  land = null,
+  flick = null,
+  lockIn = false,
+}) {
   const columns = columnLabels(settings);
   const rows = packTenses.filter((tense) => settings.tenses.includes(tense.id));
   const answered = answeredCellKeys(items);
@@ -26,7 +40,7 @@ export function Board({ settings, items = [], current, attempts = [], showPips =
   return (
     <div className={`board-wrap ${showPips ? "is-recap" : ""}`}>
       <div
-        className="board"
+        className={`board${lockIn ? " is-snap" : ""}`}
         style={{ "--cols": columns.length }}
         aria-label="This round"
       >
@@ -47,20 +61,28 @@ export function Board({ settings, items = [], current, attempts = [], showPips =
               }
               const state = roundCellState(row.id, column.id, current, answered);
               const pips = showPips ? cellPips(attempts, row.id, column.id) : 0;
+              const isLand = Boolean(
+                land && land.tense === row.id && land.person === column.id,
+              );
+              const isFlick =
+                (flick?.axis === "col" && flick.person === column.id) ||
+                (flick?.axis === "row" && flick.tense === row.id);
               return (
                 <div
                   key={column.id}
-                  className={`cell cell-${state}`}
+                  className={`cell cell-${state}${isLand ? " is-land" : ""}${
+                    isFlick ? ` is-flick is-flick-${flick.axis}` : ""
+                  }`}
                   title={`${row.label} · ${column.label}`}
                 >
-                  {showPips ? <Pips count={pips} /> : null}
+                  {showPips ? <Pips count={pips} tick={pipTick} /> : null}
                 </div>
               );
             })}
           </div>
         ))}
       </div>
-      <p className="board-note">{BOARD_NOTE}</p>
+      {showPips ? null : <p className="board-note">{BOARD_NOTE}</p>}
     </div>
   );
 }

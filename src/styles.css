@@ -247,6 +247,9 @@ p {
   box-shadow:
     var(--shadow-visit),
     inset 0 1px 0 rgba(255, 236, 200, 0.55);
+}
+
+.cell.is-land {
   animation: cell-visit var(--motion-visit) var(--motion-ease);
 }
 
@@ -341,6 +344,127 @@ p {
 .play-done .cell-answered .pips i.is-on,
 .is-recap .cell-answered .pips i.is-on {
   background: #2a1c10;
+}
+
+.cell.is-flick-col {
+  animation: flick-x var(--motion-flick) var(--motion-ease);
+}
+
+.cell.is-flick-row {
+  animation: flick-y var(--motion-flick) var(--motion-ease);
+}
+
+@keyframes flick-x {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  30% {
+    transform: translateX(-6px);
+  }
+  70% {
+    transform: translateX(6px);
+  }
+}
+
+@keyframes flick-y {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  30% {
+    transform: translateY(-5px);
+  }
+  70% {
+    transform: translateY(5px);
+  }
+}
+
+.board.is-snap {
+  animation: board-snap var(--motion-snap) var(--motion-ease);
+}
+
+@keyframes board-snap {
+  0% {
+    transform: scale(1);
+  }
+  40% {
+    transform: scale(0.978);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.pips i.is-tick {
+  animation: pip-tick 180ms var(--motion-ease) both;
+}
+
+@keyframes pip-tick {
+  0% {
+    transform: scale(0);
+    opacity: 0;
+  }
+  70% {
+    transform: scale(1.35);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.infinitive.is-rattle {
+  animation: stem-rattle 220ms var(--motion-ease);
+}
+
+@keyframes stem-rattle {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  20% {
+    transform: translateX(-4px) rotate(-1deg);
+  }
+  60% {
+    transform: translateX(4px) rotate(1deg);
+  }
+}
+
+.answer.is-drop {
+  animation: accent-drop 240ms var(--motion-ease);
+}
+
+@keyframes accent-drop {
+  0% {
+    transform: translateY(-6px);
+  }
+  100% {
+    transform: translateY(0);
+  }
+}
+
+.play-done.is-recap-hold .recap-sub,
+.play-done.is-recap-hold .btn-ghost,
+.play-done.is-recap-pips .recap-sub,
+.play-done.is-recap-pips .btn-ghost {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.play-done.is-recap-go .recap-sub,
+.play-done.is-recap-go .btn-ghost {
+  opacity: 1;
+}
+
+@keyframes miss-out {
+  0%,
+  70% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
 }
 
 .timer {
@@ -459,6 +583,7 @@ p {
   color: var(--bad);
   font-weight: 600;
   font-size: 1.05rem;
+  animation: miss-out 720ms ease forwards;
 }
 
 .reveal-form {

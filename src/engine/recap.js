@@ -1,6 +1,7 @@
 import { cellPips } from "./board.js";
 import {
   FORM_COPY,
+  RECAP_CLEAN,
   RECAP_HEAD,
   RECAP_NEXT_AGAIN,
   RECAP_NEXT_MAP,
@@ -63,9 +64,12 @@ export function recapStory(items = [], attempts = []) {
   const learning = changes.filter((change) => change.to === "learning");
   const leftover = items.some((item) => formState(attempts, specOf(item)) !== "know");
 
+  const clean = items.length > 0 && items.every((item) => item.correct);
+  const head = clean ? RECAP_CLEAN : RECAP_HEAD;
+
   if (firstVisit && stillNotEnough) {
     return {
-      head: RECAP_HEAD,
+      head,
       line: RECAP_ROUND1,
       next: RECAP_NEXT_AGAIN,
       action: "again",
@@ -76,7 +80,7 @@ export function recapStory(items = [], attempts = []) {
     const names = listNames(minted.map((change) => change.name));
     const verb = minted.length === 1 ? "is" : "are";
     return {
-      head: RECAP_HEAD,
+      head,
       line: `${names} ${verb} ${FORM_COPY.know} — ${leftover ? RECAP_NEXT_REST : RECAP_NEXT_MAP}`,
       next: leftover ? RECAP_NEXT_REST : RECAP_NEXT_MAP,
       action: leftover ? "again" : "map",
@@ -87,7 +91,7 @@ export function recapStory(items = [], attempts = []) {
     const names = listNames(learning.map((change) => change.name));
     const verb = learning.length === 1 ? "is" : "are";
     return {
-      head: RECAP_HEAD,
+      head,
       line: `${names} ${verb} ${FORM_COPY.learning} — ${RECAP_NEXT_AGAIN}`,
       next: RECAP_NEXT_AGAIN,
       action: "again",
@@ -95,7 +99,7 @@ export function recapStory(items = [], attempts = []) {
   }
 
   return {
-    head: RECAP_HEAD,
+    head,
     line: `${RECAP_STILL} ${RECAP_NEXT_AGAIN}`,
     next: RECAP_NEXT_AGAIN,
     action: "again",

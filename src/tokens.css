@@ -53,6 +53,9 @@
   /* Motion */
   --motion-visit: 180ms;
   --motion-owned: 220ms;
+  --motion-flick: 160ms;
+  --motion-snap: 140ms;
+  --motion-recap: 1600ms;
   --motion-now: 1.6s;
   --motion-ease: cubic-bezier(0.2, 0.8, 0.2, 1);
 

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { CONTENT_VERSION } from "../engine/config.js";
+import { CONTENT_VERSION, RECAP_BEAT_MS } from "../engine/config.js";
 import { moodOf, pack, personLabel, tenseLabel, timeOf } from "../engine/pack.js";
 import { answersMatch } from "../engine/check.js";
 import { explainMiss } from "../engine/miss.js";
@@ -25,7 +25,14 @@ export function Play({
     settings.mc ? makeDistractors(items[0]) : [],
   );
   const [left, setLeft] = useState(settings.timer ? settings.timerSec : null);
+  const [land, setLand] = useState(null);
+  const [flick, setFlick] = useState(null);
+  const [lockIn, setLockIn] = useState(false);
+  const [showMiss, setShowMiss] = useState(false);
+  const [motion, setMotion] = useState("");
+  const [beat, setBeat] = useState("hold");
   const inputRef = useRef(null);
+  const playAgainRef = useRef(null);
   const submitted = useRef(false);
   const startedAt = useRef(Date.now());
 
@@ -53,9 +60,36 @@ export function Play({
       }
     }, 80);
     return () => window.clearInterval(tick);
-    // judge reads the current item via the render that started this timer
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [index, settings.timer, settings.timerSec, finished, result]);
+
+  useEffect(() => {
+    if (!finished) return undefined;
+    setBeat("hold");
+    const pipsAt = window.setTimeout(() => setBeat("pips"), 420);
+    const goAt = window.setTimeout(() => {
+      setBeat("go");
+      playAgainRef.current?.focus();
+    }, Math.min(1100, RECAP_BEAT_MS - 200));
+    return () => {
+      window.clearTimeout(pipsAt);
+      window.clearTimeout(goAt);
+    };
+  }, [finished]);
+
+  function pulse(nextFlick, nextMotion) {
+    setFlick(nextFlick);
+    setMotion(nextMotion);
+    window.setTimeout(() => {
+      setFlick(null);
+      setMotion("");
+    }, 280);
+  }
+
+  function finishRound() {
+    setIndex(items.length);
+    onDone();
+  }
 
   function judge(raw) {
     if (submitted.current || !item) return;
@@ -63,11 +97,31 @@ export function Play({
     const ok = answersMatch(item.expected, raw);
     item.correct = ok;
     item.given = raw;
-    setResult({
-      ok,
-      expected: item.expected,
-      miss: ok ? null : explainMiss(item.expected, raw, item),
-    });
+    const miss = ok ? null : explainMiss(item.expected, raw, item);
+    setResult({ ok, expected: item.expected, miss });
+    setShowMiss(Boolean(miss));
+    if (ok) {
+      setLand({ tense: item.tense, person: item.person });
+    } else if (miss?.kind === "person") {
+      pulse({ axis: "col", person: item.person }, "");
+    } else if (miss?.kind === "time") {
+      const onBoard = settings.tenses.includes(miss.other);
+      const row = onBoard
+        ? miss.other
+        : settings.tenses.find((tense) => tense !== item.tense) || item.tense;
+      pulse({ axis: "row", tense: row }, "");
+    } else if (miss?.kind === "accent") {
+      pulse(null, "accent");
+    } else if (miss?.kind === "stem") {
+      pulse(null, "stem");
+    }
+    if (index + 1 >= items.length) setLockIn(true);
+    if (miss) {
+      window.setTimeout(() => setShowMiss(false), 720);
+    }
+    if (index + 1 >= items.length) {
+      window.setTimeout(finishRound, ok ? 380 : 780);
+    }
     const verb_type = item.type || item.verb_type || verbType(item.verb);
     const ending_pattern = item.ending_pattern || endingPattern(item.verb);
     onAttempt({
@@ -92,15 +146,15 @@ export function Play({
   function next() {
     if (!result) return;
     if (index + 1 >= items.length) {
-      setIndex(items.length);
-      onDone();
+      finishRound();
       return;
     }
-    const upcoming = items[index + 1];
     submitted.current = false;
     setResult(null);
+    setShowMiss(false);
     setValue("");
-    setChoices(settings.mc ? makeDistractors(upcoming) : []);
+    setLand(null);
+    setChoices(settings.mc ? makeDistractors(items[index + 1]) : []);
     startedAt.current = Date.now();
     setIndex((prev) => prev + 1);
   }
@@ -125,15 +179,24 @@ export function Play({
   if (finished) {
     const story = recapStory(items, attempts);
     return (
-      <section className="play play-done">
-        <header className="play-bar">
-          <p className="wordmark-mini">VERBOS</p>
-        </header>
+      <section className={`play play-done is-recap-${beat}`}>
         <h1 className="recap-head">{story.head}</h1>
-        <Board settings={settings} items={items} attempts={attempts} showPips />
+        <Board
+          settings={settings}
+          items={items}
+          attempts={attempts}
+          showPips
+          pipTick={beat !== "hold"}
+          lockIn
+        />
         <p className="recap-sub">{story.line}</p>
         <div className="home-actions">
-          <button className="btn btn-primary" type="button" onClick={onPlayAgain}>
+          <button
+            ref={playAgainRef}
+            className="btn btn-primary"
+            type="button"
+            onClick={onPlayAgain}
+          >
             Play again
           </button>
           <button className="btn btn-ghost" type="button" onClick={onProgress}>
@@ -151,12 +214,16 @@ export function Play({
     <section className="play">
       <header className="play-bar">
         <p className="wordmark-mini">VERBOS</p>
-        <p className="progress">
-          {index + 1} / {items.length}
-        </p>
       </header>
 
-      <Board settings={settings} items={items} current={item} />
+      <Board
+        settings={settings}
+        items={items}
+        current={item}
+        land={land}
+        flick={flick}
+        lockIn={lockIn}
+      />
 
       {settings.timer ? (
         <div className="timer" aria-hidden="true">
@@ -165,7 +232,7 @@ export function Play({
       ) : null}
 
       <div className="prompt">
-        <p className="infinitive">{item.verb}</p>
+        <p className={`infinitive${motion === "stem" ? " is-rattle" : ""}`}>{item.verb}</p>
         <p className="clue">
           {tenseLabel(item.tense)} · {personLabel(item.person)}
         </p>
@@ -201,7 +268,7 @@ export function Play({
         >
           <input
             ref={inputRef}
-            className="answer"
+            className={`answer${motion === "accent" ? " is-drop" : ""}`}
             data-result={result ? (result.ok ? "ok" : "bad") : undefined}
             value={value}
             onChange={(event) => setValue(event.target.value)}
@@ -227,11 +294,13 @@ export function Play({
 
       {result ? (
         <div className="reveal">
-          {result.miss ? <p className="miss">{result.miss.message}</p> : null}
+          {showMiss && result.miss ? <p className="miss">{result.miss.message}</p> : null}
           <p className="reveal-form">{result.expected}</p>
-          <button className="btn btn-primary" type="button" onClick={next}>
-            {index + 1 >= items.length ? "See board" : "Next"}
-          </button>
+          {index + 1 >= items.length ? null : (
+            <button className="btn btn-primary" type="button" onClick={next}>
+              Next
+            </button>
+          )}
         </div>
       ) : (
         <button
