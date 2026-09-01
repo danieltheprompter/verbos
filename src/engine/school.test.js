@@ -178,7 +178,8 @@ describe("warm-up and class set", () => {
   it("keeps first Play one tap and Warm-up only after a class set", () => {
     const home = readFileSync(join(root, "components/Home.jsx"), "utf8");
     expect(home).toMatch(/finishedRound \? "Play again" : "Play"/);
-    expect(home).toMatch(/nextPlay \|\| LEDE/);
+    expect(home).toMatch(/nextPlay/);
+    expect(home).toMatch(/LEDE/);
     expect(home).toMatch(/hasClassSet/);
     expect(home).toMatch(/WARMUP/);
     expect(home).toMatch(/onWarmup/);

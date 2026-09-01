@@ -23,7 +23,8 @@ export function Home({
   return (
     <section className="home">
       <h1 className="wordmark">{WORDMARK}</h1>
-      <p className="lede">{nextPlay || LEDE}</p>
+      <p className="lede">{LEDE}</p>
+      {nextPlay ? <p className="next-play-home">{nextPlay}</p> : null}
       <div className="home-actions">
         <button className="btn btn-primary" type="button" onClick={onPlay}>
           {finishedRound ? "Play again" : "Play"}

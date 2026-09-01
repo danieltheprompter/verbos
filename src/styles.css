@@ -101,7 +101,16 @@ p {
 .lede {
   color: var(--ink-soft);
   font-size: 1.05rem;
-  margin-bottom: 28px;
+  margin-bottom: 12px;
+}
+
+.next-play-home {
+  margin: 0 0 28px;
+  color: var(--color-ink);
+  font-family: var(--type-display);
+  font-size: clamp(1.2rem, 3vw, 1.7rem);
+  font-weight: 650;
+  line-height: 1.25;
 }
 
 .home-actions {
