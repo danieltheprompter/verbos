@@ -37,6 +37,7 @@ import { mulberry32 } from "./random.js";
 import { buildRound, makeDistractors } from "./round.js";
 import { clearProgress, toLogAttempt } from "./storage.js";
 import {
+  conjugate,
   endingPattern,
   parseCustomList,
   verbType,
@@ -161,6 +162,69 @@ describe("subject labels", () => {
       "affirmative",
       "negative",
     ]);
+  });
+});
+
+describe("pedagogy freeze", () => {
+  const studentCopy = [
+    ...PERSONS.map((person) => person.label),
+    ...TENSES.flatMap((tense) => [tense.label, tense.boardLabel]),
+    ...MOODS.map((mood) => mood.label),
+  ].join(" · ");
+
+  it("never shows nos, tu, or el as the student label", () => {
+    expect(studentCopy.split(" · ")).not.toContain("nos");
+    expect(studentCopy.split(" · ")).not.toContain("tu");
+    expect(studentCopy.split(" · ")).not.toContain("el");
+    expect(personLabel("nos")).toBe("nosotros");
+    expect(personLabel("vosotros")).toBe("vosotros");
+    expect(personLabel("tu")).toBe("tú");
+    expect(personLabel("el")).toBe("él / ella / usted");
+  });
+
+  it("keeps él / ella / usted and ellos / ellas / ustedes readable", () => {
+    expect(personLabel("el")).toBe("él / ella / usted");
+    expect(personLabel("ellos")).toBe("ellos / ellas / ustedes");
+  });
+
+  it("uses Spanish time names and bans English I/you/he, 1sg, and Pret./Imp./Subj.", () => {
+    expect(studentCopy).toMatch(/Pretérito/);
+    expect(studentCopy).not.toMatch(/\bpast\b|\bsimple past\b/i);
+    expect(studentCopy).not.toMatch(/\bI\b|\byou\b|\bhe\b|1sg|Pret\.|Imp\.|Subj\./);
+    expect(TENSES.every((tense) => tense.mood !== "subjunctive" || tense.time !== "subjunctive")).toBe(
+      true,
+    );
+  });
+
+  it("treats Subjunctive as a mood and Commands as Commands, never an imperative tense", () => {
+    expect(MOODS.map((mood) => mood.label)).toEqual(["Indicative", "Subjunctive", "Commands"]);
+    expect(studentCopy).not.toMatch(/\bimperative\b/i);
+    expect(TENSES.filter((tense) => tense.mood === "subjunctive").map((tense) => tense.time)).toEqual([
+      "presente",
+      "imperfecto",
+    ]);
+    expect(TENSES.filter((tense) => tense.mood === "commands").map((tense) => tense.label)).toEqual([
+      "Afirmativo",
+      "Negativo",
+    ]);
+  });
+
+  it("keeps imperfect subjunctive on -ra only, with no -se picker", () => {
+    const persons = ["yo", "tu", "vos", "el", "nos", "vosotros", "ellos"];
+    const forms = persons.map((person) => conjugate("hablar", "subjuntivo_imp", person));
+    expect(forms).toEqual([
+      "hablara",
+      "hablaras",
+      "hablaras",
+      "hablara",
+      "habláramos",
+      "hablarais",
+      "hablaran",
+    ]);
+    expect(forms.join(" ")).not.toMatch(/se\b/);
+    expect(answersMatch("hablara", "hablase")).toBe(false);
+    expect(studentCopy).not.toMatch(/-se|hablase|ra vs se/i);
+    expect(TENSES.filter((tense) => tense.id === "subjuntivo_imp")).toHaveLength(1);
   });
 });
 
