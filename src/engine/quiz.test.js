@@ -37,6 +37,7 @@ import {
   sameFormKeySet,
   sittingCellMarks,
   sittingIncomplete,
+  sittingVisitCellKeys,
   youKnowThis,
 } from "./mastery.js";
 import { namedLevels } from "./levels.js";
@@ -454,8 +455,9 @@ describe("recap hero", () => {
     const after = [...prior, typed("presente", "yo", true)];
     expect(formState(after, spec())).toBe("learning");
     const story = recapStory([item], after);
-    expect(story.line).toMatch(/Presente · yo/);
-    expect(story.line).toMatch(/still learning/);
+    expect(story.line).toBe(RECAP_SAME_TEN);
+    expect(story.line).not.toMatch(/sitting|hits toward knowing|you know this|still learning/i);
+    expect(story.pips).toBe("5/5");
     expect(story.next).toBe("Play those squares again.");
     expect(story.action).toBe("again");
   });
@@ -1067,6 +1069,51 @@ describe("sitting keys lock type and ending", () => {
       expectSittingSet(items, sitting);
       attempts = playClean(items, attempts);
     }
+  });
+
+  it("walks sittingKeys row-major and keeps visit wells lit without owned rust", () => {
+    const sitting = [
+      "indicative:preterito:yo:regular:er_ir",
+      "indicative:presente:el:regular:er_ir",
+      "indicative:presente:nos:regular:ar",
+      "indicative:presente:tu:regular:er_ir",
+      "indicative:presente:ellos:regular:er_ir",
+      "indicative:preterito:tu:regular:ar",
+      "indicative:preterito:nos:regular:er_ir",
+      "indicative:presente:yo:regular:ar",
+      "indicative:preterito:el:regular:er_ir",
+      "indicative:preterito:ellos:regular:er_ir",
+    ];
+    const items = playAgainRound(sitting, DEFAULT_SETTINGS, [], mulberry32(3));
+    expectSittingSet(items, sitting);
+    const order = items.map((item) => `${item.tense}:${item.person}`);
+    expect(order).toEqual([
+      "presente:yo",
+      "presente:tu",
+      "presente:el",
+      "presente:nos",
+      "presente:ellos",
+      "preterito:yo",
+      "preterito:tu",
+      "preterito:el",
+      "preterito:nos",
+      "preterito:ellos",
+    ]);
+    const attempts = playClean(items);
+    const wells = sittingVisitCellKeys(attempts, sitting);
+    expect(wells.size).toBe(10);
+    expect(roundCellState("presente", "yo", items[0], wells)).toBe("answered-now");
+    expect(sittingCellMarks(attempts, "presente", "yo", sitting)).toBe(1);
+    const board = readFileSync(join(dirname(fileURLToPath(import.meta.url)), "../components/Board.jsx"), "utf8");
+    expect(board).toMatch(/sittingVisitCellKeys/);
+    expect(board).toMatch(/sittingCellMarks/);
+    expect(board).toMatch(/is-land/);
+    expect(board).not.toMatch(/color-owned|cell-owned/);
+    const play = readFileSync(join(dirname(fileURLToPath(import.meta.url)), "../components/Play.jsx"), "utf8");
+    expect(play).toMatch(/sittingKeys=\{sittingKeys\}/);
+    expect(play).toMatch(/is-flick-col/);
+    expect(play).toMatch(/setLand/);
+    expect(RECAP_SAME_TEN).toBe("Same 10. Fill the wells.");
   });
 
   it("does not duplicate or drop a sitting key when lastCells is corrupted", () => {

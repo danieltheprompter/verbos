@@ -6,7 +6,7 @@ import {
   columnLabels,
   roundCellState,
 } from "../engine/board.js";
-import { sittingCellMarks } from "../engine/mastery.js";
+import { sittingCellMarks, sittingVisitCellKeys } from "../engine/mastery.js";
 
 export function Board({
   settings,
@@ -16,13 +16,14 @@ export function Board({
   current,
   recap = false,
   land = null,
-  flick = null,
   lockIn = false,
 }) {
   const columns = columnLabels(settings);
   const rows = packTenses.filter((tense) => settings.tenses.includes(tense.id));
-  const answered = answeredCellKeys(items);
-
+  const answered = new Set([
+    ...answeredCellKeys(items),
+    ...sittingVisitCellKeys(attempts, sittingKeys),
+  ]);
   return (
     <div className={`board-wrap${recap ? " is-recap" : ""}`}>
       <div
@@ -32,24 +33,16 @@ export function Board({
       >
         <div className="board-corner" />
         {columns.map((column) => (
-          <div
-            className={`board-col${
-              flick?.axis === "col" && flick.person === column.id ? " is-flick is-flick-col" : ""
-            }`}
-            key={column.id}
-          >
+          <div className="board-col" key={column.id}>
             {column.lines.map((line) => (
               <span key={line}>{line}</span>
             ))}
           </div>
         ))}
         {rows.map((row) => {
-          const rowFlick = flick?.axis === "row" && flick.tense === row.id;
           return (
             <div className="board-row-wrap" key={row.id}>
-              <div
-                className={`board-row-label${rowFlick ? " is-flick is-flick-row" : ""}`}
-              >
+              <div className="board-row-label">
                 {row.boardLabel}
               </div>
               {columns.map((column) => {
@@ -60,15 +53,13 @@ export function Board({
                 const isLand = Boolean(
                   land && land.tense === row.id && land.person === column.id,
                 );
-                const colFlick = flick?.axis === "col" && flick.person === column.id;
-                const axis = colFlick ? "col" : rowFlick ? "row" : null;
-                const marks = recap ? sittingCellMarks(attempts, row.id, column.id, sittingKeys) : 0;
+                const marks = recap
+                  ? 0
+                  : sittingCellMarks(attempts, row.id, column.id, sittingKeys);
                 return (
                   <div
                     key={column.id}
-                    className={`cell cell-${state}${isLand ? " is-land" : ""}${
-                      axis ? ` is-flick is-flick-${axis}` : ""
-                    }`}
+                    className={`cell cell-${state}${isLand ? " is-land" : ""}`}
                     title={`${row.label} · ${column.label}`}
                   >
                     {marks ? (
@@ -85,7 +76,7 @@ export function Board({
           );
         })}
       </div>
-      {recap ? null : <p className="board-note">{BOARD_NOTE}</p>}
+      {false ? <p className="board-note">{BOARD_NOTE}</p> : null}
     </div>
   );
 }

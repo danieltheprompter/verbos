@@ -1,5 +1,5 @@
 import { ROUND_SIZE } from "./config.js";
-import { cellKey, cellPips, cellsFor, sameBoard } from "./board.js";
+import { cellKey, cellPips, cellsFor, columnPersons, sameBoard } from "./board.js";
 import { moodOf, pack, tenses as packTenses, tenseFor, timeOf } from "./pack.js";
 import { lastMiss, miniCellState } from "./levels.js";
 import {
@@ -131,7 +131,16 @@ export function mapSittingKeys(keys, settings, attempts = [], rng = Math.random)
   const verbs = verbsForSettings(settings);
   const items = [];
   const used = new Set();
-  for (const key of shuffle(unique, rng)) {
+  const rows = packTenses.map((tense) => tense.id);
+  const cols = columnPersons(settings);
+  const walk = [...unique].sort((left, right) => {
+    const a = parseFormKey(left);
+    const b = parseFormKey(right);
+    const row = rows.indexOf(tenseFor(a.mood, a.time)) - rows.indexOf(tenseFor(b.mood, b.time));
+    if (row) return row;
+    return cols.indexOf(a.person) - cols.indexOf(b.person);
+  });
+  for (const key of walk) {
     const spec = parseFormKey(key);
     const tense = tenseFor(spec.mood, spec.time);
     if (!tense) throw new Error(`sitting key has no tense: ${key}`);

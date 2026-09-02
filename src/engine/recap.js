@@ -1,17 +1,12 @@
 import {
-  FORM_COPY,
   MASTERY_MIN,
   RECAP_CLEAN,
   RECAP_HEAD,
   RECAP_NEXT_AGAIN,
-  RECAP_NEXT_MAP,
-  RECAP_NEXT_REST,
-  RECAP_ROUND1,
   RECAP_SAME_TEN,
-  RECAP_STILL,
 } from "./config.js";
-import { formState, itemFormKey, parseFormKey, sameFormKeySet, typedAttemptsFor } from "./mastery.js";
-import { moodOf, personLabel, tenseLabel, timeOf } from "./pack.js";
+import { formState, itemFormKey, parseFormKey, typedAttemptsFor } from "./mastery.js";
+import { moodOf, timeOf } from "./pack.js";
 
 function specOf(item) {
   return {
@@ -21,17 +16,6 @@ function specOf(item) {
     type: item.type || item.verb_type,
     ending: item.ending_pattern || item.ending,
   };
-}
-
-function cellName(item) {
-  return `${tenseLabel(item.tense)} · ${personLabel(item.person)}`;
-}
-
-function listNames(names) {
-  const unique = [...new Set(names)];
-  if (unique.length === 1) return unique[0];
-  if (unique.length === 2) return `${unique[0]} and ${unique[1]}`;
-  return `${unique[0]}, ${unique[1]}, and ${unique.length - 2} more`;
 }
 
 function priorAttempts(attempts, items) {
@@ -50,7 +34,7 @@ export function recapChanges(items, attempts) {
     const from = formState(prior, spec);
     const to = formState(attempts, spec);
     if (from !== to) {
-      changes.push({ name: cellName(item), from, to });
+      changes.push({ from, to });
     }
   }
   return changes;
@@ -66,68 +50,15 @@ export function recapHitsToward(attempts, keys = []) {
 }
 
 export function recapStory(items = [], attempts = [], sittingKeys = []) {
-  const prior = priorAttempts(attempts, items);
-  const changes = recapChanges(items, attempts);
   const keys = sittingKeys.length ? sittingKeys : items.map(itemFormKey);
   const toward = recapHitsToward(attempts, keys);
-  const pips = { pips: toward.label, hits: toward.hits, need: toward.need };
-  const firstVisit = items.every((item) => typedAttemptsFor(prior, specOf(item)).length === 0);
-  const stillNotEnough = items.every((item) => formState(attempts, specOf(item)) === "not_enough");
-  const minted = changes.filter((change) => change.to === "know");
-  const learning = changes.filter((change) => change.to === "learning");
-  const leftover = items.some((item) => formState(attempts, specOf(item)) !== "know");
-
   const clean = items.length > 0 && items.every((item) => item.correct);
-  const head = clean ? RECAP_CLEAN : RECAP_HEAD;
-
-  if (firstVisit && stillNotEnough) {
-    return {
-      head,
-      line: RECAP_ROUND1,
-      ...pips,
-      next: RECAP_NEXT_AGAIN,
-      action: "again",
-    };
-  }
-
-  if (stillNotEnough && sameFormKeySet(items.map(itemFormKey), keys)) {
-    return {
-      head,
-      line: RECAP_SAME_TEN,
-      ...pips,
-      next: RECAP_NEXT_AGAIN,
-      action: "again",
-    };
-  }
-
-  if (minted.length) {
-    const names = listNames(minted.map((change) => change.name));
-    const verb = minted.length === 1 ? "is" : "are";
-    return {
-      head,
-      line: `${names} ${verb} ${FORM_COPY.know} — ${leftover ? RECAP_NEXT_REST : RECAP_NEXT_MAP}`,
-      ...pips,
-      next: leftover ? RECAP_NEXT_REST : RECAP_NEXT_MAP,
-      action: leftover ? "again" : "map",
-    };
-  }
-
-  if (learning.length) {
-    const names = listNames(learning.map((change) => change.name));
-    const verb = learning.length === 1 ? "is" : "are";
-    return {
-      head,
-      line: `${names} ${verb} ${FORM_COPY.learning} — ${RECAP_NEXT_AGAIN}`,
-      ...pips,
-      next: RECAP_NEXT_AGAIN,
-      action: "again",
-    };
-  }
-
   return {
-    head,
-    line: RECAP_STILL,
-    ...pips,
+    head: clean ? RECAP_CLEAN : RECAP_HEAD,
+    line: RECAP_SAME_TEN,
+    pips: toward.label,
+    hits: toward.hits,
+    need: toward.need,
     next: RECAP_NEXT_AGAIN,
     action: "again",
   };

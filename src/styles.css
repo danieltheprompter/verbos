@@ -385,13 +385,11 @@ p {
   }
 }
 
-.cell.is-flick-col,
-.board-col.is-flick-col {
+.answer.is-flick-col {
   animation: flick-x var(--motion-flick) var(--motion-ease);
 }
 
-.cell.is-flick-row,
-.board-row-label.is-flick-row {
+.answer.is-flick-row {
   animation: flick-y var(--motion-flick) var(--motion-ease);
 }
 

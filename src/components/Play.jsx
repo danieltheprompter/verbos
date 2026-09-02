@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { CONTENT_VERSION, PROFILE_TITLE, RECAP_BEAT_MS, WARMUP_BELL_NOTE, WORDMARK } from "../engine/config.js";
+import { CONTENT_VERSION, RECAP_BEAT_MS, WARMUP_BELL_NOTE, WORDMARK } from "../engine/config.js";
 import { moodOf, pack, personLabel, tenseLabel, timeOf } from "../engine/pack.js";
 import { answersMatch, isBlankAnswer } from "../engine/check.js";
 import { explainMiss } from "../engine/miss.js";
@@ -144,19 +144,14 @@ export function Play({
     const miss = ok ? null : explainMiss(item.expected, raw, item);
     setResult({ ok, expected: item.expected, miss });
     setShowMiss(Boolean(miss));
-    if (ok) {
-      setLand({ tense: item.tense, person: item.person });
-    } else if (miss?.kind === "person") {
-      pulse({ axis: "col", person: item.person }, "");
-    } else if (miss?.kind === "time") {
-      const onBoard = settings.tenses.includes(miss.other);
-      const row = onBoard
-        ? miss.other
-        : settings.tenses.find((tense) => tense !== item.tense) || item.tense;
-      pulse({ axis: "row", tense: row }, "");
-    } else if (miss?.kind === "accent") {
+    setLand({ tense: item.tense, person: item.person });
+    if (!ok && miss?.kind === "person") {
+      pulse({ axis: "col" }, "");
+    } else if (!ok && miss?.kind === "time") {
+      pulse({ axis: "row" }, "");
+    } else if (!ok && miss?.kind === "accent") {
       pulse(null, "accent");
-    } else if (miss?.kind === "stem") {
+    } else if (!ok && miss?.kind === "stem") {
       pulse(null, "stem");
     }
     if (index + 1 >= items.length) setLockIn(true);
@@ -228,7 +223,6 @@ export function Play({
           sittingKeys={sittingKeys}
           recap
         />
-        {story.pips ? <p className="recap-pips">{story.pips}</p> : null}
         {warmup ? null : <p className="recap-sub">{story.line}</p>}
         {beat === "go" ? (
           <div className="home-actions">
@@ -253,16 +247,7 @@ export function Play({
               <button className="btn btn-ghost" type="button" onClick={onHome}>
                 Done
               </button>
-            ) : (
-              <>
-                <button className="btn btn-ghost" type="button" onClick={onProgress}>
-                  {PROFILE_TITLE}
-                </button>
-                <button className="btn btn-ghost" type="button" onClick={onCustomize}>
-                  Customize
-                </button>
-              </>
-            )}
+            ) : null}
           </div>
         ) : null}
       </section>
@@ -278,9 +263,10 @@ export function Play({
       <Board
         settings={settings}
         items={items}
+        attempts={log}
+        sittingKeys={sittingKeys}
         current={item}
         land={land}
-        flick={flick}
         lockIn={lockIn}
       />
 
@@ -334,7 +320,9 @@ export function Play({
         >
           <input
             ref={inputRef}
-            className={`answer${motion === "accent" ? " is-drop" : ""}`}
+            className={`answer${motion === "accent" ? " is-drop" : ""}${
+              flick?.axis === "col" ? " is-flick-col" : flick?.axis === "row" ? " is-flick-row" : ""
+            }`}
             data-result={result ? (result.ok ? "ok" : "bad") : undefined}
             value={value}
             onChange={(event) => setValue(event.target.value)}

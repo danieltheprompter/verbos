@@ -1,5 +1,5 @@
 import { FORM_COPY, MASTERY_MIN, MASTERY_NEED, MASTERY_WINDOW, PIP_SLOTS } from "./constants.js";
-import { moodOf, timeOf } from "./pack.js";
+import { moodOf, tenseFor, timeOf } from "./pack.js";
 import { cellKey, cellsFor } from "./board.js";
 import { endingPattern, verbType, verbsForSettings } from "./verbs.js";
 
@@ -112,6 +112,17 @@ export function sittingCellMarks(attempts = [], tense, person, sittingKeys = [],
   const key = sittingKeyForCell(sittingKeys, tense, person);
   if (!key) return 0;
   return Math.min(slots, typedAttemptsFor(attempts, parseFormKey(key)).length);
+}
+
+export function sittingVisitCellKeys(attempts = [], sittingKeys = []) {
+  const keys = new Set();
+  for (const key of sittingKeys || []) {
+    const spec = parseFormKey(key);
+    if (!typedAttemptsFor(attempts, spec).length) continue;
+    const tense = tenseFor(spec.mood, spec.time);
+    if (tense) keys.add(cellKey({ tense, person: spec.person }));
+  }
+  return keys;
 }
 
 export function typedAttemptsFor(attempts, spec) {
