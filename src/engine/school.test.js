@@ -543,8 +543,12 @@ describe("Next Play and projector recap", () => {
     expect(namedLevels(contrast).find((level) => level.id === "contrast").checked).toBe(true);
     expect(namedLevels(contrast).find((level) => level.id === "contrast").lock).toBe(false);
     expect(nextPlayLine(contrast, true)).toMatch(new RegExp(`^${NEXT_PLAY_LEGEND}:`));
-    expect(NEXT_PLAY_SUGGEST).toMatch(/not you know this/);
-    expect(NEXT_PLAY_SUGGEST).toMatch(/Customize/);
+    expect(NEXT_PLAY_SUGGEST).toBe(
+      "Play the ones they still miss. Another mood is in Customize.",
+    );
+    expect(NEXT_PLAY_SUGGEST).not.toMatch(/you know this|sitting|hits toward|meters|when the class/i);
+    expect(RECAP_NEXT_REST).toBe("Play the ones they still miss.");
+    expect(RECAP_NEXT_REST).not.toMatch(/you know this|sitting|hits toward|meters/i);
     const visits = board.map((cell) => typed(cell.tense, cell.person, true));
     const knownPresenteYo = [
       ...knownAt("presente", "yo"),

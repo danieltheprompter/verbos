@@ -21,13 +21,13 @@ export const RECAP_ROUND1 = RECAP_SUB;
 export const RECAP_STILL = RECAP_SUB;
 export const RECAP_SAME_TEN = "Same 10. Fill the wells.";
 export const RECAP_NEXT_AGAIN = "Play those squares again.";
-export const RECAP_NEXT_REST = "Play the ones that are not you know this.";
+export const RECAP_NEXT_REST = "Play the ones they still miss.";
 export const RECAP_NEXT_MAP = "Open What you know.";
 export const YOU = "You";
 export const WHAT_YOU_KNOW = "What you know";
 
 export const FARM_NOTE =
-  "These are forms you already know. Add another time or kind of verb.";
+  "They already know these. Add another time or kind of verb.";
 
 export const PROFILE_TITLE = "You, this device";
 export const PROFILE_LEDE = "This device. Not an account.";
@@ -53,7 +53,7 @@ export const CLASS_SET_BAD = "Could not load that class set.";
 export const CLASS_SET_OK = "Loaded on this device.";
 export const CLEAR_ATLAS = "Clear the atlas";
 export const NEXT_PLAY_SUGGEST =
-  "Play the ones that are not you know this — next mood is in Customize when the class is there.";
+  "Play the ones they still miss. Another mood is in Customize.";
 
 export const FORM_STATE = {
   not_enough: "not_enough",
