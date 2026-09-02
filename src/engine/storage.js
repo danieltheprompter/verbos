@@ -258,7 +258,11 @@ export function saveSettings(state, settings) {
   const current = ensureProfiles(state);
   const next = {
     ...current,
-    settings: normalizeSettings(settings),
+    settings: normalizeSettings({
+      ...settings,
+      timer: current.settings.timer,
+      timerSec: current.settings.timerSec,
+    }),
     hasClassSet: true,
     sittingKeys: [],
     warmupBell: deviceWarmupBell(current),

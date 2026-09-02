@@ -292,6 +292,15 @@ describe("warm-up and class set", () => {
     expect(home).not.toMatch(/useState\(false\)/);
     expect(home.indexOf("warmup-bell")).toBeGreaterThan(home.indexOf("hasClassSet ?"));
     expect(home.indexOf("warmup-bell")).toBeGreaterThan(home.indexOf(") : null}"));
+    const actions = home.split('className="home-actions"')[1] || "";
+    expect(actions.indexOf("{WARMUP_BELL}")).toBeGreaterThan(actions.indexOf("{WARMUP}"));
+    const customize = readFileSync(join(root, "components/Customize.jsx"), "utf8");
+    expect(customize).toMatch(/classSetFromSettings/);
+    expect(customize).not.toMatch(/warmupBell|WARMUP_BELL|5:00/);
+    expect(customize).not.toMatch(/Per item|<strong>Timer<\/strong>|timerSec/);
+    const classSet = readFileSync(join(root, "components/ClassSet.jsx"), "utf8");
+    expect(classSet).toMatch(/classSetFromSettings/);
+    expect(classSet).not.toMatch(/timer|warmupBell|5:00/);
     const app = readFileSync(join(root, "App.jsx"), "utf8");
     expect(app).toMatch(/warmupBell/);
     expect(app).toMatch(/saveWarmupBell/);
@@ -347,6 +356,14 @@ describe("warm-up and class set", () => {
     expect(encodeClassSet({ ...payload, timer: true, timerSec: 8, warmupBell: true, mc: true })).not.toMatch(
       /timer|warmupBell|"mc"/,
     );
+    expect(CLASS_SET_FIELDS).toEqual([
+      "types",
+      "tenses",
+      "pickedVerbs",
+      "customList",
+      "address",
+      "extraColumn",
+    ]);
     expect(CLASS_SET_FIELDS).not.toEqual(expect.arrayContaining(["timer", "timerSec", "warmupBell", "mc"]));
     expect(parseClassSet(JSON.stringify({ ...payload, timer: true, warmupBell: false }))).not.toHaveProperty(
       "timer",
@@ -471,7 +488,10 @@ describe("warm-up and class set", () => {
       timerSec: 8,
     });
     expect(state.warmupBell).toBe(true);
+    expect(state.settings.timer).toBe(beforeTimer);
+    expect(state.settings.timerSec).toBe(beforeSec);
     expect(JSON.parse(localStorage.getItem(STORAGE_KEY)).warmupBell).toBe(true);
+    expect(JSON.parse(localStorage.getItem(STORAGE_KEY)).settings.timer).toBe(beforeTimer);
     expect(loadState().warmupBell).toBe(true);
     expect(timerFailsItem(timerExpireAction({ session: true }))).toBe(false);
     const profile = readFileSync(join(root, "components/Profile.jsx"), "utf8");

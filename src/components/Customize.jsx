@@ -201,31 +201,6 @@ export function Customize({ settings, attempts = [], onSave, onBack, onProgress,
             Does not count toward knowing a form
           </span>
         </label>
-        <label className="switch">
-          <input
-            type="checkbox"
-            checked={draft.timer}
-            onChange={(event) => setDraft((prev) => ({ ...prev, timer: event.target.checked }))}
-          />
-          <span>
-            <strong>Timer</strong>
-            Per item
-          </span>
-        </label>
-        {draft.timer ? (
-          <div className="chips">
-            {[8, 12, 16].map((sec) => (
-              <button
-                key={sec}
-                type="button"
-                className={`chip ${draft.timerSec === sec ? "is-on" : ""}`}
-                onClick={() => setDraft((prev) => ({ ...prev, timerSec: sec }))}
-              >
-                {sec}s
-              </button>
-            ))}
-          </div>
-        ) : null}
       </fieldset>
 
       {onApplySet ? (
