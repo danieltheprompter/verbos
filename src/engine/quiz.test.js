@@ -377,6 +377,32 @@ describe("round board ignores mastery", () => {
     );
   });
 
+  it("fills the well on a miss so the board can drop the lecture", () => {
+    const sitting = ["indicative:presente:yo:regular:ar"];
+    const miss = typed("presente", "yo", false);
+    const hit = typed("presente", "yo", true);
+    expect(sittingVisitCellKeys([miss], sitting).has("presente:yo")).toBe(true);
+    expect(sittingVisitCellKeys([hit], sitting).has("presente:yo")).toBe(true);
+    expect(sittingCellMarks([miss], "presente", "yo", sitting)).toBe(1);
+    expect(sittingCellMarks([miss, hit], "presente", "yo", sitting)).toBe(2);
+    const items = [{ tense: "presente", person: "yo", correct: false }];
+    const wells = new Set([
+      ...answeredCellKeys(items),
+      ...sittingVisitCellKeys([miss], sitting),
+    ]);
+    expect(wells.has("presente:yo")).toBe(true);
+    expect(roundCellState("presente", "yo", items[0], wells)).toBe("answered-now");
+    const root = join(dirname(fileURLToPath(import.meta.url)), "..");
+    const board = readFileSync(join(root, "components/Board.jsx"), "utf8");
+    expect(board).toMatch(/false \? <p className="board-note">\{BOARD_NOTE\}<\/p>/);
+    const play = readFileSync(join(root, "components/Play.jsx"), "utf8");
+    const judge = play.split("function judge")[1]?.split("function next")[0] || "";
+    expect(judge).toMatch(/item\.correct = ok/);
+    expect(judge).toMatch(/setLand\(\{ tense: item\.tense, person: item\.person \}\)/);
+    expect(judge.indexOf("setLand")).toBeLessThan(judge.indexOf("if (!ok"));
+    expect(play).toMatch(/result\.miss\.message/);
+  });
+
   it("does not treat lifetime attempts as this-round answers", () => {
     const history = [
       { tense: "presente", person: "yo", verb: "hablar", correct: true },

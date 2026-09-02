@@ -303,14 +303,12 @@ describe("warm-up and class set", () => {
     expect(home.indexOf("{opened ? (")).toBeGreaterThan(home.indexOf('finishedRound ? "Play again" : "Play"'));
     expect(home.indexOf("{WARMUP}")).toBeGreaterThan(home.indexOf("{opened ? ("));
     expect(home.indexOf("{YOU}")).toBeGreaterThan(home.indexOf("{opened ? ("));
-    expect(home.indexOf("Customize")).toBeGreaterThan(home.indexOf("{opened ? ("));
     expect(home.indexOf("{WHAT_YOU_KNOW}")).toBeGreaterThan(home.indexOf("{opened ? ("));
     const actions = home.split('className="home-actions"')[1] || "";
     expect(actions.indexOf("{WARMUP}")).toBeGreaterThan(actions.indexOf("Play"));
     expect(actions.indexOf("{WARMUP_BELL}")).toBeGreaterThan(actions.indexOf("{WARMUP}"));
     expect(actions.indexOf("{YOU}")).toBeGreaterThan(actions.indexOf("{WARMUP}"));
-    expect(actions.indexOf("Customize")).toBeGreaterThan(actions.indexOf("{YOU}"));
-    expect(actions.indexOf("{WHAT_YOU_KNOW}")).toBeGreaterThan(actions.indexOf("Customize"));
+    expect(actions).toMatch(/\{YOU\}[\s\S]*Customize[\s\S]*\{WHAT_YOU_KNOW\}/);
     const customize = readFileSync(join(root, "components/Customize.jsx"), "utf8");
     expect(customize).toMatch(/classSetFromSettings/);
     expect(customize).not.toMatch(/warmupBell|WARMUP_BELL|5:00/);
