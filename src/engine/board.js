@@ -86,6 +86,10 @@ export function answeredCellKeys(items = []) {
   );
 }
 
+export function visitPieceCount(sittingMarks = 0, visits = 0, dropped = false) {
+  return Math.max(Number(sittingMarks) || 0, Number(visits) || 0, dropped ? 1 : 0);
+}
+
 export function roundCellState(tense, person, current, answered = new Set()) {
   const key = `${tense}:${person}`;
   const isCurrent = Boolean(current && current.tense === tense && current.person === person);

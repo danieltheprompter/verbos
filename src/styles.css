@@ -1161,10 +1161,11 @@ p {
 
 .cell-marks i,
 .mini-marks i {
-  width: 5px;
-  height: 5px;
+  width: 8px;
+  height: 8px;
   border-radius: 99px;
-  background: rgba(255, 236, 200, 0.88);
+  background: #fff6e4;
+  box-shadow: 0 0 0 1px rgba(20, 12, 8, 0.35);
 }
 
 .mini-marks i {

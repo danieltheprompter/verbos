@@ -36,6 +36,7 @@ export function Play({
   const [sessionLeft, setSessionLeft] = useState(sessionSec);
   const [bell, setBell] = useState(false);
   const [land, setLand] = useState(null);
+  const [visitCounts, setVisitCounts] = useState({});
   const [flick, setFlick] = useState(null);
   const [lockIn, setLockIn] = useState(false);
   const [showMiss, setShowMiss] = useState(false);
@@ -144,6 +145,8 @@ export function Play({
     const miss = ok ? null : explainMiss(item.expected, raw, item);
     setResult({ ok, expected: item.expected, miss });
     setShowMiss(Boolean(miss));
+    const cell = `${item.tense}:${item.person}`;
+    setVisitCounts((prev) => ({ ...prev, [cell]: (prev[cell] || 0) + 1 }));
     setLand({ tense: item.tense, person: item.person });
     if (!ok && miss?.kind === "person") {
       pulse({ axis: "col" }, "");
@@ -222,9 +225,10 @@ export function Play({
           items={items}
           attempts={log}
           sittingKeys={sittingKeys}
+          visitCounts={visitCounts}
           recap
         />
-        <p className="recap-sub">{story.line}</p>
+        <p className="recap-sub">Same 10. Fill the wells.</p>
         {beat === "go" ? (
           <div className="home-actions">
             <button
@@ -266,6 +270,7 @@ export function Play({
         items={items}
         attempts={log}
         sittingKeys={sittingKeys}
+        visitCounts={visitCounts}
         current={item}
         land={land}
         lockIn={lockIn}

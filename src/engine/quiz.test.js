@@ -59,6 +59,7 @@ import {
   roundCellState,
   sameBoard,
   typedPips,
+  visitPieceCount,
 } from "./board.js";
 import { explainMiss } from "./miss.js";
 import { atlasCopyAt, atlasFillName, atlasFillStats, atlasRank, buildAtlas } from "./progress.js";
@@ -386,6 +387,9 @@ describe("round board ignores mastery", () => {
     expect(sittingVisitCellKeys([hit], sitting).has("presente:yo")).toBe(true);
     expect(sittingCellMarks([miss], "presente", "yo", sitting)).toBe(1);
     expect(sittingCellMarks([miss, hit], "presente", "yo", sitting)).toBe(2);
+    expect(visitPieceCount(0, 0, true)).toBe(1);
+    expect(visitPieceCount(0, 1, false)).toBe(1);
+    expect(visitPieceCount(2, 1, true)).toBe(2);
     const items = [{ tense: "presente", person: "yo", correct: false }];
     const wells = new Set([
       ...answeredCellKeys(items),
@@ -396,7 +400,9 @@ describe("round board ignores mastery", () => {
     const root = join(dirname(fileURLToPath(import.meta.url)), "..");
     const board = readFileSync(join(root, "components/Board.jsx"), "utf8");
     expect(board).toMatch(/false \? <p className="board-note">\{BOARD_NOTE\}<\/p>/);
-    expect(board).toMatch(/answeredHere \? 1 : 0/);
+    expect(board).toMatch(/visitPieceCount/);
+    expect(board).toMatch(/visitCounts/);
+    expect(board).toMatch(/data-marks/);
     expect(board).toMatch(/sittingCellMarks/);
     const play = readFileSync(join(root, "components/Play.jsx"), "utf8");
     const judge = play.split("function judge")[1]?.split("function next")[0] || "";
@@ -404,7 +410,9 @@ describe("round board ignores mastery", () => {
     expect(judge).toMatch(/setLand\(\{ tense: item\.tense, person: item\.person \}\)/);
     expect(judge.indexOf("setLand")).toBeLessThan(judge.indexOf("if (!ok"));
     expect(play).toMatch(/result\.miss\.message/);
-    expect(play).toMatch(/is-flick-col|data-result/);
+    expect(play).toMatch(/setVisitCounts/);
+    expect(play).toMatch(/Same 10\. Fill the wells\./);
+    expect(play).not.toMatch(/Fill the meters/);
   });
 
   it("does not treat lifetime attempts as this-round answers", () => {

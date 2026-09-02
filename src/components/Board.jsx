@@ -5,6 +5,7 @@ import {
   cellAllowed,
   columnLabels,
   roundCellState,
+  visitPieceCount,
 } from "../engine/board.js";
 import { sittingCellMarks, sittingVisitCellKeys } from "../engine/mastery.js";
 
@@ -17,6 +18,7 @@ export function Board({
   recap = false,
   land = null,
   lockIn = false,
+  visitCounts = {},
 }) {
   const columns = columnLabels(settings);
   const rows = packTenses.filter((tense) => settings.tenses.includes(tense.id));
@@ -60,12 +62,14 @@ export function Board({
                   sittingKeys,
                 );
                 const answeredHere = answered.has(`${row.id}:${column.id}`);
-                const marks = sittingMarks || (answeredHere ? 1 : 0);
+                const visits = visitCounts[`${row.id}:${column.id}`] || 0;
+                const marks = visitPieceCount(sittingMarks, visits, answeredHere || isLand);
                 return (
                   <div
                     key={column.id}
                     className={`cell cell-${state}${isLand ? " is-land" : ""}`}
                     title={`${row.label} · ${column.label}`}
+                    data-marks={marks || undefined}
                   >
                     {marks ? (
                       <span className="cell-marks" aria-hidden="true">

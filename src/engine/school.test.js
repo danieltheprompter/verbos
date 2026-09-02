@@ -564,7 +564,8 @@ describe("Next Play and projector recap", () => {
     expect(play).toMatch(/\{story\.banner\}/);
     expect(play).toMatch(/recap-hdmi/);
     expect(play).toMatch(/\{story\.head\}/);
-    expect(play).toMatch(/\{story\.line\}/);
+    expect(play).toMatch(/Same 10\. Fill the wells\./);
+    expect(play).not.toMatch(/Fill the meters/);
     expect(play).not.toMatch(/recap-pips/);
     expect(play).not.toMatch(/\{story\.pips\}/);
     expect(play).not.toMatch(/Pips \{story\.pips\}/);
