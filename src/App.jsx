@@ -47,14 +47,20 @@ export function App() {
     session = null,
     newSitting = false,
   } = {}) {
-    const from = storeRef.current;
     const roundSettings = mode === "warmup" ? warmupSettings(nextSettings) : nextSettings;
-    const who = activeProfile(from);
+    let from = storeRef.current;
+    let who = activeProfile(from);
+    const recovered = sittingKeysFromAttempts(who.attempts, cellsFor(roundSettings));
+    if (!newSitting && !who.sittingKeys?.length && recovered.length) {
+      from = rememberSitting(from, who.lastCells, { fresh: true, keys: recovered });
+      storeRef.current = from;
+      who = activeProfile(from);
+    }
     const sittingKeys = newSitting
       ? []
       : who.sittingKeys?.length
         ? who.sittingKeys
-        : sittingKeysFromAttempts(who.attempts, cellsFor(roundSettings));
+        : recovered;
     const replayCells = replay && sameBoard(who.lastCells, roundSettings) ? who.lastCells : null;
     const nextItems = buildRound(
       roundSettings,
@@ -68,11 +74,7 @@ export function App() {
       setScreen(mode === "warmup" ? "home" : "customize");
       return;
     }
-    setStore(
-      rememberSitting(from, nextItems, {
-        fresh: Boolean(newSitting) || !who.sittingKeys?.length,
-      }),
-    );
+    setStore(rememberSitting(from, nextItems, { fresh: Boolean(newSitting) }));
     setItems(nextItems);
     setPlayMode(mode);
     setSessionSec(session);

@@ -958,6 +958,13 @@ describe("sitting keys lock type and ending", () => {
     return items.map((item) => ({ ...item, correct: true }));
   }
 
+  function expectSittingSet(items, sitting) {
+    const keys = items.map(itemFormKey);
+    expect(keys).toHaveLength(sitting.length);
+    expect(new Set(keys).size).toBe(sitting.length);
+    expect([...keys].sort()).toEqual([...sitting].sort());
+  }
+
   it("logs the same formKey two rounds in a row; a new key before 5 typed fails", () => {
     const first = buildRound(DEFAULT_SETTINGS, [], mulberry32(7));
     const keys = first.map(itemFormKey);
@@ -1017,10 +1024,7 @@ describe("sitting keys lock type and ending", () => {
         10,
         itemsToCells(first),
       );
-      const keys = items.map(itemFormKey);
-      expect(keys).toHaveLength(10);
-      expect(new Set(keys).size).toBe(10);
-      expect([...keys].sort()).toEqual([...sitting].sort());
+      expectSittingSet(items, sitting);
       attempts = playClean(items, attempts);
     }
   });
@@ -1043,12 +1047,127 @@ describe("sitting keys lock type and ending", () => {
     ];
     const badKeys = [...sitting.slice(0, 9), sitting[0]];
     const round4 = buildRound(DEFAULT_SETTINGS, after3, mulberry32(23), 10, badCells, badKeys);
-    const keys4 = round4.map(itemFormKey);
-    expect(keys4).toHaveLength(10);
-    expect(new Set(keys4).size).toBe(10);
-    expect([...keys4].sort()).toEqual([...sitting].sort());
-    expect(keys4.filter((key) => key === elPresente).length).toBe(1);
-    expect(keys4).toContain(yoPreterito);
+    expectSittingSet(round4, sitting);
+    expect(round4.map(itemFormKey).filter((key) => key === elPresente)).toHaveLength(1);
+    expect(round4.map(itemFormKey)).toContain(yoPreterito);
+  });
+
+  it("fails a rebuilt 10 that duplicates presente el -ar and drops pretérito yo -ar", () => {
+    const sitting = [
+      "indicative:presente:el:regular:ar",
+      "indicative:preterito:yo:regular:ar",
+      "indicative:presente:yo:regular:ar",
+      "indicative:presente:tu:regular:ar",
+      "indicative:presente:nos:regular:er_ir",
+      "indicative:presente:ellos:regular:er_ir",
+      "indicative:preterito:tu:regular:ar",
+      "indicative:preterito:el:regular:ar",
+      "indicative:preterito:nos:regular:er_ir",
+      "indicative:preterito:ellos:regular:er_ir",
+    ];
+    expect(new Set(sitting).size).toBe(10);
+    let attempts = [];
+    for (let round = 0; round < 3; round += 1) {
+      attempts = [
+        ...attempts,
+        ...sitting.map((key) => {
+          const spec = parseFormKey(key);
+          return typed(spec.time, spec.person, true, {
+            verb: spec.ending === "ar" ? "viajar" : "vender",
+            type: spec.type,
+            ending: spec.ending,
+          });
+        }),
+      ];
+    }
+    const badKeys = sitting.map((key) =>
+      key === "indicative:preterito:yo:regular:ar" ? "indicative:presente:el:regular:ar" : key,
+    );
+    expect(new Set(badKeys).size).toBe(9);
+    const badCells = badKeys.map((key) => {
+      const spec = parseFormKey(key);
+      return { tense: spec.time, person: spec.person, type: spec.type, ending: spec.ending };
+    });
+    const round4 = buildRound(DEFAULT_SETTINGS, attempts, mulberry32(23), 10, badCells, []);
+    expectSittingSet(round4, sitting);
+    expect(round4.map(itemFormKey).filter((key) => key === "indicative:presente:el:regular:ar")).toHaveLength(1);
+    expect(round4.map(itemFormKey)).toContain("indicative:preterito:yo:regular:ar");
+  });
+
+  it("persists sittingKeys when the blob dump is empty mid-sitting", () => {
+    const memory = {};
+    globalThis.localStorage = {
+      getItem: (key) => memory[key] ?? null,
+      setItem: (key, value) => {
+        memory[key] = String(value);
+      },
+    };
+    const sitting = [
+      "indicative:presente:el:regular:ar",
+      "indicative:preterito:yo:regular:ar",
+      "indicative:presente:yo:regular:ar",
+      "indicative:presente:tu:regular:ar",
+      "indicative:presente:nos:regular:er_ir",
+      "indicative:presente:ellos:regular:er_ir",
+      "indicative:preterito:tu:regular:ar",
+      "indicative:preterito:el:regular:ar",
+      "indicative:preterito:nos:regular:er_ir",
+      "indicative:preterito:ellos:regular:er_ir",
+    ];
+    const items = sitting.map((key) => {
+      const spec = parseFormKey(key);
+      return {
+        tense: spec.time,
+        person: spec.person,
+        type: spec.type,
+        ending_pattern: spec.ending,
+        verb: spec.ending === "ar" ? "viajar" : "vender",
+      };
+    });
+    let state = rememberSitting(loadState(), items, { fresh: true, keys: sitting });
+    expect(JSON.parse(localStorage.getItem(STORAGE_KEY)).sittingKeys).toEqual(sitting);
+    state = {
+      ...state,
+      sittingKeys: [],
+      profiles: state.profiles.map((profile) =>
+        profile.id === state.activeProfileId ? { ...profile, sittingKeys: [] } : profile,
+      ),
+    };
+    const attempts = sitting.map((key) => {
+      const spec = parseFormKey(key);
+      return typed(spec.time, spec.person, true, {
+        verb: spec.ending === "ar" ? "viajar" : "vender",
+        type: spec.type,
+        ending: spec.ending,
+      });
+    });
+    state = {
+      ...state,
+      profiles: state.profiles.map((profile) =>
+        profile.id === state.activeProfileId ? { ...profile, attempts } : profile,
+      ),
+    };
+    expect(activeProfile(state).sittingKeys).toEqual([]);
+    const duplicateRebuild = [
+      ...items.filter((item) => !(item.tense === "preterito" && item.person === "yo")),
+      items.find((item) => item.tense === "presente" && item.person === "el"),
+    ];
+    expect(new Set(duplicateRebuild.map(itemFormKey)).size).toBe(9);
+    state = rememberSitting(state, duplicateRebuild, { fresh: true });
+    const blob = JSON.parse(localStorage.getItem(STORAGE_KEY));
+    expect(blob.sittingKeys).toHaveLength(10);
+    expect(new Set(blob.sittingKeys).size).toBe(10);
+    expect([...blob.sittingKeys].sort()).toEqual([...sitting].sort());
+    expect(activeProfile(state).sittingKeys).toHaveLength(10);
+    const next = buildRound(
+      DEFAULT_SETTINGS,
+      attempts,
+      mulberry32(4),
+      10,
+      duplicateRebuild,
+      blob.sittingKeys,
+    );
+    expectSittingSet(next, sitting);
   });
 
   it("writes the 10 sittingKeys into the localStorage blob during a sitting", () => {

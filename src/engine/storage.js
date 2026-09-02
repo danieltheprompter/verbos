@@ -2,7 +2,8 @@ import { CONTENT_VERSION, STORAGE_KEY } from "./config.js";
 import { DEFAULT_SETTINGS, typesFromLegacyPool } from "./constants.js";
 import { settingsLookLikeClassSet } from "./classSet.js";
 import { moodOf, pack, timeOf } from "./pack.js";
-import { itemFormKey, uniqueFormKeys } from "./mastery.js";
+import { cellsFor } from "./board.js";
+import { itemFormKey, sittingKeysFromAttempts, uniqueFormKeys } from "./mastery.js";
 import { endingPattern, verbType } from "./verbs.js";
 
 function normalizeSettings(raw = {}) {
@@ -259,21 +260,42 @@ export function saveWarmupBell(state, on) {
   return next;
 }
 
-export function rememberSitting(state, items, { fresh = false } = {}) {
+export function rememberSitting(state, items, { fresh = false, keys: pinKeys } = {}) {
   const profile = activeProfile(state);
-  const incoming = uniqueFormKeys((items || []).map((item) => (typeof item === "string" ? item : itemFormKey(item))));
+  const raw = pinKeys?.length
+    ? pinKeys
+    : (items || []).map((item) => (typeof item === "string" ? item : itemFormKey(item)));
+  const incoming = uniqueFormKeys(raw);
   const existing = uniqueFormKeys(profile.sittingKeys);
-  const keys = !fresh && existing.length ? existing : incoming;
+  const recovered = uniqueFormKeys(
+    sittingKeysFromAttempts(profile.attempts, cellsFor(ensureProfiles(state).settings)),
+  );
+  const duplicateRebuild = raw.length > 0 && incoming.length !== raw.length;
+  const keys = !fresh && existing.length
+    ? existing
+    : duplicateRebuild && existing.length
+      ? existing
+      : duplicateRebuild && recovered.length
+        ? recovered
+        : incoming.length
+          ? incoming
+          : existing.length
+            ? existing
+            : recovered;
   const atlasKeys = profile.atlasKeys?.length ? profile.atlasKeys : keys;
-  const next = {
-    ...patchActive(state, {
-      lastCells: (items || []).map((cell) => ({
+  const cells = (items || []).filter((cell) => cell && cell.tense && cell.person);
+  const lastCells = cells.length
+    ? cells.map((cell) => ({
         tense: cell.tense,
         person: cell.person,
         type: cell.type || cell.verb_type,
         ending: cell.ending_pattern || cell.ending,
         verb: cell.verb,
-      })),
+      }))
+    : profile.lastCells;
+  const next = {
+    ...patchActive(state, {
+      lastCells,
       sittingKeys: keys,
       atlasKeys,
     }),
