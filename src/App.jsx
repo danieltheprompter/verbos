@@ -5,9 +5,9 @@ import { Home } from "./components/Home.jsx";
 import { Play } from "./components/Play.jsx";
 import { Profile } from "./components/Profile.jsx";
 import { Progress } from "./components/Progress.jsx";
-import { sameBoard } from "./engine/board.js";
+import { cellsFor, sameBoard } from "./engine/board.js";
 import { DEFAULT_SETTINGS, WARMUP_BELL_SEC } from "./engine/constants.js";
-import { allSelectedKnown } from "./engine/mastery.js";
+import { allSelectedKnown, sittingKeysFromAttempts } from "./engine/mastery.js";
 import { nextPlayLine } from "./engine/levels.js";
 import { buildRound } from "./engine/round.js";
 import { warmupSettings } from "./engine/warmup.js";
@@ -51,7 +51,11 @@ export function App() {
     const from = storeRef.current;
     const roundSettings = mode === "warmup" ? warmupSettings(nextSettings) : nextSettings;
     const who = activeProfile(from);
-    const sittingKeys = newSitting ? [] : who.sittingKeys;
+    const sittingKeys = newSitting
+      ? []
+      : who.sittingKeys?.length
+        ? who.sittingKeys
+        : sittingKeysFromAttempts(who.attempts, cellsFor(roundSettings));
     const replayCells = replay && sameBoard(who.lastCells, roundSettings) ? who.lastCells : null;
     const nextItems = buildRound(
       roundSettings,
@@ -65,7 +69,7 @@ export function App() {
       setScreen(mode === "warmup" ? "home" : "customize");
       return;
     }
-    const keepSitting = !newSitting && sittingKeys?.length;
+    const keepSitting = !newSitting && who.sittingKeys?.length;
     setStore(keepSitting ? rememberCells(from, nextItems) : rememberSitting(from, nextItems));
     setItems(nextItems);
     setPlayMode(mode);

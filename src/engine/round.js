@@ -1,4 +1,4 @@
-import { ROUND_SIZE } from "./config.js";
+import { MASTERY_MIN, ROUND_SIZE } from "./config.js";
 import { cellKey, cellPips, cellsFor, sameBoard } from "./board.js";
 import { moodOf, pack, tenses as packTenses, tenseFor, timeOf } from "./pack.js";
 import { lastMiss, miniCellState } from "./levels.js";
@@ -9,6 +9,8 @@ import {
   isVisited,
   parseFormKey,
   sittingIncomplete,
+  sittingKeysFromAttempts,
+  typedAttemptsFor,
   typeKnownAtCell,
   youKnowThis,
 } from "./mastery.js";
@@ -112,10 +114,19 @@ function keysFromReplayCells(cells = []) {
   return keys;
 }
 
+function openSittingKeys(attempts, keys) {
+  return keys.filter((key) => typedAttemptsFor(attempts, parseFormKey(key)).length < MASTERY_MIN);
+}
+
 function fillFromSittingKeys(keys, verbs, rng, size, attempts = []) {
+  if (!keys.length) return [];
+  const order = [];
+  while (order.length < size) {
+    order.push(...shuffle(keys, rng));
+  }
   const items = [];
   const used = new Set();
-  for (const key of shuffle(keys, rng).slice(0, size)) {
+  for (const key of order.slice(0, size)) {
     const spec = parseFormKey(key);
     const tense = tenseFor(spec.mood, spec.time);
     const verb = pickVerbForSpec(verbs, spec, used, rng, lastVerbOnKey(attempts, spec));
@@ -239,9 +250,15 @@ export function buildRound(
   if (!verbs.length || !cells.length) return [];
   if (allSelectedKnown(settings, attempts)) return [];
 
-  const lockedKeys = sittingKeys?.length ? sittingKeys : keysFromReplayCells(replay || []);
+  const fromReplay = keysFromReplayCells(replay || []);
+  const lockedKeys = sittingKeys?.length
+    ? sittingKeys
+    : fromReplay.length === cells.length
+      ? fromReplay
+      : sittingKeysFromAttempts(attempts, cells);
   if (sittingIncomplete(attempts, lockedKeys)) {
-    return fillFromSittingKeys(lockedKeys, verbs, rng, size, attempts);
+    const open = openSittingKeys(attempts, lockedKeys);
+    if (open.length) return fillFromSittingKeys(open, verbs, rng, size, attempts);
   }
 
   // Round 1 / still nothing you-know-this: one visit per cell, no retries stuffed in.

@@ -1,6 +1,6 @@
 import { FORM_COPY, MASTERY_MIN, MASTERY_NEED, MASTERY_WINDOW, PIP_SLOTS } from "./constants.js";
 import { moodOf, timeOf } from "./pack.js";
-import { cellsFor } from "./board.js";
+import { cellKey, cellsFor } from "./board.js";
 import { endingPattern, verbType, verbsForSettings } from "./verbs.js";
 
 export function attemptType(attempt) {
@@ -59,6 +59,25 @@ export function sittingIncomplete(attempts, sittingKeys = []) {
   return sittingKeys.some(
     (key) => typedAttemptsFor(attempts, parseFormKey(key)).length < MASTERY_MIN,
   );
+}
+
+export function sittingKeysFromAttempts(attempts = [], cells = []) {
+  if (!cells.length) return [];
+  const order = cells.map(cellKey);
+  const first = new Map();
+  for (const attempt of attempts) {
+    if (!attempt.typed) continue;
+    const hasVerb = Boolean(attempt.verb);
+    const hasPair = Boolean(
+      (attempt.type || attempt.verb_type) && (attempt.ending_pattern || attempt.ending),
+    );
+    if (!hasVerb && !hasPair) continue;
+    const ck = cellKey(attempt);
+    if (!order.includes(ck) || first.has(ck)) continue;
+    first.set(ck, itemFormKey(attempt));
+  }
+  if (first.size !== cells.length) return [];
+  return order.map((ck) => first.get(ck));
 }
 
 export function sittingKnownCount(attempts, sittingKeys = []) {

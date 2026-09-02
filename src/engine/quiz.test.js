@@ -1001,6 +1001,78 @@ describe("sitting keys lock type and ending", () => {
     );
   });
 
+  it("serializes formKeys from two consecutive Play-agains as the same set", () => {
+    const first = buildRound(DEFAULT_SETTINGS, [], mulberry32(7));
+    const keys1 = [...first.map(itemFormKey)].sort();
+    expect(keys1).toHaveLength(10);
+    const round1 = playClean(first);
+    const second = buildRound(DEFAULT_SETTINGS, round1, mulberry32(11), 10, itemsToCells(first));
+    const keys2 = [...second.map(itemFormKey)].sort();
+    expect(keys2).toEqual(keys1);
+    expect(new Set(keys2).size).toBe(10);
+
+    const qaFlipped = [
+      "indicative:presente:el:regular:ar",
+      "indicative:preterito:nos:regular:er_ir",
+      "indicative:preterito:el:regular:er_ir",
+    ];
+    const qaGone = [
+      "indicative:presente:el:regular:er_ir",
+      "indicative:preterito:nos:regular:ar",
+      "indicative:preterito:el:regular:ar",
+    ];
+    if (qaGone.every((key) => keys1.includes(key))) {
+      for (const key of qaFlipped) expect(keys2).not.toContain(key);
+    }
+
+    let state = rememberSitting(
+      { settings: DEFAULT_SETTINGS, attempts: [], finishedRound: true, lastCells: [] },
+      first,
+    );
+    expect([...activeProfile(state).sittingKeys].sort()).toEqual(keys1);
+    const viaStore = buildRound(
+      DEFAULT_SETTINGS,
+      round1,
+      mulberry32(19),
+      10,
+      itemsToCells(activeProfile(state).lastCells),
+      activeProfile(state).sittingKeys,
+    );
+    expect([...viaStore.map(itemFormKey)].sort()).toEqual(keys1);
+  });
+
+  it("cannot flip -ar / -er_ir on the QA dump cells before 5 typed", () => {
+    const qa1 = [
+      "indicative:presente:el:regular:er_ir",
+      "indicative:presente:ellos:regular:ar",
+      "indicative:preterito:tu:regular:ar",
+      "indicative:preterito:yo:regular:er_ir",
+      "indicative:presente:nos:regular:ar",
+      "indicative:preterito:ellos:regular:er_ir",
+      "indicative:presente:yo:regular:er_ir",
+      "indicative:presente:tu:regular:ar",
+      "indicative:preterito:nos:regular:ar",
+      "indicative:preterito:el:regular:ar",
+    ];
+    const attempts = qa1.map((key) => {
+      const spec = parseFormKey(key);
+      return typed(spec.time, spec.person, true, {
+        verb: spec.ending === "ar" ? "hablar" : "comer",
+        type: spec.type,
+        ending: spec.ending,
+      });
+    });
+    const cells = qa1.map((key) => {
+      const spec = parseFormKey(key);
+      return { tense: spec.time, person: spec.person };
+    });
+    const second = buildRound(DEFAULT_SETTINGS, attempts, mulberry32(3), 10, cells);
+    expect([...second.map(itemFormKey)].sort()).toEqual([...qa1].sort());
+    expect(second.map(itemFormKey)).not.toContain("indicative:presente:el:regular:ar");
+    expect(second.map(itemFormKey)).not.toContain("indicative:preterito:nos:regular:er_ir");
+    expect(second.map(itemFormKey)).not.toContain("indicative:preterito:el:regular:er_ir");
+  });
+
   it("does not reweight types onto the same squares during a sitting", () => {
     const mixed = { ...DEFAULT_SETTINGS, types: ["regular", "stem"] };
     const first = buildRound(mixed, [], mulberry32(3));

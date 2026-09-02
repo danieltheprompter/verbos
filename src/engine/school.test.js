@@ -205,6 +205,7 @@ describe("named levels do not lock Customize", () => {
     );
     expect(warm.map(itemFormKey).sort()).toEqual([...keys].sort());
     const app = readFileSync(join(root, "App.jsx"), "utf8");
+    expect(app).toMatch(/sittingKeysFromAttempts/);
     expect(app).toMatch(/sittingKeys=\{profile\.sittingKeys\}/);
     const play = readFileSync(join(root, "components/Play.jsx"), "utf8");
     expect(play).toMatch(/recapStory\(items, log, sittingKeys\)/);
