@@ -19,6 +19,7 @@ import {
   RECAP_SAME_TEN,
   RECAP_SUB,
   SOUND_MUTED,
+  STORAGE_KEY,
   WARMUP_BELL_SEC,
 } from "./constants.js";
 import { cellsFor, itemsToCells } from "./board.js";
@@ -287,6 +288,8 @@ describe("warm-up and class set", () => {
     expect(home).toMatch(/warmupBell/);
     expect(home).toMatch(/onWarmupBell/);
     expect(home).not.toMatch(/useState\(false\)/);
+    expect(home.indexOf("warmup-bell")).toBeGreaterThan(home.indexOf("hasClassSet ?"));
+    expect(home.indexOf("warmup-bell")).toBeGreaterThan(home.indexOf(") : null}"));
     const app = readFileSync(join(root, "App.jsx"), "utf8");
     expect(app).toMatch(/warmupBell/);
     expect(app).toMatch(/saveWarmupBell/);
@@ -307,6 +310,13 @@ describe("warm-up and class set", () => {
     expect(withBell.warmupBell).toBe(true);
     expect(loadState().warmupBell).toBe(true);
     expect(saveWarmupBell(withBell, false).warmupBell).toBe(false);
+    memoryStore();
+    const noSet = saveWarmupBell(loadState(), true);
+    expect(noSet.hasClassSet).toBe(false);
+    expect(noSet.warmupBell).toBe(true);
+    expect(JSON.parse(localStorage.getItem(STORAGE_KEY)).warmupBell).toBe(true);
+    expect(loadState().warmupBell).toBe(true);
+    expect(loadState().hasClassSet).toBe(false);
     const settings = warmupSettings({ ...DEFAULT_SETTINGS, mc: true, timer: true, timerSec: 8 });
     expect(settings.mc).toBe(false);
     expect(settings.timer).toBe(false);
@@ -337,6 +347,52 @@ describe("warm-up and class set", () => {
     expect(state.settings.types).toEqual(["stem"]);
     expect(state.settings.tenses).toEqual(["presente", "subjuntivo"]);
     expect(activeProfile(state).attempts).toHaveLength(1);
+  });
+
+  it("keeps minted atlas 10/10 after a class set clears sittingKeys", () => {
+    memoryStore();
+    const first = buildRound(DEFAULT_SETTINGS, [], mulberry32(7));
+    const keys = first.map(itemFormKey);
+    let attempts = [];
+    let items = first;
+    for (let round = 0; round < 5; round += 1) {
+      items = buildRound(DEFAULT_SETTINGS, attempts, mulberry32(20 + round), 10, itemsToCells(first), keys);
+      attempts = [
+        ...attempts,
+        ...items.map((item) => typed(item.tense, item.person, true, { verb: item.verb })),
+      ];
+    }
+    let state = rememberSitting(loadState(), first);
+    state = {
+      ...state,
+      profiles: state.profiles.map((profile) =>
+        profile.id === state.activeProfileId ? { ...profile, attempts } : profile,
+      ),
+    };
+    expect(activeProfile(state).atlasKeys).toEqual(keys);
+    expect(namedLevels(attempts, activeProfile(state).sittingKeys, activeProfile(state).atlasKeys).find((level) => level.id === "fill").known).toBe(10);
+    expect(miniCellPaint(attempts, first[0].tense, first[0].person, keys)).toBe("know");
+    const before = activeProfile(state).attempts.length;
+    state = loadClassSet(state, classSetFromSettings({ ...DEFAULT_SETTINGS, types: ["stem"] }));
+    expect(activeProfile(state).sittingKeys).toEqual([]);
+    expect(activeProfile(state).atlasKeys).toEqual(keys);
+    expect(activeProfile(state).attempts).toHaveLength(before);
+    const fill = namedLevels(
+      activeProfile(state).attempts,
+      activeProfile(state).sittingKeys,
+      activeProfile(state).atlasKeys,
+    ).find((level) => level.id === "fill");
+    expect(fill.known).toBe(10);
+    expect(fill.detail).toBe(`10/${LEVEL_FILL_TOTAL} ${FORM_COPY.know}`);
+    expect(recapHitsToward(activeProfile(state).attempts, activeProfile(state).sittingKeys).label).toBe("0/5");
+    expect(recapHitsToward(activeProfile(state).attempts, keys).label).toBe("5/5");
+    expect(miniCellPaint(activeProfile(state).attempts, first[0].tense, first[0].person, activeProfile(state).atlasKeys)).toBe("know");
+    expect(state.warmupBell).toBe(false);
+    const profile = readFileSync(join(root, "components/Profile.jsx"), "utf8");
+    expect(profile).toMatch(/atlasKeys/);
+    expect(profile).not.toMatch(/recapHitsToward|recap-pips/);
+    expect(profile).toMatch(/sittingKeys=\{profile\.sittingKeys\}/);
+    expect(profile).toMatch(/atlasKeys=\{profile\.atlasKeys\}/);
   });
 });
 

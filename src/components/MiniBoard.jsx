@@ -4,7 +4,7 @@ import { miniCellPaint } from "../engine/levels.js";
 import { sittingCellMarks } from "../engine/mastery.js";
 import { tenses as packTenses } from "../engine/pack.js";
 
-export function MiniBoard({ attempts = [], sittingKeys = [] }) {
+export function MiniBoard({ attempts = [], sittingKeys = [], atlasKeys = [] }) {
   const columns = columnLabels(DEFAULT_SETTINGS);
   const rows = packTenses.filter((tense) => DEFAULT_SETTINGS.tenses.includes(tense.id));
 
@@ -22,7 +22,7 @@ export function MiniBoard({ attempts = [], sittingKeys = [] }) {
         <div className="board-row-wrap" key={row.id}>
           <div className="board-row-label">{row.boardLabel}</div>
           {columns.map((column) => {
-            const paint = miniCellPaint(attempts, row.id, column.id);
+            const paint = miniCellPaint(attempts, row.id, column.id, atlasKeys);
             const know = paint === "know";
             const marks = sittingCellMarks(attempts, row.id, column.id, sittingKeys);
             return (

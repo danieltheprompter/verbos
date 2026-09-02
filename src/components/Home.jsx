@@ -29,27 +29,25 @@ export function Home({
           {finishedRound ? "Play again" : "Play"}
         </button>
         {hasClassSet ? (
-          <>
-            <button
-              className="btn btn-ghost"
-              type="button"
-              onClick={() => onWarmup(warmupBell)}
-            >
-              {WARMUP}
-            </button>
-            <label className="switch warmup-bell">
-              <input
-                type="checkbox"
-                checked={warmupBell}
-                onChange={(event) => onWarmupBell?.(event.target.checked)}
-              />
-              <span>
-                <strong>{WARMUP_BELL}</strong>
-                Optional. Never fails the item.
-              </span>
-            </label>
-          </>
+          <button
+            className="btn btn-ghost"
+            type="button"
+            onClick={() => onWarmup(warmupBell)}
+          >
+            {WARMUP}
+          </button>
         ) : null}
+        <label className="switch warmup-bell">
+          <input
+            type="checkbox"
+            checked={warmupBell}
+            onChange={(event) => onWarmupBell?.(event.target.checked)}
+          />
+          <span>
+            <strong>{WARMUP_BELL}</strong>
+            Optional. Never fails the item.
+          </span>
+        </label>
         {finishedRound ? (
           <button className="btn btn-ghost" type="button" onClick={onCustomize}>
             Customize

@@ -16,6 +16,8 @@ import {
   formState,
   isVisited,
   parseFormKey,
+  sittingKeyForCell,
+  sittingKeysFromAttempts,
   sittingKnownCount,
   typedAttemptsFor,
   youKnowThis,
@@ -69,8 +71,16 @@ export function miniCellState(attempts, tense, person) {
   return "empty";
 }
 
-export function miniCellPaint(attempts, tense, person) {
+export function miniCellPaint(attempts, tense, person, fillKeys = []) {
+  const key = sittingKeyForCell(fillKeys, tense, person);
+  if (key) return youKnowThis(attempts, parseFormKey(key)) ? "know" : "empty";
   return miniCellState(attempts, tense, person) === "know" ? "know" : "empty";
+}
+
+export function fillKeysFor(attempts = [], sittingKeys = [], atlasKeys = []) {
+  if (atlasKeys.length) return atlasKeys;
+  if (sittingKeys.length) return sittingKeys;
+  return sittingKeysFromAttempts(attempts, defaultBoardCells());
 }
 
 function playMoodId() {
@@ -93,13 +103,14 @@ function nextMoodLabel() {
   return next?.label ?? "next mood";
 }
 
-export function namedLevels(attempts = [], sittingKeys = []) {
+export function namedLevels(attempts = [], sittingKeys = [], atlasKeys = []) {
   const board = defaultBoardCells();
-  const known = sittingKeys.length
-    ? sittingKnownCount(attempts, sittingKeys)
+  const keys = fillKeysFor(attempts, sittingKeys, atlasKeys);
+  const known = keys.length
+    ? sittingKnownCount(attempts, keys)
     : board.filter((cell) => cellKnown(attempts, cell)).length;
-  const opened = sittingKeys.length
-    ? sittingKeys.filter((key) => typedAttemptsFor(attempts, parseFormKey(key)).length > 0).length
+  const opened = keys.length
+    ? keys.filter((key) => typedAttemptsFor(attempts, parseFormKey(key)).length > 0).length
     : board.filter((cell) => isVisited(attempts, cell.tense, cell.person)).length;
   const [presentId, pastId] = DEFAULT_SETTINGS.tenses;
   const presentKnown = board.some((cell) => cell.tense === presentId && cellKnown(attempts, cell));

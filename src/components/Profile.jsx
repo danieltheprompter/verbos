@@ -29,7 +29,7 @@ export function Profile({
   onRename,
   onClear,
 }) {
-  const levels = namedLevels(profile.attempts, profile.sittingKeys);
+  const levels = namedLevels(profile.attempts, profile.sittingKeys, profile.atlasKeys);
   const leftover = !allSelectedKnown(settings, profile.attempts);
   const nextLine = nextPlayLine(profile.attempts, leftover, settings);
 
@@ -103,7 +103,11 @@ export function Profile({
         </ul>
       </fieldset>
 
-      <MiniBoard attempts={profile.attempts} sittingKeys={profile.sittingKeys} />
+      <MiniBoard
+        attempts={profile.attempts}
+        sittingKeys={profile.sittingKeys}
+        atlasKeys={profile.atlasKeys}
+      />
 
       <section className="clear-block">
         <p className="times-mood">Atlas</p>

@@ -97,12 +97,10 @@ export function sittingKeyForCell(sittingKeys = [], tense, person) {
 }
 
 export function sittingCellMarks(attempts = [], tense, person, sittingKeys = [], slots = PIP_SLOTS) {
+  if (!sittingKeys?.length) return 0;
   const key = sittingKeyForCell(sittingKeys, tense, person);
-  const count = key
-    ? typedAttemptsFor(attempts, parseFormKey(key)).length
-    : attempts.filter((attempt) => attempt.typed && attempt.tense === tense && attempt.person === person)
-        .length;
-  return Math.min(slots, count);
+  if (!key) return 0;
+  return Math.min(slots, typedAttemptsFor(attempts, parseFormKey(key)).length);
 }
 
 export function typedAttemptsFor(attempts, spec) {

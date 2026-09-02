@@ -37,6 +37,7 @@ export function blankProfile(id = newId("p"), name = "") {
     finishedRound: false,
     lastCells: [],
     sittingKeys: [],
+    atlasKeys: [],
   };
 }
 
@@ -61,6 +62,11 @@ function normalizeProfile(raw, fallbackId) {
     finishedRound: Boolean(raw?.finishedRound),
     lastCells: Array.isArray(raw?.lastCells) ? raw.lastCells : [],
     sittingKeys: Array.isArray(raw?.sittingKeys) ? raw.sittingKeys : [],
+    atlasKeys: Array.isArray(raw?.atlasKeys) && raw.atlasKeys.length
+      ? raw.atlasKeys
+      : Array.isArray(raw?.sittingKeys)
+        ? raw.sittingKeys
+        : [],
   };
 }
 
@@ -88,6 +94,7 @@ export function ensureProfiles(state = {}) {
       finishedRound: state.finishedRound,
       lastCells: state.lastCells,
       sittingKeys: state.sittingKeys,
+      atlasKeys: state.atlasKeys,
     },
     "p1",
   );
@@ -234,6 +241,8 @@ export function saveWarmupBell(state, on) {
 }
 
 export function rememberSitting(state, items) {
+  const profile = activeProfile(state);
+  const keys = (items || []).map(itemFormKey);
   const next = patchActive(state, {
     lastCells: (items || []).map((cell) => ({
       tense: cell.tense,
@@ -242,14 +251,15 @@ export function rememberSitting(state, items) {
       ending: cell.ending_pattern || cell.ending,
       verb: cell.verb,
     })),
-    sittingKeys: (items || []).map(itemFormKey),
+    sittingKeys: keys,
+    atlasKeys: profile.atlasKeys?.length ? profile.atlasKeys : keys,
   });
   saveState(next);
   return next;
 }
 
 export function clearProgress(state) {
-  const next = patchActive(state, { attempts: [], sittingKeys: [] });
+  const next = patchActive(state, { attempts: [], sittingKeys: [], atlasKeys: [] });
   saveState(next);
   return next;
 }
