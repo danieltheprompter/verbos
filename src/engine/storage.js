@@ -2,6 +2,7 @@ import { CONTENT_VERSION, STORAGE_KEY } from "./config.js";
 import { DEFAULT_SETTINGS, typesFromLegacyPool } from "./constants.js";
 import { settingsLookLikeClassSet } from "./classSet.js";
 import { moodOf, pack, timeOf } from "./pack.js";
+import { itemFormKey } from "./mastery.js";
 import { endingPattern, verbType } from "./verbs.js";
 
 function normalizeSettings(raw = {}) {
@@ -35,6 +36,7 @@ export function blankProfile(id = newId("p"), name = "") {
     attempts: [],
     finishedRound: false,
     lastCells: [],
+    sittingKeys: [],
   };
 }
 
@@ -58,6 +60,7 @@ function normalizeProfile(raw, fallbackId) {
       : [],
     finishedRound: Boolean(raw?.finishedRound),
     lastCells: Array.isArray(raw?.lastCells) ? raw.lastCells : [],
+    sittingKeys: Array.isArray(raw?.sittingKeys) ? raw.sittingKeys : [],
   };
 }
 
@@ -84,6 +87,7 @@ export function ensureProfiles(state = {}) {
       attempts: state.attempts,
       finishedRound: state.finishedRound,
       lastCells: state.lastCells,
+      sittingKeys: state.sittingKeys,
     },
     "p1",
   );
@@ -200,6 +204,9 @@ export function saveSettings(state, settings) {
     ...current,
     settings: normalizeSettings(settings),
     hasClassSet: true,
+    profiles: current.profiles.map((profile) =>
+      profile.id === current.activeProfileId ? { ...profile, sittingKeys: [] } : profile,
+    ),
   };
   saveState(next);
   return next;
@@ -226,8 +233,23 @@ export function saveWarmupBell(state, on) {
   return next;
 }
 
+export function rememberSitting(state, items) {
+  const next = patchActive(state, {
+    lastCells: (items || []).map((cell) => ({
+      tense: cell.tense,
+      person: cell.person,
+      type: cell.type || cell.verb_type,
+      ending: cell.ending_pattern || cell.ending,
+      verb: cell.verb,
+    })),
+    sittingKeys: (items || []).map(itemFormKey),
+  });
+  saveState(next);
+  return next;
+}
+
 export function clearProgress(state) {
-  const next = patchActive(state, { attempts: [] });
+  const next = patchActive(state, { attempts: [], sittingKeys: [] });
   saveState(next);
   return next;
 }
@@ -271,6 +293,9 @@ export function loadClassSet(state, payload) {
       timerSec: current.settings.timerSec,
     }),
     hasClassSet: true,
+    profiles: current.profiles.map((profile) =>
+      profile.id === current.activeProfileId ? { ...profile, sittingKeys: [] } : profile,
+    ),
   };
   saveState(next);
   return next;

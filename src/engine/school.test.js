@@ -16,11 +16,12 @@ import {
   RECAP_CLEAN,
   RECAP_HEAD,
   RECAP_NEXT_REST,
+  RECAP_SAME_TEN,
   RECAP_SUB,
   SOUND_MUTED,
   WARMUP_BELL_SEC,
 } from "./constants.js";
-import { cellsFor } from "./board.js";
+import { cellsFor, itemsToCells } from "./board.js";
 import {
   applyClassSet,
   classSetFromSettings,
@@ -35,9 +36,9 @@ import {
   nextPlayFocus,
   nextPlayLine,
 } from "./levels.js";
-import { formCopy } from "./mastery.js";
+import { formCopy, itemFormKey } from "./mastery.js";
 import { personLabel, tenseLabel } from "./pack.js";
-import { recapStory } from "./recap.js";
+import { recapHitsToward, recapStory } from "./recap.js";
 import { buildRound } from "./round.js";
 import { mulberry32 } from "./random.js";
 import {
@@ -47,6 +48,7 @@ import {
   loadClassSet,
   loadState,
   recordAttempt,
+  rememberSitting,
   saveSettings,
   saveWarmupBell,
   switchProfile,
@@ -179,6 +181,16 @@ describe("named levels do not lock Customize", () => {
     expect(miniCss).not.toMatch(/is-not_enough|is-learning/);
   });
 
+  it("starts a new sitting and a new recap from Customize", () => {
+    memoryStore();
+    const first = buildRound(DEFAULT_SETTINGS, [], mulberry32(7));
+    let state = rememberSitting(loadState(), first);
+    expect(activeProfile(state).sittingKeys).toHaveLength(10);
+    state = saveSettings(state, { ...DEFAULT_SETTINGS, types: ["stem"] });
+    expect(activeProfile(state).sittingKeys).toEqual([]);
+    expect(customizeLockedByLevels(namedLevels(activeProfile(state).attempts))).toBe(false);
+  });
+
   it("does not gate Customize or Subjunctive on levels", () => {
     const customize = readFileSync(join(root, "components/Customize.jsx"), "utf8");
     expect(customize).not.toMatch(/namedLevels|customizeLockedByLevels|LEVEL_FILL/);
@@ -202,6 +214,24 @@ describe("named levels do not lock Customize", () => {
       /6\/10/,
     );
     expect(`${RECAP_HEAD} ${RECAP_CLEAN} ${RECAP_SUB}`).not.toMatch(/6\/10/);
+    const keys = first.map(itemFormKey);
+    const story1 = recapStory(first.map((item) => ({ ...item, correct: true })), round1);
+    expect(story1.pips).toBe("1/5");
+    expect(recapHitsToward(round1, keys).label).toBe("1/5");
+    const second = buildRound(DEFAULT_SETTINGS, round1, mulberry32(11), 10, itemsToCells(first), keys);
+    const after2 = [
+      ...round1,
+      ...second.map((item) => typed(item.tense, item.person, true, { verb: item.verb })),
+    ];
+    const story2 = recapStory(second.map((item) => ({ ...item, correct: true })), after2);
+    expect(story2.pips).toBe("2/5");
+    expect(story2.line).toBe(RECAP_SAME_TEN);
+    expect(story2.line).not.toMatch(/0\/10|you know this/);
+    expect(namedLevels(after2, keys).find((level) => level.id === "fill").known).toBe(0);
+    expect(namedLevels(after2, keys).find((level) => level.id === "fill").detail).toBe(
+      `0/${LEVEL_FILL_TOTAL} ${FORM_COPY.know}`,
+    );
+    expect(miniCellPaint(after2, first[0].tense, first[0].person)).toBe("empty");
     const visited = first[0];
     expect(miniCellState(round1, visited.tense, visited.person)).toBe("not_enough");
     expect(miniCellPaint(round1, visited.tense, visited.person)).toBe("empty");
@@ -326,6 +356,7 @@ describe("Next Play and projector recap", () => {
     expect(RECAP_CLEAN).toBe("Clean board");
     const play = readFileSync(join(root, "components/Play.jsx"), "utf8");
     expect(play).toMatch(/is-glance/);
+    expect(play).toMatch(/recap-pips/);
     expect(play).toMatch(/Play again/);
     expect(play).toMatch(/PROFILE_TITLE/);
     expect(play).not.toMatch(/class score|live score|roster|leaderboard/i);

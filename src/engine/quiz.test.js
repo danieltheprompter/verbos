@@ -9,6 +9,7 @@ import {
   DEFAULT_PERSONS,
   DEFAULT_SETTINGS,
   FORM_COPY,
+  LEVEL_FILL_TOTAL,
   MASTERY_MIN,
   MASTERY_NEED,
   MASTERY_WINDOW,
@@ -19,12 +20,20 @@ import {
   RECAP_BEAT_MS,
   RECAP_CLEAN,
   RECAP_HEAD,
+  RECAP_SAME_TEN,
   RECAP_SUB,
   TENSES,
   VERB_BUCKETS,
   WORDMARK,
 } from "./constants.js";
-import { allSelectedKnown, formCopy, formState, youKnowThis } from "./mastery.js";
+import {
+  allSelectedKnown,
+  formCopy,
+  formState,
+  itemFormKey,
+  sittingIncomplete,
+  youKnowThis,
+} from "./mastery.js";
 import { namedLevels } from "./levels.js";
 import {
   answeredCellKeys,
@@ -46,10 +55,10 @@ import {
 } from "./board.js";
 import { explainMiss } from "./miss.js";
 import { atlasCopyAt, atlasFillName, atlasFillStats, atlasRank, buildAtlas } from "./progress.js";
-import { recapStory } from "./recap.js";
+import { recapHitsToward, recapStory } from "./recap.js";
 import { mulberry32 } from "./random.js";
 import { buildRound, makeDistractors } from "./round.js";
-import { clearProgress, saveSettings, toLogAttempt } from "./storage.js";
+import { activeProfile, clearProgress, rememberSitting, saveSettings, toLogAttempt } from "./storage.js";
 import {
   conjugate,
   endingPattern,
@@ -401,9 +410,12 @@ describe("recap hero", () => {
     const story = recapStory(clean, attempts);
     expect(story.head).toBe("Clean board");
     expect(story.line).toBe(RECAP_SUB);
+    expect(story.pips).toBe("1/5");
+    expect(story.hits).toBe(1);
+    expect(story.need).toBe(5);
     expect(story.line.split(/\s+/).length).toBeLessThanOrEqual(6);
     expect(story.action).toBe("again");
-    expect(story.line).not.toMatch(/xp|streak|loot|8\/10|2\s*[×x]\s*5|5 of last 7/i);
+    expect(story.line).not.toMatch(/xp|streak|loot|8\/10|0\/10|2\s*[×x]\s*5|5 of last 7/i);
     const mixed = clean.map((item, index) => ({ ...item, correct: index !== 0 }));
     expect(recapStory(mixed, attempts).head).toBe("Board lit");
     const commands = [
@@ -817,13 +829,15 @@ describe("round builder", () => {
     const first = buildRound(DEFAULT_SETTINGS, [], mulberry32(7));
     expect(first).toHaveLength(10);
     const cells = itemsToCells(first);
+    const keys = first.map(itemFormKey);
     expect(sameBoard(cells, DEFAULT_SETTINGS)).toBe(true);
     const attempts = first.map((item) => typed(item.tense, item.person, true, { verb: item.verb }));
     for (const item of first) {
       expect(cellPips(attempts, item.tense, item.person)).toBe(1);
     }
-    const second = buildRound(DEFAULT_SETTINGS, attempts, mulberry32(11), 10, cells);
+    const second = buildRound(DEFAULT_SETTINGS, attempts, mulberry32(11), 10, cells, keys);
     expect(second.map(cellKey).sort()).toEqual(cells.map(cellKey).sort());
+    expect(second.map(itemFormKey).sort()).toEqual([...keys].sort());
     const after = [
       ...attempts,
       ...second.map((item) => typed(item.tense, item.person, true, { verb: item.verb })),
@@ -837,7 +851,6 @@ describe("round builder", () => {
     expect(second.map((item) => `${item.tense}:${item.person}:${item.ending_pattern}`).sort()).toEqual(
       first.map((item) => `${item.tense}:${item.person}:${item.ending_pattern}`).sort(),
     );
-    expect(second.map((item) => item.verb).sort()).toEqual(first.map((item) => item.verb).sort());
   });
 
   it("mints you know this on the same 10 cells after five clean typed rounds", () => {
@@ -899,6 +912,113 @@ describe("round builder", () => {
       }),
     ).toBe(true);
     expect(buildRound(DEFAULT_SETTINGS, attempts, mulberry32(99), 10, replay)).toEqual([]);
+  });
+});
+
+describe("sitting keys lock type and ending", () => {
+  function playClean(items, attempts = []) {
+    return [
+      ...attempts,
+      ...items.map((item) => typed(item.tense, item.person, true, { verb: item.verb })),
+    ];
+  }
+
+  function recapItems(items) {
+    return items.map((item) => ({ ...item, correct: true }));
+  }
+
+  it("logs the same formKey two rounds in a row; a new key before 5 typed fails", () => {
+    const first = buildRound(DEFAULT_SETTINGS, [], mulberry32(7));
+    const keys = first.map(itemFormKey);
+    expect(keys).toHaveLength(10);
+    expect(new Set(keys).size).toBe(10);
+    const round1 = playClean(first);
+    expect(namedLevels(round1, keys).find((level) => level.id === "fill").known).toBe(0);
+    expect(namedLevels(round1, keys).find((level) => level.id === "fill").detail).toBe(
+      `0/${LEVEL_FILL_TOTAL} ${FORM_COPY.know}`,
+    );
+    const story1 = recapStory(recapItems(first), round1);
+    expect(story1.pips).toBe("1/5");
+    expect(recapHitsToward(round1, keys).label).toBe("1/5");
+    expect(story1.line).not.toMatch(/0\/10/);
+    expect(`${story1.line} ${story1.pips}`).not.toMatch(
+      new RegExp(`0/${LEVEL_FILL_TOTAL} ${FORM_COPY.know}`),
+    );
+
+    const second = buildRound(
+      DEFAULT_SETTINGS,
+      round1,
+      mulberry32(11),
+      10,
+      itemsToCells(first),
+      keys,
+    );
+    expect(second.map(itemFormKey).sort()).toEqual([...keys].sort());
+    for (const item of second) {
+      expect(keys).toContain(itemFormKey(item));
+    }
+    const after2 = playClean(second, round1);
+    const story2 = recapStory(recapItems(second), after2);
+    expect(story2.pips).toBe("2/5");
+    expect(recapHitsToward(after2, keys).label).toBe("2/5");
+    expect(story2.line).toBe(RECAP_SAME_TEN);
+    expect(story2.line).not.toMatch(/0\/10|you know this/);
+    expect(`${story2.head} ${story2.line} ${story2.pips}`).not.toMatch(
+      new RegExp(`0/${LEVEL_FILL_TOTAL} ${FORM_COPY.know}`),
+    );
+    expect(namedLevels(after2, keys).find((level) => level.id === "fill").known).toBe(0);
+    expect(namedLevels(after2, keys).find((level) => level.id === "fill").detail).toBe(
+      `0/${LEVEL_FILL_TOTAL} ${FORM_COPY.know}`,
+    );
+  });
+
+  it("mints you-know-this on the atlas after five clean Play-agains, never on round 1", () => {
+    const first = buildRound(DEFAULT_SETTINGS, [], mulberry32(7));
+    const keys = first.map(itemFormKey);
+    let attempts = playClean(first);
+    expect(namedLevels(attempts, keys).find((level) => level.id === "fill").known).toBe(0);
+
+    for (let round = 0; round < 5; round += 1) {
+      const items = buildRound(
+        DEFAULT_SETTINGS,
+        attempts,
+        mulberry32(20 + round),
+        10,
+        itemsToCells(first),
+        keys,
+      );
+      if (sittingIncomplete(attempts, keys)) {
+        expect(items.map(itemFormKey).sort()).toEqual([...keys].sort());
+      }
+      attempts = playClean(items, attempts);
+    }
+
+    const fill = namedLevels(attempts, keys).find((level) => level.id === "fill");
+    expect(fill.known).toBeGreaterThan(0);
+    expect(fill.detail).not.toBe(`0/${LEVEL_FILL_TOTAL} ${FORM_COPY.know}`);
+    expect(fill.known).toBe(10);
+    for (const key of keys) {
+      const [mood, time, person, type, ending] = key.split(":");
+      expect(youKnowThis(attempts, { mood, time, person, type, ending })).toBe(true);
+    }
+  });
+
+  it("starts a new sitting from Customize", () => {
+    const memory = {};
+    globalThis.localStorage = {
+      getItem: (key) => memory[key] ?? null,
+      setItem: (key, value) => {
+        memory[key] = String(value);
+      },
+    };
+    const first = buildRound(DEFAULT_SETTINGS, [], mulberry32(7));
+    let state = rememberSitting(
+      { settings: DEFAULT_SETTINGS, attempts: [], finishedRound: true, lastCells: [] },
+      first,
+    );
+    expect(activeProfile(state).sittingKeys).toEqual(first.map(itemFormKey));
+    state = saveSettings(state, { ...DEFAULT_SETTINGS, types: ["stem"] });
+    expect(activeProfile(state).sittingKeys).toEqual([]);
   });
 });
 
@@ -982,7 +1102,7 @@ describe("teaching + UX freeze", () => {
       "You own this",
       "This map is yours",
     ]);
-    const chrome = `${BOARD_NOTE} ${RECAP_HEAD} ${RECAP_SUB} ${Object.values(FORM_COPY).join(" ")} ${RANK_PATH.map((rank) => rank.label).join(" ")}`;
+    const chrome = `${BOARD_NOTE} ${RECAP_HEAD} ${RECAP_SUB} ${RECAP_SAME_TEN} ${Object.values(FORM_COPY).join(" ")} ${RANK_PATH.map((rank) => rank.label).join(" ")}`;
     expect(chrome).not.toMatch(/xp|streak|loot|points|\bscore\b/i);
     expect(PERSONS.map((person) => person.label)).toEqual([
       "yo",

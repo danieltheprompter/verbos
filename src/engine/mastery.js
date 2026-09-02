@@ -1,4 +1,5 @@
-import { FORM_COPY, MASTERY_MIN, MASTERY_NEED, MASTERY_WINDOW, moodOf, timeOf } from "./constants.js";
+import { FORM_COPY, MASTERY_MIN, MASTERY_NEED, MASTERY_WINDOW } from "./constants.js";
+import { moodOf, timeOf } from "./pack.js";
 import { cellsFor } from "./board.js";
 import { endingPattern, verbType, verbsForSettings } from "./verbs.js";
 
@@ -36,6 +37,32 @@ export function normalizeAttempt(attempt) {
 
 export function formKey({ mood, time, person, type, ending }) {
   return `${mood}:${time}:${person}:${type}:${ending}`;
+}
+
+export function itemFormKey(item) {
+  return formKey({
+    mood: item.mood || moodOf(item.tense),
+    time: item.time || timeOf(item.tense),
+    person: item.person,
+    type: item.type || item.verb_type || attemptType(item),
+    ending: item.ending_pattern || item.ending || attemptEnding(item),
+  });
+}
+
+export function parseFormKey(key) {
+  const [mood, time, person, type, ending] = String(key || "").split(":");
+  return { mood, time, person, type, ending };
+}
+
+export function sittingIncomplete(attempts, sittingKeys = []) {
+  if (!sittingKeys.length) return false;
+  return sittingKeys.some(
+    (key) => typedAttemptsFor(attempts, parseFormKey(key)).length < MASTERY_MIN,
+  );
+}
+
+export function sittingKnownCount(attempts, sittingKeys = []) {
+  return sittingKeys.filter((key) => youKnowThis(attempts, parseFormKey(key))).length;
 }
 
 export function typedAttemptsFor(attempts, spec) {

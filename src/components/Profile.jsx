@@ -29,7 +29,7 @@ export function Profile({
   onRename,
   onClear,
 }) {
-  const levels = namedLevels(profile.attempts);
+  const levels = namedLevels(profile.attempts, profile.sittingKeys);
   const leftover = !allSelectedKnown(settings, profile.attempts);
   const nextLine = nextPlayLine(profile.attempts, leftover, settings);
 

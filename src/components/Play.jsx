@@ -226,6 +226,7 @@ export function Play({
           attempts={log}
           recap
         />
+        {story.pips ? <p className="recap-pips">{story.pips}</p> : null}
         {warmup ? null : <p className="recap-sub">{story.line}</p>}
         {beat === "go" ? (
           <div className="home-actions">

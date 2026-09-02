@@ -11,7 +11,15 @@ import {
   RECAP_NEXT_REST,
 } from "./constants.js";
 import { cellPips, cellsFor } from "./board.js";
-import { completePassDone, formState, isVisited, typedAttemptsFor, youKnowThis } from "./mastery.js";
+import {
+  completePassDone,
+  formState,
+  isVisited,
+  parseFormKey,
+  sittingKnownCount,
+  typedAttemptsFor,
+  youKnowThis,
+} from "./mastery.js";
 import { moodOf, pack, personLabel, tenseLabel, timeOf } from "./pack.js";
 
 export function defaultBoardCells() {
@@ -85,10 +93,14 @@ function nextMoodLabel() {
   return next?.label ?? "next mood";
 }
 
-export function namedLevels(attempts = []) {
+export function namedLevels(attempts = [], sittingKeys = []) {
   const board = defaultBoardCells();
-  const known = board.filter((cell) => cellKnown(attempts, cell)).length;
-  const opened = board.filter((cell) => isVisited(attempts, cell.tense, cell.person)).length;
+  const known = sittingKeys.length
+    ? sittingKnownCount(attempts, sittingKeys)
+    : board.filter((cell) => cellKnown(attempts, cell)).length;
+  const opened = sittingKeys.length
+    ? sittingKeys.filter((key) => typedAttemptsFor(attempts, parseFormKey(key)).length > 0).length
+    : board.filter((cell) => isVisited(attempts, cell.tense, cell.person)).length;
   const [presentId, pastId] = DEFAULT_SETTINGS.tenses;
   const presentKnown = board.some((cell) => cell.tense === presentId && cellKnown(attempts, cell));
   const pastKnown = board.some((cell) => cell.tense === pastId && cellKnown(attempts, cell));

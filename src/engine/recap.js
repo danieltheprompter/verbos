@@ -1,15 +1,16 @@
-import { cellPips } from "./board.js";
 import {
   FORM_COPY,
+  MASTERY_MIN,
   RECAP_CLEAN,
   RECAP_HEAD,
   RECAP_NEXT_AGAIN,
   RECAP_NEXT_MAP,
   RECAP_NEXT_REST,
   RECAP_ROUND1,
+  RECAP_SAME_TEN,
   RECAP_STILL,
 } from "./config.js";
-import { formState } from "./mastery.js";
+import { formState, itemFormKey, parseFormKey, typedAttemptsFor } from "./mastery.js";
 import { moodOf, personLabel, tenseLabel, timeOf } from "./pack.js";
 
 function specOf(item) {
@@ -55,10 +56,22 @@ export function recapChanges(items, attempts) {
   return changes;
 }
 
+export function recapHitsToward(attempts, keys = []) {
+  const need = MASTERY_MIN;
+  if (!keys.length) return { hits: 0, need, label: `0/${need}` };
+  const hits = Math.min(
+    ...keys.map((key) => typedAttemptsFor(attempts, parseFormKey(key)).length),
+  );
+  return { hits, need, label: `${hits}/${need}` };
+}
+
 export function recapStory(items = [], attempts = []) {
   const prior = priorAttempts(attempts, items);
   const changes = recapChanges(items, attempts);
-  const firstVisit = items.every((item) => cellPips(prior, item.tense, item.person) === 0);
+  const keys = items.map(itemFormKey);
+  const toward = recapHitsToward(attempts, keys);
+  const pips = { pips: toward.label, hits: toward.hits, need: toward.need };
+  const firstVisit = items.every((item) => typedAttemptsFor(prior, specOf(item)).length === 0);
   const stillNotEnough = items.every((item) => formState(attempts, specOf(item)) === "not_enough");
   const minted = changes.filter((change) => change.to === "know");
   const learning = changes.filter((change) => change.to === "learning");
@@ -71,6 +84,17 @@ export function recapStory(items = [], attempts = []) {
     return {
       head,
       line: RECAP_ROUND1,
+      ...pips,
+      next: RECAP_NEXT_AGAIN,
+      action: "again",
+    };
+  }
+
+  if (stillNotEnough) {
+    return {
+      head,
+      line: RECAP_SAME_TEN,
+      ...pips,
       next: RECAP_NEXT_AGAIN,
       action: "again",
     };
@@ -82,6 +106,7 @@ export function recapStory(items = [], attempts = []) {
     return {
       head,
       line: `${names} ${verb} ${FORM_COPY.know} — ${leftover ? RECAP_NEXT_REST : RECAP_NEXT_MAP}`,
+      ...pips,
       next: leftover ? RECAP_NEXT_REST : RECAP_NEXT_MAP,
       action: leftover ? "again" : "map",
     };
@@ -93,6 +118,7 @@ export function recapStory(items = [], attempts = []) {
     return {
       head,
       line: `${names} ${verb} ${FORM_COPY.learning} — ${RECAP_NEXT_AGAIN}`,
+      ...pips,
       next: RECAP_NEXT_AGAIN,
       action: "again",
     };
@@ -101,6 +127,7 @@ export function recapStory(items = [], attempts = []) {
   return {
     head,
     line: RECAP_STILL,
+    ...pips,
     next: RECAP_NEXT_AGAIN,
     action: "again",
   };

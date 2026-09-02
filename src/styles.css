@@ -343,6 +343,13 @@ p {
   line-height: 1.25;
 }
 
+.recap-pips {
+  color: var(--color-ink);
+  font-size: clamp(1.4rem, 4vw, 2.4rem);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
 .recap-state {
   font-weight: 600;
 }
@@ -467,6 +474,7 @@ p {
 }
 
 .play-done.is-recap-hold .recap-sub,
+.play-done.is-recap-hold .recap-pips,
 .play-done.is-recap-hold .btn-ghost,
 .play-done.is-recap-pips .recap-sub,
 .play-done.is-recap-pips .btn-ghost {
@@ -474,6 +482,8 @@ p {
   pointer-events: none;
 }
 
+.play-done.is-recap-pips .recap-pips,
+.play-done.is-recap-go .recap-pips,
 .play-done.is-recap-go .recap-sub {
   opacity: 1;
 }

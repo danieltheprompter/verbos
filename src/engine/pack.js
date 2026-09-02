@@ -32,6 +32,10 @@ export function timeOf(tense) {
   return tenseById[tense]?.time ?? tense;
 }
 
+export function tenseFor(mood, time) {
+  return tenses.find((tense) => tense.mood === mood && tense.time === time)?.id;
+}
+
 export function timesForMood(mood) {
   return pack.targetGroups.find((group) => group.id === mood)?.items ?? [];
 }

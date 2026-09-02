@@ -20,6 +20,7 @@ import {
   markFinished,
   recordAttempt,
   rememberCells,
+  rememberSitting,
   renameProfile,
   saveSettings,
   saveWarmupBell,
@@ -45,17 +46,27 @@ export function App() {
     replay = false,
     mode = "play",
     session = null,
+    newSitting = false,
   } = {}) {
     const from = storeRef.current;
     const roundSettings = mode === "warmup" ? warmupSettings(nextSettings) : nextSettings;
     const who = activeProfile(from);
+    const sittingKeys = newSitting ? [] : who.sittingKeys;
     const replayCells = replay && sameBoard(who.lastCells, roundSettings) ? who.lastCells : null;
-    const nextItems = buildRound(roundSettings, who.attempts, Math.random, undefined, replayCells);
+    const nextItems = buildRound(
+      roundSettings,
+      who.attempts,
+      Math.random,
+      undefined,
+      replayCells,
+      sittingKeys,
+    );
     if (!nextItems.length) {
       setScreen(mode === "warmup" ? "home" : "customize");
       return;
     }
-    setStore(rememberCells(from, nextItems));
+    const keepSitting = !newSitting && sittingKeys?.length;
+    setStore(keepSitting ? rememberCells(from, nextItems) : rememberSitting(from, nextItems));
     setItems(nextItems);
     setPlayMode(mode);
     setSessionSec(session);
@@ -128,9 +139,12 @@ export function App() {
           onApplySet={(next) => setStore((prev) => saveSettings(prev, next))}
           onSave={(next) => {
             const saved = saveSettings(storeRef.current, next);
+            storeRef.current = saved;
+            setStore(saved);
             start({
               nextSettings: next,
-              replay: sameBoard(activeProfile(saved).lastCells, next),
+              replay: false,
+              newSitting: true,
             });
           }}
         />

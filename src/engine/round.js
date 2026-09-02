@@ -1,11 +1,13 @@
 import { ROUND_SIZE } from "./config.js";
 import { cellKey, cellPips, cellsFor, sameBoard } from "./board.js";
-import { moodOf, pack, tenses as packTenses, timeOf } from "./pack.js";
+import { moodOf, pack, tenses as packTenses, tenseFor, timeOf } from "./pack.js";
 import { lastMiss, miniCellState } from "./levels.js";
 import {
   allSelectedKnown,
   completePassDone,
   isVisited,
+  parseFormKey,
+  sittingIncomplete,
   typeKnownAtCell,
   youKnowThis,
 } from "./mastery.js";
@@ -57,6 +59,28 @@ function verbForCell(cell, verbs, types, verbsByType, attempts, usedVerbs, rng) 
     }
   }
   return pickVerb(pool, usedVerbs, rng);
+}
+
+function pickVerbForSpec(verbs, spec, used, rng) {
+  const pool = verbs.filter(
+    (verb) => verb.type === spec.type && endingPattern(verb.inf) === spec.ending,
+  );
+  const fresh = pool.filter((verb) => !used.has(verb.inf));
+  return pick(fresh.length ? fresh : pool, rng);
+}
+
+function fillFromSittingKeys(keys, verbs, rng, size) {
+  const items = [];
+  const used = new Set();
+  for (const key of shuffle(keys, rng).slice(0, size)) {
+    const spec = parseFormKey(key);
+    const tense = tenseFor(spec.mood, spec.time);
+    const verb = pickVerbForSpec(verbs, spec, used, rng);
+    if (!verb || !tense) continue;
+    used.add(verb.inf);
+    items.push(itemFrom({ tense, person: spec.person }, verb));
+  }
+  return items;
 }
 
 function itemFrom(cell, verb) {
@@ -149,7 +173,14 @@ function fillWeighted(board, verbs, types, verbsByType, attempts, rng, size, see
   return items;
 }
 
-export function buildRound(settings, attempts, rng = Math.random, size = ROUND_SIZE, replayCells) {
+export function buildRound(
+  settings,
+  attempts,
+  rng = Math.random,
+  size = ROUND_SIZE,
+  replayCells,
+  sittingKeys,
+) {
   const cells = cellsFor(settings);
   const verbs = verbsForSettings(settings);
   const types = activeTypes(settings);
@@ -164,6 +195,10 @@ export function buildRound(settings, attempts, rng = Math.random, size = ROUND_S
 
   if (!verbs.length || !cells.length) return [];
   if (allSelectedKnown(settings, attempts)) return [];
+
+  if (sittingIncomplete(attempts, sittingKeys)) {
+    return fillFromSittingKeys(sittingKeys, verbs, rng, size);
+  }
 
   // Round 1 / still nothing you-know-this: one visit per cell, no retries stuffed in.
   if (nothingKnown && cells.length <= size) {
