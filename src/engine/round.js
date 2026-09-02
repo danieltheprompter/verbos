@@ -5,6 +5,7 @@ import { lastMiss, miniCellState } from "./levels.js";
 import {
   allSelectedKnown,
   completePassDone,
+  formKey,
   isVisited,
   parseFormKey,
   sittingIncomplete,
@@ -61,21 +62,63 @@ function verbForCell(cell, verbs, types, verbsByType, attempts, usedVerbs, rng) 
   return pickVerb(pool, usedVerbs, rng);
 }
 
-function pickVerbForSpec(verbs, spec, used, rng) {
+function lastVerbOnKey(attempts, spec) {
+  for (let index = attempts.length - 1; index >= 0; index -= 1) {
+    const attempt = attempts[index];
+    if (
+      attempt.person === spec.person &&
+      (attempt.type || attempt.verb_type) === spec.type &&
+      (attempt.ending_pattern || attempt.ending) === spec.ending &&
+      (attempt.mood || moodOf(attempt.tense)) === spec.mood &&
+      (attempt.time || timeOf(attempt.tense)) === spec.time
+    ) {
+      return attempt.verb;
+    }
+  }
+  return null;
+}
+
+function pickVerbForSpec(verbs, spec, used, rng, prefer) {
   const pool = verbs.filter(
     (verb) => verb.type === spec.type && endingPattern(verb.inf) === spec.ending,
   );
+  if (prefer) {
+    const same = pool.find((verb) => verb.inf === prefer) || verbs.find((verb) => verb.inf === prefer);
+    if (same) {
+      used.add(same.inf);
+      return same;
+    }
+  }
   const fresh = pool.filter((verb) => !used.has(verb.inf));
   return pick(fresh.length ? fresh : pool, rng);
 }
 
-function fillFromSittingKeys(keys, verbs, rng, size) {
+function keysFromReplayCells(cells = []) {
+  const keys = [];
+  for (const cell of cells || []) {
+    const type = cell.type || cell.verb_type;
+    const ending = cell.ending || cell.ending_pattern;
+    if (!cell?.tense || !cell?.person || !type || !ending) continue;
+    keys.push(
+      formKey({
+        mood: cell.mood || moodOf(cell.tense),
+        time: cell.time || timeOf(cell.tense),
+        person: cell.person,
+        type,
+        ending,
+      }),
+    );
+  }
+  return keys;
+}
+
+function fillFromSittingKeys(keys, verbs, rng, size, attempts = []) {
   const items = [];
   const used = new Set();
   for (const key of shuffle(keys, rng).slice(0, size)) {
     const spec = parseFormKey(key);
     const tense = tenseFor(spec.mood, spec.time);
-    const verb = pickVerbForSpec(verbs, spec, used, rng);
+    const verb = pickVerbForSpec(verbs, spec, used, rng, lastVerbOnKey(attempts, spec));
     if (!verb || !tense) continue;
     used.add(verb.inf);
     items.push(itemFrom({ tense, person: spec.person }, verb));
@@ -196,8 +239,9 @@ export function buildRound(
   if (!verbs.length || !cells.length) return [];
   if (allSelectedKnown(settings, attempts)) return [];
 
-  if (sittingIncomplete(attempts, sittingKeys)) {
-    return fillFromSittingKeys(sittingKeys, verbs, rng, size);
+  const lockedKeys = sittingKeys?.length ? sittingKeys : keysFromReplayCells(replay || []);
+  if (sittingIncomplete(attempts, lockedKeys)) {
+    return fillFromSittingKeys(lockedKeys, verbs, rng, size, attempts);
   }
 
   // Round 1 / still nothing you-know-this: one visit per cell, no retries stuffed in.

@@ -103,7 +103,7 @@ export function Profile({
         </ul>
       </fieldset>
 
-      <MiniBoard attempts={profile.attempts} />
+      <MiniBoard attempts={profile.attempts} sittingKeys={profile.sittingKeys} />
 
       <section className="clear-block">
         <p className="times-mood">Atlas</p>

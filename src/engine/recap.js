@@ -65,10 +65,10 @@ export function recapHitsToward(attempts, keys = []) {
   return { hits, need, label: `${hits}/${need}` };
 }
 
-export function recapStory(items = [], attempts = []) {
+export function recapStory(items = [], attempts = [], sittingKeys = []) {
   const prior = priorAttempts(attempts, items);
   const changes = recapChanges(items, attempts);
-  const keys = items.map(itemFormKey);
+  const keys = sittingKeys.length ? sittingKeys : items.map(itemFormKey);
   const toward = recapHitsToward(attempts, keys);
   const pips = { pips: toward.label, hits: toward.hits, need: toward.need };
   const firstVisit = items.every((item) => typedAttemptsFor(prior, specOf(item)).length === 0);

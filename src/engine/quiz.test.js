@@ -31,6 +31,9 @@ import {
   formCopy,
   formState,
   itemFormKey,
+  masteryWindow,
+  parseFormKey,
+  sittingCellMarks,
   sittingIncomplete,
   youKnowThis,
 } from "./mastery.js";
@@ -759,6 +762,26 @@ describe("round builder", () => {
     expect(formCopy(yoPreterite, spec({ time: "presente", person: "yo" }))).toBe("not enough yet");
   });
 
+  it("does not pad the last-7 window with fake misses", () => {
+    const five = Array.from({ length: 5 }, () => typed("presente", "yo", true));
+    expect(masteryWindow(five, spec())).toHaveLength(5);
+    expect(masteryWindow(five, spec()).every((attempt) => attempt.correct === true)).toBe(true);
+    expect(formState(five, spec())).toBe("know");
+    expect(formCopy(five, spec())).toBe("you know this");
+    const four = five.slice(0, 4);
+    expect(masteryWindow(four, spec())).toHaveLength(4);
+    expect(formState(four, spec())).toBe("not_enough");
+    const mixed = [
+      typed("presente", "yo", true),
+      typed("presente", "yo", false),
+      typed("presente", "yo", true),
+      typed("presente", "yo", true),
+      typed("presente", "yo", true),
+    ];
+    expect(masteryWindow(mixed, spec())).toHaveLength(5);
+    expect(formState(mixed, spec())).toBe("learning");
+  });
+
   it("uses the last-7 window only, with no calendar rust", () => {
     const old = Array.from({ length: 5 }, (_, i) => ({
       ...typed("presente", "yo", true),
@@ -856,13 +879,16 @@ describe("round builder", () => {
   it("mints you know this on the same 10 cells after five clean typed rounds", () => {
     let attempts = [];
     let replay = null;
+    let sitting = [];
     const firstKeys = [];
     for (let round = 0; round < 5; round += 1) {
-      const items = buildRound(DEFAULT_SETTINGS, attempts, mulberry32(20 + round), 10, replay);
+      const items = buildRound(DEFAULT_SETTINGS, attempts, mulberry32(20 + round), 10, replay, sitting);
       expect(items).toHaveLength(10);
       const keys = items.map((item) => `${item.tense}:${item.person}`).sort();
       if (!firstKeys.length) firstKeys.push(...keys);
       expect(keys).toEqual(firstKeys);
+      if (!sitting.length) sitting = items.map(itemFormKey);
+      expect(items.map(itemFormKey).sort()).toEqual([...sitting].sort());
       if (replay) {
         expect(items.map((item) => `${item.tense}:${item.person}:${item.type}:${item.ending_pattern}`).sort()).toEqual(
           replay
@@ -887,21 +913,24 @@ describe("round builder", () => {
         ending: item.ending_pattern,
         verb: item.verb,
       }));
-      const fill = namedLevels(attempts).find((level) => level.id === "fill");
+      const fill = namedLevels(attempts, sitting).find((level) => level.id === "fill");
       if (round === 0) {
         expect(fill.known).toBe(0);
         expect(fill.checked).toBe(false);
         expect(cellPips(attempts, items[0].tense, items[0].person)).toBe(1);
+        expect(sittingCellMarks(attempts, items[0].tense, items[0].person, sitting)).toBe(1);
       }
       if (round === 1) {
         expect(fill.known).toBe(0);
         expect(cellPips(attempts, items[0].tense, items[0].person)).toBe(2);
+        expect(sittingCellMarks(attempts, items[0].tense, items[0].person, sitting)).toBe(2);
       }
     }
-    const filled = namedLevels(attempts).find((level) => level.id === "fill");
+    const filled = namedLevels(attempts, sitting).find((level) => level.id === "fill");
     expect(filled.known).toBe(10);
     expect(filled.checked).toBe(true);
     expect(cellPips(attempts, replay[0].tense, replay[0].person)).toBe(5);
+    expect(sittingCellMarks(attempts, replay[0].tense, replay[0].person, sitting)).toBe(5);
     expect(
       youKnowThis(attempts, {
         mood: "indicative",
@@ -911,7 +940,7 @@ describe("round builder", () => {
         ending: replay[0].ending,
       }),
     ).toBe(true);
-    expect(buildRound(DEFAULT_SETTINGS, attempts, mulberry32(99), 10, replay)).toEqual([]);
+    expect(buildRound(DEFAULT_SETTINGS, attempts, mulberry32(99), 10, replay, sitting)).toEqual([]);
   });
 });
 
@@ -972,13 +1001,48 @@ describe("sitting keys lock type and ending", () => {
     );
   });
 
+  it("does not reweight types onto the same squares during a sitting", () => {
+    const mixed = { ...DEFAULT_SETTINGS, types: ["regular", "stem"] };
+    const first = buildRound(mixed, [], mulberry32(3));
+    const keys = first.map(itemFormKey);
+    expect(keys).toHaveLength(10);
+    const visits = first.map((item) => ({
+      tense: item.tense,
+      person: item.person,
+      correct: true,
+      typed: true,
+    }));
+    let diverged = false;
+    for (let seed = 0; seed < 50; seed += 1) {
+      const loose = buildRound(mixed, visits, mulberry32(80 + seed), 10, itemsToCells(first));
+      if (loose.map(itemFormKey).sort().join("|") !== [...keys].sort().join("|")) {
+        diverged = true;
+        break;
+      }
+    }
+    expect(diverged).toBe(true);
+    const locked = buildRound(mixed, visits, mulberry32(80), 10, itemsToCells(first), keys);
+    expect(locked.map(itemFormKey).sort()).toEqual([...keys].sort());
+    expect(locked.every((item) => keys.includes(itemFormKey(item)))).toBe(true);
+  });
+
+  it("counts marks on the sitting formKey, not every type collapsed onto the square", () => {
+    const sitting = ["indicative:presente:yo:regular:ar"];
+    const attempts = [
+      typed("presente", "yo", true, { verb: "hablar" }),
+      typed("presente", "yo", true, { verb: "pensar" }),
+    ];
+    expect(cellPips(attempts, "presente", "yo")).toBe(2);
+    expect(sittingCellMarks(attempts, "presente", "yo", sitting)).toBe(1);
+  });
+
   it("mints you-know-this on the atlas after five clean Play-agains, never on round 1", () => {
     const first = buildRound(DEFAULT_SETTINGS, [], mulberry32(7));
     const keys = first.map(itemFormKey);
     let attempts = playClean(first);
     expect(namedLevels(attempts, keys).find((level) => level.id === "fill").known).toBe(0);
 
-    for (let round = 0; round < 5; round += 1) {
+    for (let round = 2; round <= 5; round += 1) {
       const items = buildRound(
         DEFAULT_SETTINGS,
         attempts,
@@ -991,9 +1055,15 @@ describe("sitting keys lock type and ending", () => {
         expect(items.map(itemFormKey).sort()).toEqual([...keys].sort());
       }
       attempts = playClean(items, attempts);
+      const mid = namedLevels(attempts, keys).find((level) => level.id === "fill");
+      if (round < 5) {
+        expect(mid.known).toBe(0);
+        expect(masteryWindow(attempts, parseFormKey(keys[0])).length).toBe(round);
+      }
     }
 
     const fill = namedLevels(attempts, keys).find((level) => level.id === "fill");
+    expect(masteryWindow(attempts, parseFormKey(keys[0])).length).toBe(5);
     expect(fill.known).toBeGreaterThan(0);
     expect(fill.detail).not.toBe(`0/${LEVEL_FILL_TOTAL} ${FORM_COPY.know}`);
     expect(fill.known).toBe(10);

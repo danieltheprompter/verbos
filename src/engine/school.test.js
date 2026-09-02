@@ -172,7 +172,7 @@ describe("named levels do not lock Customize", () => {
 
     const mini = readFileSync(join(root, "components/MiniBoard.jsx"), "utf8");
     expect(mini).toMatch(/miniCellPaint/);
-    expect(mini).toMatch(/cellPips/);
+    expect(mini).toMatch(/sittingCellMarks/);
     expect(mini).toMatch(/is-know/);
     expect(mini).not.toMatch(/is-not_enough|color-visit|cell-visit/);
     const css = readFileSync(join(root, "styles.css"), "utf8");
@@ -189,6 +189,25 @@ describe("named levels do not lock Customize", () => {
     state = saveSettings(state, { ...DEFAULT_SETTINGS, types: ["stem"] });
     expect(activeProfile(state).sittingKeys).toEqual([]);
     expect(customizeLockedByLevels(namedLevels(activeProfile(state).attempts))).toBe(false);
+  });
+
+  it("keeps Warm-up on the sitting formKeys", () => {
+    const first = buildRound(DEFAULT_SETTINGS, [], mulberry32(7));
+    const keys = first.map(itemFormKey);
+    const round1 = first.map((item) => typed(item.tense, item.person, true, { verb: item.verb }));
+    const warm = buildRound(
+      warmupSettings(DEFAULT_SETTINGS),
+      round1,
+      mulberry32(8),
+      10,
+      itemsToCells(first),
+      keys,
+    );
+    expect(warm.map(itemFormKey).sort()).toEqual([...keys].sort());
+    const app = readFileSync(join(root, "App.jsx"), "utf8");
+    expect(app).toMatch(/sittingKeys=\{profile\.sittingKeys\}/);
+    const play = readFileSync(join(root, "components/Play.jsx"), "utf8");
+    expect(play).toMatch(/recapStory\(items, log, sittingKeys\)/);
   });
 
   it("does not gate Customize or Subjunctive on levels", () => {

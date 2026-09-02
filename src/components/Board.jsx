@@ -6,17 +6,13 @@ import {
   columnLabels,
   roundCellState,
 } from "../engine/board.js";
-
-function typedMarks(attempts, tense, person) {
-  return attempts.filter(
-    (attempt) => attempt.typed && attempt.tense === tense && attempt.person === person,
-  ).length;
-}
+import { sittingCellMarks } from "../engine/mastery.js";
 
 export function Board({
   settings,
   items = [],
   attempts = [],
+  sittingKeys = [],
   current,
   recap = false,
   land = null,
@@ -66,7 +62,7 @@ export function Board({
                 );
                 const colFlick = flick?.axis === "col" && flick.person === column.id;
                 const axis = colFlick ? "col" : rowFlick ? "row" : null;
-                const marks = recap ? Math.min(5, typedMarks(attempts, row.id, column.id)) : 0;
+                const marks = recap ? sittingCellMarks(attempts, row.id, column.id, sittingKeys) : 0;
                 return (
                   <div
                     key={column.id}

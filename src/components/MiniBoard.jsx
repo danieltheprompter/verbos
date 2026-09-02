@@ -1,9 +1,10 @@
 import { DEFAULT_SETTINGS } from "../engine/constants.js";
-import { cellPips, columnLabels } from "../engine/board.js";
+import { columnLabels } from "../engine/board.js";
 import { miniCellPaint } from "../engine/levels.js";
+import { sittingCellMarks } from "../engine/mastery.js";
 import { tenses as packTenses } from "../engine/pack.js";
 
-export function MiniBoard({ attempts = [] }) {
+export function MiniBoard({ attempts = [], sittingKeys = [] }) {
   const columns = columnLabels(DEFAULT_SETTINGS);
   const rows = packTenses.filter((tense) => DEFAULT_SETTINGS.tenses.includes(tense.id));
 
@@ -23,7 +24,7 @@ export function MiniBoard({ attempts = [] }) {
           {columns.map((column) => {
             const paint = miniCellPaint(attempts, row.id, column.id);
             const know = paint === "know";
-            const marks = cellPips(attempts, row.id, column.id);
+            const marks = sittingCellMarks(attempts, row.id, column.id, sittingKeys);
             return (
               <div
                 key={column.id}

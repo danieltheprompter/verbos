@@ -110,6 +110,7 @@ export function App() {
           settings={playMode === "warmup" ? warmupSettings(playSettings) : playSettings}
           items={items}
           attempts={profile.attempts}
+          sittingKeys={profile.sittingKeys}
           mode={playMode}
           sessionSec={sessionSec}
           onAttempt={(attempt) => setStore((prev) => recordAttempt(prev, attempt))}

@@ -13,6 +13,7 @@ export function Play({
   settings,
   items,
   attempts = [],
+  sittingKeys = [],
   mode = "play",
   sessionSec = null,
   onAttempt,
@@ -216,7 +217,7 @@ export function Play({
   }
 
   if (finished) {
-    const story = recapStory(items, log);
+    const story = recapStory(items, log, sittingKeys);
     return (
       <section className={`play play-done is-glance is-recap-${beat}`}>
         <h1 className="recap-head">{story.head}</h1>
@@ -224,6 +225,7 @@ export function Play({
           settings={settings}
           items={items}
           attempts={log}
+          sittingKeys={sittingKeys}
           recap
         />
         {story.pips ? <p className="recap-pips">{story.pips}</p> : null}

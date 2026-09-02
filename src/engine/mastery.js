@@ -1,4 +1,4 @@
-import { FORM_COPY, MASTERY_MIN, MASTERY_NEED, MASTERY_WINDOW } from "./constants.js";
+import { FORM_COPY, MASTERY_MIN, MASTERY_NEED, MASTERY_WINDOW, PIP_SLOTS } from "./constants.js";
 import { moodOf, timeOf } from "./pack.js";
 import { cellsFor } from "./board.js";
 import { endingPattern, verbType, verbsForSettings } from "./verbs.js";
@@ -65,6 +65,27 @@ export function sittingKnownCount(attempts, sittingKeys = []) {
   return sittingKeys.filter((key) => youKnowThis(attempts, parseFormKey(key))).length;
 }
 
+export function sittingKeyForCell(sittingKeys = [], tense, person) {
+  if (!sittingKeys?.length) return null;
+  const mood = moodOf(tense);
+  const time = timeOf(tense);
+  return (
+    sittingKeys.find((key) => {
+      const spec = parseFormKey(key);
+      return spec.mood === mood && spec.time === time && spec.person === person;
+    }) || null
+  );
+}
+
+export function sittingCellMarks(attempts = [], tense, person, sittingKeys = [], slots = PIP_SLOTS) {
+  const key = sittingKeyForCell(sittingKeys, tense, person);
+  const count = key
+    ? typedAttemptsFor(attempts, parseFormKey(key)).length
+    : attempts.filter((attempt) => attempt.typed && attempt.tense === tense && attempt.person === person)
+        .length;
+  return Math.min(slots, count);
+}
+
 export function typedAttemptsFor(attempts, spec) {
   return attempts.map(normalizeAttempt).filter((attempt) => {
     if (!attempt.typed) return false;
@@ -77,11 +98,15 @@ export function typedAttemptsFor(attempts, spec) {
   });
 }
 
+export function masteryWindow(attempts, spec) {
+  return typedAttemptsFor(attempts, spec).slice(-MASTERY_WINDOW);
+}
+
 export function formState(attempts, spec) {
-  const typed = typedAttemptsFor(attempts, spec);
-  if (typed.length < MASTERY_MIN) return "not_enough";
-  const window = typed.slice(-MASTERY_WINDOW);
-  if (window.filter((attempt) => attempt.correct).length >= MASTERY_NEED) return "know";
+  const window = masteryWindow(attempts, spec);
+  if (window.length < MASTERY_MIN) return "not_enough";
+  const hits = window.filter((attempt) => attempt.correct === true).length;
+  if (hits >= MASTERY_NEED) return "know";
   return "learning";
 }
 
