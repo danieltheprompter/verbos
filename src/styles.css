@@ -335,6 +335,14 @@ p {
   color: var(--color-ink);
 }
 
+.recap-hdmi {
+  margin: 0;
+  color: var(--color-ink);
+  font-size: clamp(1.15rem, 3vw, 1.8rem);
+  font-weight: 650;
+  letter-spacing: -0.02em;
+}
+
 .recap-sub,
 .recap-state {
   color: var(--color-ink);
@@ -367,6 +375,11 @@ p {
 
 .is-recap .cell {
   min-height: clamp(52px, 9vw, 92px);
+}
+
+.is-recap .cell-marks i {
+  width: 8px;
+  height: 8px;
 }
 
 .play-done.is-recap-pips .cell-answered,

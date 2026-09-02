@@ -215,7 +215,8 @@ export function Play({
     const story = recapStory(items, log, sittingKeys);
     return (
       <section className={`play play-done is-glance is-recap-${beat}`}>
-        <h1 className="recap-head">{story.head}</h1>
+        <h1 className="recap-head">{story.banner}</h1>
+        <p className="recap-hdmi">{story.head}</p>
         <Board
           settings={settings}
           items={items}
@@ -223,7 +224,7 @@ export function Play({
           sittingKeys={sittingKeys}
           recap
         />
-        {warmup ? null : <p className="recap-sub">{story.line}</p>}
+        <p className="recap-sub">{story.line}</p>
         {beat === "go" ? (
           <div className="home-actions">
             <button

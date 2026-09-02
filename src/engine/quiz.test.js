@@ -20,6 +20,7 @@ import {
   RECAP_BEAT_MS,
   RECAP_CLEAN,
   RECAP_HEAD,
+  RECAP_SAME_BOARD,
   RECAP_SAME_TEN,
   RECAP_SUB,
   STORAGE_KEY,
@@ -442,10 +443,11 @@ describe("recap hero", () => {
     const attempts = first.map((item) => typed(item.tense, item.person, true, { verb: item.verb }));
     const clean = first.map((item) => ({ ...item, correct: true }));
     const story = recapStory(clean, attempts);
+    expect(story.banner).toBe(RECAP_SAME_BOARD);
     expect(story.head).toBe("Clean board");
     expect(story.line).toBe(RECAP_SAME_TEN);
-    expect(RECAP_SAME_TEN).toBe("Same 10. Fill the wells.");
-    expect(RECAP_SAME_TEN).not.toMatch(/meter|sitting|hits toward|you know this/i);
+    expect(RECAP_SAME_TEN).toBe("Same 10. Fill the meters.");
+    expect(RECAP_SAME_TEN).not.toMatch(/wells|sitting|hits toward|you know this/i);
     expect(story.pips).toBe("1/5");
     expect(story.hits).toBe(1);
     expect(story.need).toBe(5);
@@ -485,7 +487,7 @@ describe("recap hero", () => {
     expect(formState(after, spec())).toBe("learning");
     const story = recapStory([item], after);
     expect(story.line).toBe(RECAP_SAME_TEN);
-    expect(story.line).not.toMatch(/sitting|hits toward knowing|you know this|still learning|meter/i);
+    expect(story.line).not.toMatch(/sitting|hits toward knowing|you know this|still learning|wells/i);
     expect(story.pips).toBe("5/5");
     expect(story.next).toBe("Play those squares again.");
     expect(story.action).toBe("again");
@@ -1015,7 +1017,7 @@ describe("sitting keys lock type and ending", () => {
     expect(story1.pips).toBe("1/5");
     expect(recapHitsToward(round1, keys).label).toBe("1/5");
     expect(story1.line).toBe(RECAP_SAME_TEN);
-    expect(story1.line).not.toMatch(/0\/10|sitting|hits toward|meter/i);
+    expect(story1.line).not.toMatch(/0\/10|sitting|hits toward|wells/i);
     expect(`${story1.line} ${story1.pips}`).not.toMatch(
       new RegExp(`0/${LEVEL_FILL_TOTAL} ${FORM_COPY.know}`),
     );
@@ -1037,8 +1039,9 @@ describe("sitting keys lock type and ending", () => {
     expect(story2.pips).toBe("2/5");
     expect(recapHitsToward(after2, keys).label).toBe("2/5");
     expect(story2.line).toBe(RECAP_SAME_TEN);
-    expect(RECAP_SAME_TEN).toBe("Same 10. Fill the wells.");
-    expect(story2.line).not.toMatch(/0\/10|you know this|sitting|hits toward|meter/i);
+    expect(story2.banner).toBe(RECAP_SAME_BOARD);
+    expect(RECAP_SAME_TEN).toBe("Same 10. Fill the meters.");
+    expect(story2.line).not.toMatch(/0\/10|you know this|sitting|hits toward|wells/i);
     expect(`${story2.head} ${story2.line} ${story2.pips}`).not.toMatch(
       new RegExp(`0/${LEVEL_FILL_TOTAL} ${FORM_COPY.know}`),
     );
@@ -1144,7 +1147,8 @@ describe("sitting keys lock type and ending", () => {
     expect(play).toMatch(/sittingKeys=\{sittingKeys\}/);
     expect(play).toMatch(/is-flick-col/);
     expect(play).toMatch(/setLand/);
-    expect(RECAP_SAME_TEN).toBe("Same 10. Fill the wells.");
+    expect(RECAP_SAME_TEN).toBe("Same 10. Fill the meters.");
+    expect(RECAP_SAME_BOARD).toBe("Same board.");
   });
 
   it("does not duplicate or drop a sitting key when lastCells is corrupted", () => {

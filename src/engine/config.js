@@ -13,12 +13,13 @@ export const BOARD_NOTE =
 
 export const RECAP_HEAD = "Board lit";
 export const RECAP_CLEAN = "Clean board";
+export const RECAP_SAME_BOARD = "Same board.";
 export const RECAP_BEAT_MS = 1600;
 export const SOUND_MUTED = true;
-export const RECAP_SUB = "Same 10. Fill the wells.";
+export const RECAP_SUB = "Same 10. Fill the meters.";
 export const RECAP_ROUND1 = RECAP_SUB;
 export const RECAP_STILL = RECAP_SUB;
-export const RECAP_SAME_TEN = "Same 10. Fill the wells.";
+export const RECAP_SAME_TEN = "Same 10. Fill the meters.";
 export const RECAP_NEXT_AGAIN = "Play those squares again.";
 export const RECAP_NEXT_REST = "Play the ones that are not you know this.";
 export const RECAP_NEXT_MAP = "Open What you know.";

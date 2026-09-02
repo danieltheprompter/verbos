@@ -3,6 +3,7 @@ import {
   RECAP_CLEAN,
   RECAP_HEAD,
   RECAP_NEXT_AGAIN,
+  RECAP_SAME_BOARD,
   RECAP_SAME_TEN,
 } from "./config.js";
 import { formState, itemFormKey, parseFormKey, typedAttemptsFor } from "./mastery.js";
@@ -54,6 +55,7 @@ export function recapStory(items = [], attempts = [], sittingKeys = []) {
   const toward = recapHitsToward(attempts, keys);
   const clean = items.length > 0 && items.every((item) => item.correct);
   return {
+    banner: RECAP_SAME_BOARD,
     head: clean ? RECAP_CLEAN : RECAP_HEAD,
     line: RECAP_SAME_TEN,
     pips: toward.label,

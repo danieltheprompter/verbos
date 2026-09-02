@@ -16,6 +16,7 @@ import {
   RECAP_CLEAN,
   RECAP_HEAD,
   RECAP_NEXT_REST,
+  RECAP_SAME_BOARD,
   RECAP_SAME_TEN,
   RECAP_SUB,
   SOUND_MUTED,
@@ -249,9 +250,10 @@ describe("named levels do not lock Customize", () => {
     ];
     const story2 = recapStory(second.map((item) => ({ ...item, correct: true })), after2);
     expect(story2.pips).toBe("2/5");
+    expect(story2.banner).toBe(RECAP_SAME_BOARD);
     expect(story2.line).toBe(RECAP_SAME_TEN);
-    expect(RECAP_SAME_TEN).toBe("Same 10. Fill the wells.");
-    expect(story2.line).not.toMatch(/0\/10|you know this|sitting|hits toward|meter/i);
+    expect(RECAP_SAME_TEN).toBe("Same 10. Fill the meters.");
+    expect(story2.line).not.toMatch(/0\/10|you know this|sitting|hits toward|wells/i);
     expect(namedLevels(after2, keys).find((level) => level.id === "fill").known).toBe(0);
     expect(namedLevels(after2, keys).find((level) => level.id === "fill").detail).toBe(
       `0/${LEVEL_FILL_TOTAL} ${FORM_COPY.know}`,
@@ -552,22 +554,35 @@ describe("Next Play and projector recap", () => {
   it("keeps recap as a still-lit glance with Board lit / Clean board and no class scores", () => {
     expect(RECAP_HEAD).toBe("Board lit");
     expect(RECAP_CLEAN).toBe("Clean board");
+    expect(RECAP_SAME_BOARD).toBe("Same board.");
     const play = readFileSync(join(root, "components/Play.jsx"), "utf8");
     expect(play).toMatch(/is-glance/);
+    expect(play).toMatch(/\{story\.banner\}/);
+    expect(play).toMatch(/recap-hdmi/);
+    expect(play).toMatch(/\{story\.head\}/);
+    expect(play).toMatch(/\{story\.line\}/);
     expect(play).not.toMatch(/recap-pips/);
+    expect(play).not.toMatch(/\{story\.pips\}/);
+    expect(play).not.toMatch(/Pips \{story\.pips\}/);
     expect(play).toMatch(/Play again/);
     expect(play).not.toMatch(/PROFILE_TITLE/);
     expect(play).not.toMatch(/class score|live score|roster|leaderboard|improved/i);
-    expect(RECAP_SAME_TEN).toBe("Same 10. Fill the wells.");
-    expect(RECAP_SAME_TEN).not.toMatch(/sitting|hits toward knowing|you know this|meters/i);
+    expect(RECAP_SAME_TEN).toBe("Same 10. Fill the meters.");
+    expect(RECAP_SAME_TEN).not.toMatch(/sitting|hits toward knowing|you know this|wells/i);
     const recapActions = play.split("play-done")[1] || "";
     expect(recapActions).toMatch(/btn-primary/);
     expect(recapActions).not.toMatch(/Customize/);
     expect(recapActions).not.toMatch(/WHAT_YOU_KNOW|What you know/);
     const recap = readFileSync(join(root, "engine/recap.js"), "utf8");
+    expect(recap).toMatch(/banner: RECAP_SAME_BOARD/);
     expect(recap).toMatch(/line: RECAP_SAME_TEN/);
-    expect(recap).not.toMatch(/\bscore\b|\bXP\b|streak|loot|hits toward|Fill the meters/i);
-    expect(RECAP_SAME_TEN).toBe("Same 10. Fill the wells.");
+    expect(recap).not.toMatch(/\bscore\b|\bXP\b|streak|loot|hits toward|Fill the wells/i);
+    expect(RECAP_SAME_TEN).toBe("Same 10. Fill the meters.");
+    const board = readFileSync(join(root, "components/Board.jsx"), "utf8");
+    expect(board).toMatch(/sittingCellMarks/);
+    expect(board).not.toMatch(/recap \?\s*0/);
+    const styles = readFileSync(join(root, "styles.css"), "utf8");
+    expect(styles).toMatch(/\.recap-hdmi/);
   });
 });
 
