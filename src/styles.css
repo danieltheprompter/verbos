@@ -267,6 +267,21 @@ p {
   animation: cell-visit var(--motion-visit) var(--motion-ease);
 }
 
+.cell.is-land .cell-marks i:last-child {
+  animation: piece-land var(--motion-visit) var(--motion-ease);
+}
+
+@keyframes piece-land {
+  0% {
+    transform: translateY(-12px) scale(0.35);
+    opacity: 0;
+  }
+  100% {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+}
+
 @keyframes cell-visit {
   0% {
     transform: scale(0.62);
@@ -378,8 +393,8 @@ p {
 }
 
 .is-recap .cell-marks i {
-  width: 8px;
-  height: 8px;
+  width: 10px;
+  height: 10px;
 }
 
 .play-done.is-recap-pips .cell-answered,

@@ -14,11 +14,11 @@ export function Board({
   items = [],
   attempts = [],
   sittingKeys = [],
+  visitCounts = {},
   current,
   recap = false,
   land = null,
   lockIn = false,
-  visitCounts = {},
 }) {
   const columns = columnLabels(settings);
   const rows = packTenses.filter((tense) => settings.tenses.includes(tense.id));
@@ -26,6 +26,7 @@ export function Board({
     ...answeredCellKeys(items),
     ...sittingVisitCellKeys(attempts, sittingKeys),
   ]);
+  if (land) answered.add(`${land.tense}:${land.person}`);
   return (
     <div className={`board-wrap${recap ? " is-recap" : ""}`}>
       <div
@@ -61,8 +62,8 @@ export function Board({
                   column.id,
                   sittingKeys,
                 );
+                const visits = Number(visitCounts[`${row.id}:${column.id}`]) || 0;
                 const answeredHere = answered.has(`${row.id}:${column.id}`);
-                const visits = visitCounts[`${row.id}:${column.id}`] || 0;
                 const marks = visitPieceCount(sittingMarks, visits, answeredHere || isLand);
                 return (
                   <div

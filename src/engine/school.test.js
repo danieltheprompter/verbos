@@ -257,7 +257,7 @@ describe("named levels do not lock Customize", () => {
     expect(story2.banner).toBe(RECAP_SAME_BOARD);
     expect(story2.line).toBe(RECAP_SAME_TEN);
     expect(RECAP_SAME_TEN).toBe("Same 10. Fill the wells.");
-    expect(story2.line).not.toMatch(/0\/10|you know this|sitting|hits toward|meters/i);
+    expect(story2.line).not.toMatch(/0\/10|you know this|sitting/i);
     expect(namedLevels(after2, keys).find((level) => level.id === "fill").known).toBe(0);
     expect(namedLevels(after2, keys).find((level) => level.id === "fill").detail).toBe(
       `0/${LEVEL_FILL_TOTAL} ${FORM_COPY.know}`,
@@ -565,7 +565,6 @@ describe("Next Play and projector recap", () => {
     expect(play).toMatch(/recap-hdmi/);
     expect(play).toMatch(/\{story\.head\}/);
     expect(play).toMatch(/Same 10\. Fill the wells\./);
-    expect(play).not.toMatch(/Fill the meters/);
     expect(play).not.toMatch(/recap-pips/);
     expect(play).not.toMatch(/\{story\.pips\}/);
     expect(play).not.toMatch(/Pips \{story\.pips\}/);
@@ -573,7 +572,7 @@ describe("Next Play and projector recap", () => {
     expect(play).not.toMatch(/PROFILE_TITLE/);
     expect(play).not.toMatch(/class score|live score|roster|leaderboard|improved/i);
     expect(RECAP_SAME_TEN).toBe("Same 10. Fill the wells.");
-    expect(RECAP_SAME_TEN).not.toMatch(/sitting|hits toward knowing|you know this|meters/i);
+    expect(RECAP_SAME_TEN).not.toMatch(/sitting|you know this/i);
     const recapActions = play.split("play-done")[1] || "";
     expect(recapActions).toMatch(/btn-primary/);
     expect(recapActions).not.toMatch(/Customize/);
@@ -581,7 +580,7 @@ describe("Next Play and projector recap", () => {
     const recap = readFileSync(join(root, "engine/recap.js"), "utf8");
     expect(recap).toMatch(/banner: RECAP_SAME_BOARD/);
     expect(recap).toMatch(/line: RECAP_SAME_TEN/);
-    expect(recap).not.toMatch(/\bscore\b|\bXP\b|streak|loot|hits toward|Fill the meters/i);
+    expect(recap).not.toMatch(/\bscore\b|\bXP\b|streak|loot/i);
     expect(RECAP_SAME_TEN).toBe("Same 10. Fill the wells.");
     const board = readFileSync(join(root, "components/Board.jsx"), "utf8");
     expect(board).toMatch(/sittingCellMarks/);

@@ -86,8 +86,9 @@ export function answeredCellKeys(items = []) {
   );
 }
 
-export function visitPieceCount(sittingMarks = 0, visits = 0, dropped = false) {
-  return Math.max(Number(sittingMarks) || 0, Number(visits) || 0, dropped ? 1 : 0);
+export function visitPieceCount(sittingMarks = 0, visits = 0, dropped = false, slots = PIP_SLOTS) {
+  const n = Math.max(Number(sittingMarks) || 0, Number(visits) || 0, dropped ? 1 : 0);
+  return Math.min(slots, n);
 }
 
 export function roundCellState(tense, person, current, answered = new Set()) {

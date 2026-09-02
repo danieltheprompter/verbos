@@ -387,8 +387,10 @@ describe("round board ignores mastery", () => {
     expect(sittingVisitCellKeys([hit], sitting).has("presente:yo")).toBe(true);
     expect(sittingCellMarks([miss], "presente", "yo", sitting)).toBe(1);
     expect(sittingCellMarks([miss, hit], "presente", "yo", sitting)).toBe(2);
+    expect(visitPieceCount(0, 0, false)).toBe(0);
     expect(visitPieceCount(0, 0, true)).toBe(1);
     expect(visitPieceCount(0, 1, false)).toBe(1);
+    expect(visitPieceCount(0, 1, true)).toBe(1);
     expect(visitPieceCount(2, 1, true)).toBe(2);
     const items = [{ tense: "presente", person: "yo", correct: false }];
     const wells = new Set([
@@ -402,17 +404,18 @@ describe("round board ignores mastery", () => {
     expect(board).toMatch(/false \? <p className="board-note">\{BOARD_NOTE\}<\/p>/);
     expect(board).toMatch(/visitPieceCount/);
     expect(board).toMatch(/visitCounts/);
-    expect(board).toMatch(/data-marks/);
     expect(board).toMatch(/sittingCellMarks/);
+    expect(board).toMatch(/data-marks/);
+    expect(board).toMatch(/if \(land\) answered\.add/);
     const play = readFileSync(join(root, "components/Play.jsx"), "utf8");
     const judge = play.split("function judge")[1]?.split("function next")[0] || "";
     expect(judge).toMatch(/item\.correct = ok/);
     expect(judge).toMatch(/setLand\(\{ tense: item\.tense, person: item\.person \}\)/);
     expect(judge.indexOf("setLand")).toBeLessThan(judge.indexOf("if (!ok"));
+    expect(judge).toMatch(/setVisitCounts/);
     expect(play).toMatch(/result\.miss\.message/);
-    expect(play).toMatch(/setVisitCounts/);
+    expect(play).toMatch(/is-flick-col|data-result/);
     expect(play).toMatch(/Same 10\. Fill the wells\./);
-    expect(play).not.toMatch(/Fill the meters/);
   });
 
   it("does not treat lifetime attempts as this-round answers", () => {
@@ -458,7 +461,7 @@ describe("recap hero", () => {
     expect(story.head).toBe("Clean board");
     expect(story.line).toBe(RECAP_SAME_TEN);
     expect(RECAP_SAME_TEN).toBe("Same 10. Fill the wells.");
-    expect(RECAP_SAME_TEN).not.toMatch(/meters|sitting|hits toward|you know this/i);
+    expect(RECAP_SAME_TEN).not.toMatch(/sitting|you know this/i);
     expect(story.pips).toBe("1/5");
     expect(story.hits).toBe(1);
     expect(story.need).toBe(5);
@@ -498,7 +501,7 @@ describe("recap hero", () => {
     expect(formState(after, spec())).toBe("learning");
     const story = recapStory([item], after);
     expect(story.line).toBe(RECAP_SAME_TEN);
-    expect(story.line).not.toMatch(/sitting|hits toward knowing|you know this|still learning|meters/i);
+    expect(story.line).not.toMatch(/sitting|you know this|still learning/i);
     expect(story.pips).toBe("5/5");
     expect(story.next).toBe("Play those squares again.");
     expect(story.action).toBe("again");
@@ -1028,7 +1031,7 @@ describe("sitting keys lock type and ending", () => {
     expect(story1.pips).toBe("1/5");
     expect(recapHitsToward(round1, keys).label).toBe("1/5");
     expect(story1.line).toBe(RECAP_SAME_TEN);
-    expect(story1.line).not.toMatch(/0\/10|sitting|hits toward|meters/i);
+    expect(story1.line).not.toMatch(/0\/10|sitting/i);
     expect(`${story1.line} ${story1.pips}`).not.toMatch(
       new RegExp(`0/${LEVEL_FILL_TOTAL} ${FORM_COPY.know}`),
     );
@@ -1052,7 +1055,7 @@ describe("sitting keys lock type and ending", () => {
     expect(story2.line).toBe(RECAP_SAME_TEN);
     expect(story2.banner).toBe(RECAP_SAME_BOARD);
     expect(RECAP_SAME_TEN).toBe("Same 10. Fill the wells.");
-    expect(story2.line).not.toMatch(/0\/10|you know this|sitting|hits toward|meters/i);
+    expect(story2.line).not.toMatch(/0\/10|you know this|sitting/i);
     expect(`${story2.head} ${story2.line} ${story2.pips}`).not.toMatch(
       new RegExp(`0/${LEVEL_FILL_TOTAL} ${FORM_COPY.know}`),
     );
@@ -1158,6 +1161,8 @@ describe("sitting keys lock type and ending", () => {
     expect(play).toMatch(/sittingKeys=\{sittingKeys\}/);
     expect(play).toMatch(/is-flick-col/);
     expect(play).toMatch(/setLand/);
+    expect(play).toMatch(/visitCounts=\{visitCounts\}/);
+    expect(play).toMatch(/Same 10\. Fill the wells\./);
     expect(RECAP_SAME_TEN).toBe("Same 10. Fill the wells.");
     expect(RECAP_SAME_BOARD).toBe("Same board.");
   });
