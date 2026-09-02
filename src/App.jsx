@@ -183,7 +183,10 @@ export function App() {
               address: next.address,
               extraColumn: next.extraColumn,
             };
-            setStore((prev) => loadClassSet(prev, payload));
+            setStore((prev) => {
+              const loaded = loadClassSet(prev, payload);
+              return { ...loaded, warmupBell: Boolean(prev.warmupBell) };
+            });
             setScreen("home");
           }}
         />

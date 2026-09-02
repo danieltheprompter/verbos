@@ -294,6 +294,7 @@ describe("warm-up and class set", () => {
     const app = readFileSync(join(root, "App.jsx"), "utf8");
     expect(app).toMatch(/warmupBell/);
     expect(app).toMatch(/saveWarmupBell/);
+    expect(app).toMatch(/warmupBell: Boolean\(prev\.warmupBell\)/);
     const play = readFileSync(join(root, "components/Play.jsx"), "utf8");
     const warmupRecap = play.split("{warmup ? (")[1]?.split(") : (")[0] || "";
     expect(warmupRecap).toMatch(/Done/);
@@ -318,6 +319,10 @@ describe("warm-up and class set", () => {
     expect(JSON.parse(localStorage.getItem(STORAGE_KEY)).warmupBell).toBe(true);
     expect(loadState().warmupBell).toBe(true);
     expect(loadState().hasClassSet).toBe(false);
+    const storage = readFileSync(join(root, "engine/storage.js"), "utf8");
+    expect(storage).toMatch(/warmupBell: deviceWarmupBell\(current\)/);
+    expect(storage).toMatch(/classSetSettingsPatch/);
+    expect(storage).not.toMatch(/warmupBell: Boolean\(state\.warmupBell\)/);
     const settings = warmupSettings({ ...DEFAULT_SETTINGS, mc: true, timer: true, timerSec: 8 });
     expect(settings.mc).toBe(false);
     expect(settings.timer).toBe(false);
@@ -391,6 +396,54 @@ describe("warm-up and class set", () => {
     expect(recapHitsToward(activeProfile(state).attempts, keys).label).toBe("5/5");
     expect(miniCellPaint(activeProfile(state).attempts, first[0].tense, first[0].person, activeProfile(state).atlasKeys)).toBe("know");
     expect(state.warmupBell).toBe(false);
+    const withBell = saveWarmupBell(state, true);
+    const hostile = {
+      ...classSetFromSettings({ ...DEFAULT_SETTINGS, types: ["stem"] }),
+      warmupBell: false,
+      sittingKeys: ["should-not-write"],
+    };
+    const afterBell = loadClassSet(withBell, hostile);
+    expect(afterBell.warmupBell).toBe(true);
+    expect(JSON.parse(localStorage.getItem(STORAGE_KEY)).warmupBell).toBe(true);
+    expect(loadState().warmupBell).toBe(true);
+    expect(activeProfile(afterBell).sittingKeys).toEqual([]);
+    expect(JSON.parse(localStorage.getItem(STORAGE_KEY)).sittingKeys).toEqual([]);
+    expect(activeProfile(afterBell).atlasKeys).toEqual(keys);
+    expect(encodeClassSet(classSetFromSettings(afterBell.settings))).not.toMatch(/warmupBell/);
+  });
+
+  it("keeps 5:00 on the device after a hard reload and after a class set", () => {
+    memoryStore();
+    let state = saveWarmupBell(loadState(), true);
+    expect(state.hasClassSet).toBe(false);
+    expect(JSON.parse(localStorage.getItem(STORAGE_KEY)).warmupBell).toBe(true);
+    expect(loadState().warmupBell).toBe(true);
+    expect(loadState().hasClassSet).toBe(false);
+
+    const first = buildRound(DEFAULT_SETTINGS, [], mulberry32(3));
+    const keys = first.map(itemFormKey);
+    state = rememberSitting(loadState(), first);
+    expect(state.warmupBell).toBe(true);
+    expect(activeProfile(state).sittingKeys).toEqual(keys);
+
+    state = loadClassSet(state, {
+      ...classSetFromSettings({ ...DEFAULT_SETTINGS, types: ["stem"] }),
+      warmupBell: false,
+      sittingKeys: keys,
+    });
+    expect(state.hasClassSet).toBe(true);
+    expect(state.warmupBell).toBe(true);
+    expect(JSON.parse(localStorage.getItem(STORAGE_KEY)).warmupBell).toBe(true);
+    expect(loadState().warmupBell).toBe(true);
+    expect(activeProfile(state).sittingKeys).toEqual([]);
+    expect(JSON.parse(localStorage.getItem(STORAGE_KEY)).sittingKeys).toEqual([]);
+    expect(activeProfile(state).atlasKeys).toEqual(keys);
+    expect(encodeClassSet(classSetFromSettings(state.settings))).not.toMatch(/warmupBell/);
+
+    state = saveSettings(state, { ...DEFAULT_SETTINGS, types: ["irregular"] });
+    expect(state.warmupBell).toBe(true);
+    expect(JSON.parse(localStorage.getItem(STORAGE_KEY)).warmupBell).toBe(true);
+    expect(loadState().warmupBell).toBe(true);
     const profile = readFileSync(join(root, "components/Profile.jsx"), "utf8");
     expect(profile).toMatch(/atlasKeys/);
     expect(profile).not.toMatch(/recapHitsToward|recap-pips/);

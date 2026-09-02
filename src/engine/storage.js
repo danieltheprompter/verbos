@@ -1,13 +1,42 @@
 import { CONTENT_VERSION, STORAGE_KEY } from "./config.js";
 import { DEFAULT_SETTINGS, typesFromLegacyPool } from "./constants.js";
-import { settingsLookLikeClassSet } from "./classSet.js";
+import { CLASS_SET_FIELDS, settingsLookLikeClassSet } from "./classSet.js";
 import { moodOf, pack, timeOf } from "./pack.js";
 import { cellsFor } from "./board.js";
 import { itemFormKey, sittingKeysFromAttempts, uniqueFormKeys } from "./mastery.js";
 import { endingPattern, verbType } from "./verbs.js";
 
+function classSetSettingsPatch(payload) {
+  const patch = {};
+  for (const field of CLASS_SET_FIELDS) {
+    if (payload && Object.prototype.hasOwnProperty.call(payload, field)) {
+      patch[field] = payload[field];
+    }
+  }
+  return patch;
+}
+
+function blobWarmupBell() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return false;
+    return Boolean(JSON.parse(raw).warmupBell);
+  } catch {
+    return false;
+  }
+}
+
+function deviceWarmupBell(state) {
+  if (state && Object.prototype.hasOwnProperty.call(state, "warmupBell")) {
+    return Boolean(state.warmupBell);
+  }
+  return blobWarmupBell();
+}
+
 function normalizeSettings(raw = {}) {
-  const fromPack = pack.normalizeSettings?.(raw) ?? raw;
+  const safe = { ...(raw || {}) };
+  delete safe.warmupBell;
+  const fromPack = pack.normalizeSettings?.(safe) ?? safe;
   const tenses = Array.isArray(fromPack.tenses) && fromPack.tenses.length
     ? fromPack.tenses
     : [...DEFAULT_SETTINGS.tenses];
@@ -84,7 +113,7 @@ export function ensureProfiles(state = {}) {
     return {
       settings: normalizeSettings(state.settings),
       hasClassSet: Boolean(state.hasClassSet),
-      warmupBell: Boolean(state.warmupBell),
+      warmupBell: deviceWarmupBell(state),
       sittingKeys: topKeys,
       atlasKeys: topAtlas,
       activeProfileId,
@@ -115,7 +144,7 @@ export function ensureProfiles(state = {}) {
   return {
     settings: normalizeSettings(state.settings),
     hasClassSet: Boolean(state.hasClassSet) || settingsLookLikeClassSet(state.settings),
-    warmupBell: Boolean(state.warmupBell),
+    warmupBell: deviceWarmupBell(state),
     sittingKeys: profile.sittingKeys,
     atlasKeys: profile.atlasKeys,
     activeProfileId: profile.id,
@@ -190,14 +219,15 @@ export function loadState() {
 }
 
 export function saveState(state) {
-  const current = ensureProfiles(state);
+  const warmupBell = deviceWarmupBell(state);
+  const current = { ...ensureProfiles(state), warmupBell };
   const who = activeProfile(current);
   localStorage.setItem(
     STORAGE_KEY,
     JSON.stringify({
       settings: current.settings,
       hasClassSet: current.hasClassSet,
-      warmupBell: Boolean(current.warmupBell),
+      warmupBell,
       sittingKeys: who.sittingKeys || [],
       atlasKeys: who.atlasKeys || [],
       activeProfileId: current.activeProfileId,
@@ -231,6 +261,7 @@ export function saveSettings(state, settings) {
     settings: normalizeSettings(settings),
     hasClassSet: true,
     sittingKeys: [],
+    warmupBell: deviceWarmupBell(current),
     profiles: current.profiles.map((profile) =>
       profile.id === current.activeProfileId ? { ...profile, sittingKeys: [] } : profile,
     ),
@@ -349,13 +380,14 @@ export function loadClassSet(state, payload) {
     ...current,
     settings: normalizeSettings({
       ...current.settings,
-      ...payload,
+      ...classSetSettingsPatch(payload),
       mc: current.settings.mc,
       timer: current.settings.timer,
       timerSec: current.settings.timerSec,
     }),
     hasClassSet: true,
     sittingKeys: [],
+    warmupBell: deviceWarmupBell(current),
     profiles: current.profiles.map((profile) =>
       profile.id === current.activeProfileId ? { ...profile, sittingKeys: [] } : profile,
     ),
