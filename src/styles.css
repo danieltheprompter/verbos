@@ -1137,11 +1137,10 @@ p {
 .cell-marks,
 .mini-marks {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: 3px;
   justify-content: center;
   align-items: center;
-  max-width: 28px;
   pointer-events: none;
 }
 
