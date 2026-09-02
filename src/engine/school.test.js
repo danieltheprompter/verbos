@@ -178,6 +178,10 @@ describe("named levels do not lock Customize", () => {
     expect(mini).toMatch(/sittingCellMarks/);
     expect(mini).toMatch(/is-know/);
     expect(mini).not.toMatch(/is-not_enough|color-visit|cell-visit/);
+    const progress = readFileSync(join(root, "components/Progress.jsx"), "utf8");
+    expect(progress).toMatch(/MiniBoard/);
+    expect(progress).toMatch(/sittingKeys/);
+    expect(progress).toMatch(/atlasKeys/);
     const css = readFileSync(join(root, "styles.css"), "utf8");
     const miniCss = css.slice(css.indexOf(".mini-cell"), css.indexOf(".session-bell"));
     expect(miniCss).not.toMatch(/--color-visit|--color-owned|#c9843c|#e39a45|#d8a35a/);

@@ -1117,6 +1117,10 @@ p {
   font-size: 0.86rem;
 }
 
+.career .mini-board {
+  margin: 0 0 1.25rem;
+}
+
 .mini-board {
   --cols: 5;
   --row-label: 7.2rem;

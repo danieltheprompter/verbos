@@ -202,6 +202,8 @@ export function App() {
       {screen === "progress" ? (
         <Progress
           attempts={profile.attempts}
+          sittingKeys={profile.sittingKeys}
+          atlasKeys={profile.atlasKeys}
           onBack={() => setScreen("profile")}
           onCustomize={
             profile.finishedRound || store.hasClassSet ? () => setScreen("customize") : null

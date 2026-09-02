@@ -3,8 +3,16 @@ import { FORM_COPY, RANK_PATH, WHAT_YOU_KNOW } from "../engine/config.js";
 import { pack } from "../engine/pack.js";
 import { atlasFillStats, atlasPersons, buildAtlas } from "../engine/progress.js";
 import { ClearProgress } from "./ClearProgress.jsx";
+import { MiniBoard } from "./MiniBoard.jsx";
 
-export function Progress({ attempts, onBack, onCustomize, onClear }) {
+export function Progress({
+  attempts,
+  sittingKeys = [],
+  atlasKeys = [],
+  onBack,
+  onCustomize,
+  onClear,
+}) {
   const [mood, setMood] = useState(pack.moods[0]?.id);
   const [type, setType] = useState(pack.verbBuckets[0]?.id);
   const [ending, setEnding] = useState(pack.endingPatterns[0]?.id);
@@ -78,6 +86,8 @@ export function Progress({ attempts, onBack, onCustomize, onClear }) {
           </div>
         </div>
       ) : null}
+
+      <MiniBoard attempts={attempts} sittingKeys={sittingKeys} atlasKeys={atlasKeys} />
 
       <div className="atlas" style={{ "--cols": persons.length }} aria-label={`${mood} atlas`}>
         <div className="board-corner" />
