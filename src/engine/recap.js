@@ -10,7 +10,7 @@ import {
   RECAP_SAME_TEN,
   RECAP_STILL,
 } from "./config.js";
-import { formState, itemFormKey, parseFormKey, typedAttemptsFor } from "./mastery.js";
+import { formState, itemFormKey, parseFormKey, sameFormKeySet, typedAttemptsFor } from "./mastery.js";
 import { moodOf, personLabel, tenseLabel, timeOf } from "./pack.js";
 
 function specOf(item) {
@@ -90,7 +90,7 @@ export function recapStory(items = [], attempts = [], sittingKeys = []) {
     };
   }
 
-  if (stillNotEnough) {
+  if (stillNotEnough && sameFormKeySet(items.map(itemFormKey), keys)) {
     return {
       head,
       line: RECAP_SAME_TEN,

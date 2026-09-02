@@ -10,6 +10,7 @@ import {
   itemFormKey,
   parseFormKey,
   sittingIncomplete,
+  sameFormKeySet,
   sittingKeysFromAttempts,
   typeKnownAtCell,
   uniqueFormKeys,
@@ -118,31 +119,40 @@ function keysFromReplayCells(cells = []) {
   return uniqueFormKeys(keys);
 }
 
-function resolveSittingKeys(sittingKeys, replay, attempts, cells) {
-  const pinned = uniqueFormKeys(sittingKeys);
-  if (pinned.length === cells.length) return pinned;
-  const recovered = uniqueFormKeys(sittingKeysFromAttempts(attempts, cells));
-  if (recovered.length === cells.length) return recovered;
-  const fromReplay = keysFromReplayCells(replay || []);
-  if (fromReplay.length === cells.length) return fromReplay;
-  return pinned.length ? pinned : recovered.length ? recovered : fromReplay;
-}
-
-function fillFromSittingKeys(keys, verbs, rng, _size, attempts = []) {
+export function mapSittingKeys(keys, settings, attempts = [], rng = Math.random) {
   const unique = uniqueFormKeys(keys);
-  if (!unique.length) return [];
+  if (unique.length !== ROUND_SIZE) {
+    throw new Error(`sittingKeys must be ${ROUND_SIZE} unique formKeys, got ${unique.length}`);
+  }
+  const verbs = verbsForSettings(settings);
   const items = [];
   const used = new Set();
   for (const key of shuffle(unique, rng)) {
     const spec = parseFormKey(key);
     const tense = tenseFor(spec.mood, spec.time);
+    if (!tense) throw new Error(`sitting key has no tense: ${key}`);
     const verb = pickVerbForSpec(verbs, spec, used, rng, lastVerbOnKey(attempts, spec));
-    if (!verb || !tense) continue;
+    if (!verb) throw new Error(`sitting key has no verb: ${key}`);
     const item = itemFrom({ tense, person: spec.person }, verb);
-    if (itemFormKey(item) !== key) continue;
+    if (itemFormKey(item) !== key) {
+      throw new Error(`sitting map drifted ${key} -> ${itemFormKey(item)}`);
+    }
     items.push(item);
   }
+  if (!sameFormKeySet(items.map(itemFormKey), unique)) {
+    throw new Error("built round set ≠ sittingKeys");
+  }
   return items;
+}
+
+function pinForRound(sittingKeys, replay, attempts, cells) {
+  const explicit = uniqueFormKeys(sittingKeys);
+  if (explicit.length === ROUND_SIZE) return explicit;
+  const recovered = uniqueFormKeys(sittingKeysFromAttempts(attempts, cells));
+  if (recovered.length === ROUND_SIZE) return recovered;
+  const fromReplay = keysFromReplayCells(replay || []);
+  if (fromReplay.length === ROUND_SIZE) return fromReplay;
+  return [];
 }
 
 function itemFrom(cell, verb) {
@@ -258,10 +268,9 @@ export function buildRound(
   if (!verbs.length || !cells.length) return [];
   if (allSelectedKnown(settings, attempts)) return [];
 
-  const lockedKeys = resolveSittingKeys(sittingKeys, replay, attempts, cells);
-  if (lockedKeys.length === size && sittingIncomplete(attempts, lockedKeys)) {
-    const pinned = fillFromSittingKeys(lockedKeys, verbs, rng, size, attempts);
-    if (pinned.length) return pinned;
+  const pin = pinForRound(sittingKeys, replay, attempts, cells);
+  if (pin.length === ROUND_SIZE && sittingIncomplete(attempts, pin)) {
+    return mapSittingKeys(pin, settings, attempts, rng);
   }
 
   // Round 1 / still nothing you-know-this: one visit per cell, no retries stuffed in.

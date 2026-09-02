@@ -58,6 +58,13 @@ export function uniqueFormKeys(keys = []) {
   return [...new Set((keys || []).filter((key) => key && String(key).split(":").length === 5))];
 }
 
+export function sameFormKeySet(left = [], right = []) {
+  const a = uniqueFormKeys(left);
+  const b = uniqueFormKeys(right);
+  if (a.length !== b.length) return false;
+  return [...a].sort().join("|") === [...b].sort().join("|");
+}
+
 export function sittingIncomplete(attempts, sittingKeys = []) {
   if (!sittingKeys.length) return false;
   return sittingKeys.some(

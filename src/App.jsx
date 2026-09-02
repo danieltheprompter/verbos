@@ -7,7 +7,7 @@ import { Profile } from "./components/Profile.jsx";
 import { Progress } from "./components/Progress.jsx";
 import { cellsFor, sameBoard } from "./engine/board.js";
 import { DEFAULT_SETTINGS, WARMUP_BELL_SEC } from "./engine/constants.js";
-import { allSelectedKnown, sittingKeysFromAttempts } from "./engine/mastery.js";
+import { allSelectedKnown, itemFormKey, sameFormKeySet, sittingKeysFromAttempts, uniqueFormKeys } from "./engine/mastery.js";
 import { nextPlayLine } from "./engine/levels.js";
 import { buildRound } from "./engine/round.js";
 import { warmupSettings } from "./engine/warmup.js";
@@ -73,6 +73,10 @@ export function App() {
     if (!nextItems.length) {
       setScreen(mode === "warmup" ? "home" : "customize");
       return;
+    }
+    const pin = uniqueFormKeys(sittingKeys);
+    if (pin.length === 10 && !sameFormKeySet(nextItems.map(itemFormKey), pin)) {
+      throw new Error("built round set ≠ sittingKeys");
     }
     setStore(rememberSitting(from, nextItems, { fresh: Boolean(newSitting) }));
     setItems(nextItems);

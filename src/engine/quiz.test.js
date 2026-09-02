@@ -34,6 +34,7 @@ import {
   itemFormKey,
   masteryWindow,
   parseFormKey,
+  sameFormKeySet,
   sittingCellMarks,
   sittingIncomplete,
   youKnowThis,
@@ -61,7 +62,7 @@ import { explainMiss } from "./miss.js";
 import { atlasCopyAt, atlasFillName, atlasFillStats, atlasRank, buildAtlas } from "./progress.js";
 import { recapHitsToward, recapStory } from "./recap.js";
 import { mulberry32 } from "./random.js";
-import { buildRound, makeDistractors } from "./round.js";
+import { buildRound, makeDistractors, mapSittingKeys } from "./round.js";
 import { activeProfile, clearProgress, loadClassSet, loadState, rememberSitting, saveSettings, toLogAttempt } from "./storage.js";
 import { classSetFromSettings } from "./classSet.js";
 import {
@@ -962,7 +963,7 @@ describe("sitting keys lock type and ending", () => {
     const keys = items.map(itemFormKey);
     expect(keys).toHaveLength(sitting.length);
     expect(new Set(keys).size).toBe(sitting.length);
-    expect([...keys].sort()).toEqual([...sitting].sort());
+    expect(sameFormKeySet(keys, sitting)).toBe(true);
   }
 
   it("logs the same formKey two rounds in a row; a new key before 5 typed fails", () => {
@@ -1010,6 +1011,43 @@ describe("sitting keys lock type and ending", () => {
     );
   });
 
+  it("maps persisted sittingKeys for five Play-agains; esperaste-twice fixture cannot pass", () => {
+    const sitting = [
+      "indicative:preterito:yo:regular:er_ir",
+      "indicative:presente:el:regular:er_ir",
+      "indicative:presente:nos:regular:ar",
+      "indicative:presente:tu:regular:er_ir",
+      "indicative:presente:ellos:regular:er_ir",
+      "indicative:preterito:tu:regular:ar",
+      "indicative:preterito:nos:regular:er_ir",
+      "indicative:presente:yo:regular:ar",
+      "indicative:preterito:el:regular:er_ir",
+      "indicative:preterito:ellos:regular:er_ir",
+    ];
+    expect(new Set(sitting).size).toBe(10);
+    const esperasteTwice = sitting.map((key) =>
+      key === "indicative:presente:ellos:regular:er_ir" ? "indicative:preterito:tu:regular:ar" : key,
+    );
+    expect(new Set(esperasteTwice).size).toBe(9);
+    expect(() => mapSittingKeys(esperasteTwice, DEFAULT_SETTINGS, [], mulberry32(2))).toThrow(
+      /10 unique formKeys|built round set/,
+    );
+    const src = readFileSync(join(dirname(fileURLToPath(import.meta.url)), "round.js"), "utf8");
+    const sittingPath = src.split("if (pin.length === ROUND_SIZE && sittingIncomplete")[1]?.split(
+      "// Round 1",
+    )[0];
+    expect(sittingPath).toMatch(/return mapSittingKeys\(pin/);
+    expect(sittingPath).not.toMatch(/pickTypeForCell|fillWeighted|fillCells/);
+    let attempts = [];
+    for (let round = 1; round <= 5; round += 1) {
+      const items = buildRound(DEFAULT_SETTINGS, attempts, mulberry32(17 * round), 10, null, sitting);
+      expectSittingSet(items, sitting);
+      expect(items.filter((item) => itemFormKey(item) === "indicative:preterito:tu:regular:ar")).toHaveLength(1);
+      expect(items.map(itemFormKey)).toContain("indicative:presente:ellos:regular:er_ir");
+      attempts = playClean(items, attempts);
+    }
+  });
+
   it("keeps the same unique 10 formKeys across five consecutive Play-agains", () => {
     const first = buildRound(DEFAULT_SETTINGS, [], mulberry32(7));
     const sitting = first.map(itemFormKey);
@@ -1023,6 +1061,7 @@ describe("sitting keys lock type and ending", () => {
         mulberry32(20 + round),
         10,
         itemsToCells(first),
+        sitting,
       );
       expectSittingSet(items, sitting);
       attempts = playClean(items, attempts);
