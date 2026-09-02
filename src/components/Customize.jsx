@@ -252,9 +252,8 @@ export function Customize({ settings, attempts = [], onSave, onBack, onProgress,
                   setSetNote(CLASS_SET_BAD);
                   return;
                 }
-                const next = applyClassSet(draft, payload);
-                setDraft(next);
-                onApplySet(next);
+                setDraft((prev) => applyClassSet(prev, payload));
+                onApplySet(payload);
                 setSetNote(CLASS_SET_OK);
               }}
             >

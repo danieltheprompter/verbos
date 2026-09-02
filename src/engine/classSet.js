@@ -26,7 +26,7 @@ export function classSetFromSettings(settings = DEFAULT_SETTINGS) {
 }
 
 export function encodeClassSet(payload) {
-  return JSON.stringify(payload);
+  return JSON.stringify(classSetFromSettings(payload));
 }
 
 export function parseClassSet(text) {

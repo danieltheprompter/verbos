@@ -10,6 +10,7 @@ import { DEFAULT_SETTINGS, WARMUP_BELL_SEC } from "./engine/constants.js";
 import { allSelectedKnown, itemFormKey, sameFormKeySet, sittingIncomplete, sittingKeysFromAttempts, uniqueFormKeys } from "./engine/mastery.js";
 import { nextPlayLine } from "./engine/levels.js";
 import { buildRound, playAgainRound } from "./engine/round.js";
+import { classSetFromSettings } from "./engine/classSet.js";
 import { warmupSettings } from "./engine/warmup.js";
 import {
   activeProfile,
@@ -155,7 +156,12 @@ export function App() {
           attempts={profile.attempts}
           onBack={() => setScreen("home")}
           onProgress={() => setScreen("profile")}
-          onApplySet={(next) => setStore((prev) => saveSettings(prev, next))}
+          onApplySet={(next) =>
+            setStore((prev) => {
+              const loaded = loadClassSet(prev, classSetFromSettings(next));
+              return { ...loaded, warmupBell: Boolean(prev.warmupBell) };
+            })
+          }
           onSave={(next) => {
             const saved = saveSettings(storeRef.current, next);
             storeRef.current = saved;
@@ -175,16 +181,8 @@ export function App() {
           hasClassSet={store.hasClassSet}
           onBack={() => setScreen("home")}
           onLoad={(next) => {
-            const payload = {
-              types: next.types,
-              tenses: next.tenses,
-              pickedVerbs: next.pickedVerbs,
-              customList: next.customList,
-              address: next.address,
-              extraColumn: next.extraColumn,
-            };
             setStore((prev) => {
-              const loaded = loadClassSet(prev, payload);
+              const loaded = loadClassSet(prev, classSetFromSettings(next));
               return { ...loaded, warmupBell: Boolean(prev.warmupBell) };
             });
             setScreen("home");

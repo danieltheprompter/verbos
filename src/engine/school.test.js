@@ -25,6 +25,7 @@ import {
 import { cellsFor, itemsToCells } from "./board.js";
 import {
   applyClassSet,
+  CLASS_SET_FIELDS,
   classSetFromSettings,
   encodeClassSet,
   parseClassSet,
@@ -295,6 +296,9 @@ describe("warm-up and class set", () => {
     expect(app).toMatch(/warmupBell/);
     expect(app).toMatch(/saveWarmupBell/);
     expect(app).toMatch(/warmupBell: Boolean\(prev\.warmupBell\)/);
+    expect(app).toMatch(/onApplySet=\{/);
+    expect(app).toMatch(/loadClassSet\(prev, classSetFromSettings/);
+    expect(app).not.toMatch(/onApplySet=\{\(next\) => setStore\(\(prev\) => saveSettings/);
     const play = readFileSync(join(root, "components/Play.jsx"), "utf8");
     const warmupRecap = play.split("{warmup ? (")[1]?.split(") : (")[0] || "";
     expect(warmupRecap).toMatch(/Done/);
@@ -340,6 +344,16 @@ describe("warm-up and class set", () => {
     });
     const text = encodeClassSet(payload);
     expect(text).not.toMatch(/account|password|SIS|login/i);
+    expect(encodeClassSet({ ...payload, timer: true, timerSec: 8, warmupBell: true, mc: true })).not.toMatch(
+      /timer|warmupBell|"mc"/,
+    );
+    expect(CLASS_SET_FIELDS).not.toEqual(expect.arrayContaining(["timer", "timerSec", "warmupBell", "mc"]));
+    expect(parseClassSet(JSON.stringify({ ...payload, timer: true, warmupBell: false }))).not.toHaveProperty(
+      "timer",
+    );
+    expect(parseClassSet(JSON.stringify({ ...payload, timer: true, warmupBell: false }))).not.toHaveProperty(
+      "warmupBell",
+    );
     expect(parseClassSet(text)).toMatchObject({
       types: ["stem"],
       tenses: ["presente", "subjuntivo"],
@@ -426,24 +440,40 @@ describe("warm-up and class set", () => {
     expect(state.warmupBell).toBe(true);
     expect(activeProfile(state).sittingKeys).toEqual(keys);
 
+    const beforeTimer = state.settings.timer;
+    const beforeSec = state.settings.timerSec;
     state = loadClassSet(state, {
       ...classSetFromSettings({ ...DEFAULT_SETTINGS, types: ["stem"] }),
       warmupBell: false,
+      timer: true,
+      timerSec: 8,
+      mc: true,
       sittingKeys: keys,
     });
     expect(state.hasClassSet).toBe(true);
     expect(state.warmupBell).toBe(true);
+    expect(state.settings.timer).toBe(beforeTimer);
+    expect(state.settings.timerSec).toBe(beforeSec);
+    expect(state.settings.mc).toBe(false);
     expect(JSON.parse(localStorage.getItem(STORAGE_KEY)).warmupBell).toBe(true);
+    expect(JSON.parse(localStorage.getItem(STORAGE_KEY)).settings.timer).toBe(beforeTimer);
     expect(loadState().warmupBell).toBe(true);
     expect(activeProfile(state).sittingKeys).toEqual([]);
     expect(JSON.parse(localStorage.getItem(STORAGE_KEY)).sittingKeys).toEqual([]);
     expect(activeProfile(state).atlasKeys).toEqual(keys);
-    expect(encodeClassSet(classSetFromSettings(state.settings))).not.toMatch(/warmupBell/);
+    expect(encodeClassSet(classSetFromSettings(state.settings))).not.toMatch(/timer|warmupBell/);
 
-    state = saveSettings(state, { ...DEFAULT_SETTINGS, types: ["irregular"] });
+    state = saveSettings(state, {
+      ...DEFAULT_SETTINGS,
+      types: ["irregular"],
+      warmupBell: false,
+      timer: true,
+      timerSec: 8,
+    });
     expect(state.warmupBell).toBe(true);
     expect(JSON.parse(localStorage.getItem(STORAGE_KEY)).warmupBell).toBe(true);
     expect(loadState().warmupBell).toBe(true);
+    expect(timerFailsItem(timerExpireAction({ session: true }))).toBe(false);
     const profile = readFileSync(join(root, "components/Profile.jsx"), "utf8");
     expect(profile).toMatch(/atlasKeys/);
     expect(profile).not.toMatch(/recapHitsToward|recap-pips/);
