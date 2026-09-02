@@ -43,6 +43,7 @@ function blank() {
   return {
     settings: normalizeSettings(),
     hasClassSet: false,
+    warmupBell: false,
     activeProfileId: profile.id,
     profiles: [profile],
   };
@@ -71,6 +72,7 @@ export function ensureProfiles(state = {}) {
     return {
       settings: normalizeSettings(state.settings),
       hasClassSet: Boolean(state.hasClassSet),
+      warmupBell: Boolean(state.warmupBell),
       activeProfileId,
       profiles,
     };
@@ -88,6 +90,7 @@ export function ensureProfiles(state = {}) {
   return {
     settings: normalizeSettings(state.settings),
     hasClassSet: Boolean(state.hasClassSet) || settingsLookLikeClassSet(state.settings),
+    warmupBell: Boolean(state.warmupBell),
     activeProfileId: profile.id,
     profiles: [profile],
   };
@@ -166,6 +169,7 @@ export function saveState(state) {
     JSON.stringify({
       settings: current.settings,
       hasClassSet: current.hasClassSet,
+      warmupBell: Boolean(current.warmupBell),
       activeProfileId: current.activeProfileId,
       profiles: current.profiles.map((profile) => ({
         ...profile,
@@ -203,8 +207,21 @@ export function saveSettings(state, settings) {
 
 export function rememberCells(state, cells) {
   const next = patchActive(state, {
-    lastCells: (cells || []).map((cell) => ({ tense: cell.tense, person: cell.person })),
+    lastCells: (cells || []).map((cell) => ({
+      tense: cell.tense,
+      person: cell.person,
+      type: cell.type || cell.verb_type,
+      ending: cell.ending_pattern || cell.ending,
+      verb: cell.verb,
+    })),
   });
+  saveState(next);
+  return next;
+}
+
+export function saveWarmupBell(state, on) {
+  const current = ensureProfiles(state);
+  const next = { ...current, warmupBell: Boolean(on) };
   saveState(next);
   return next;
 }

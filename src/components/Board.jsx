@@ -7,9 +7,16 @@ import {
   roundCellState,
 } from "../engine/board.js";
 
+function typedMarks(attempts, tense, person) {
+  return attempts.filter(
+    (attempt) => attempt.typed && attempt.tense === tense && attempt.person === person,
+  ).length;
+}
+
 export function Board({
   settings,
   items = [],
+  attempts = [],
   current,
   recap = false,
   land = null,
@@ -59,6 +66,7 @@ export function Board({
                 );
                 const colFlick = flick?.axis === "col" && flick.person === column.id;
                 const axis = colFlick ? "col" : rowFlick ? "row" : null;
+                const marks = recap ? Math.min(5, typedMarks(attempts, row.id, column.id)) : 0;
                 return (
                   <div
                     key={column.id}
@@ -66,7 +74,15 @@ export function Board({
                       axis ? ` is-flick is-flick-${axis}` : ""
                     }`}
                     title={`${row.label} · ${column.label}`}
-                  />
+                  >
+                    {marks ? (
+                      <span className="cell-marks" aria-hidden="true">
+                        {Array.from({ length: marks }, (_, index) => (
+                          <i key={index} />
+                        ))}
+                      </span>
+                    ) : null}
+                  </div>
                 );
               })}
             </div>

@@ -1,5 +1,5 @@
 import { DEFAULT_SETTINGS } from "../engine/constants.js";
-import { columnLabels } from "../engine/board.js";
+import { cellPips, columnLabels } from "../engine/board.js";
 import { miniCellPaint } from "../engine/levels.js";
 import { tenses as packTenses } from "../engine/pack.js";
 
@@ -23,12 +23,21 @@ export function MiniBoard({ attempts = [] }) {
           {columns.map((column) => {
             const paint = miniCellPaint(attempts, row.id, column.id);
             const know = paint === "know";
+            const marks = cellPips(attempts, row.id, column.id);
             return (
               <div
                 key={column.id}
                 className={`atlas-cell mini-cell${know ? " is-know is-open" : ""}`}
                 title={`${row.label} · ${column.label}`}
-              />
+              >
+                {marks ? (
+                  <span className="mini-marks" aria-hidden="true">
+                    {Array.from({ length: marks }, (_, index) => (
+                      <i key={index} />
+                    ))}
+                  </span>
+                ) : null}
+              </div>
             );
           })}
         </div>

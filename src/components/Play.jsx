@@ -40,6 +40,7 @@ export function Play({
   const [showMiss, setShowMiss] = useState(false);
   const [motion, setMotion] = useState("");
   const [beat, setBeat] = useState("hold");
+  const [log, setLog] = useState(attempts);
   const inputRef = useRef(null);
   const playAgainRef = useRef(null);
   const playAgainReady = useRef(false);
@@ -160,7 +161,7 @@ export function Play({
     if (index + 1 >= items.length) setLockIn(true);
     const verb_type = item.type || item.verb_type || verbType(item.verb);
     const ending_pattern = item.ending_pattern || endingPattern(item.verb);
-    onAttempt({
+    const entry = {
       attempt_id: globalThis.crypto?.randomUUID?.(),
       mood: item.mood || moodOf(item.tense),
       time: item.time || timeOf(item.tense),
@@ -176,7 +177,9 @@ export function Play({
       typed: !useMc,
       latency_ms: Date.now() - startedAt.current,
       content_version: CONTENT_VERSION,
-    });
+    };
+    setLog((prev) => [...prev, entry]);
+    onAttempt(entry);
   }
 
   function next() {
@@ -213,13 +216,14 @@ export function Play({
   }
 
   if (finished) {
-    const story = recapStory(items, attempts);
+    const story = recapStory(items, log);
     return (
       <section className={`play play-done is-glance is-recap-${beat}`}>
         <h1 className="recap-head">{story.head}</h1>
         <Board
           settings={settings}
           items={items}
+          attempts={log}
           recap
         />
         {warmup ? null : <p className="recap-sub">{story.line}</p>}

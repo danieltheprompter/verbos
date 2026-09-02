@@ -25,6 +25,7 @@ import {
   WORDMARK,
 } from "./constants.js";
 import { allSelectedKnown, formCopy, formState, youKnowThis } from "./mastery.js";
+import { namedLevels } from "./levels.js";
 import {
   answeredCellKeys,
   cellKey,
@@ -791,7 +792,8 @@ describe("round builder", () => {
         counts[key] = (counts[key] || 0) + 1;
       }
     }
-    expect(counts["presente:yo"]).toBeLessThan(counts["preterito:tu"]);
+    expect(counts["presente:yo"] || 0).toBe(0);
+    expect(counts["preterito:tu"]).toBeGreaterThan(0);
   });
 
   it("builds four MC options including the key", () => {
@@ -832,6 +834,71 @@ describe("round builder", () => {
         cellPips(attempts, item.tense, item.person),
       );
     }
+    expect(second.map((item) => `${item.tense}:${item.person}:${item.ending_pattern}`).sort()).toEqual(
+      first.map((item) => `${item.tense}:${item.person}:${item.ending_pattern}`).sort(),
+    );
+    expect(second.map((item) => item.verb).sort()).toEqual(first.map((item) => item.verb).sort());
+  });
+
+  it("mints you know this on the same 10 cells after five clean typed rounds", () => {
+    let attempts = [];
+    let replay = null;
+    const firstKeys = [];
+    for (let round = 0; round < 5; round += 1) {
+      const items = buildRound(DEFAULT_SETTINGS, attempts, mulberry32(20 + round), 10, replay);
+      expect(items).toHaveLength(10);
+      const keys = items.map((item) => `${item.tense}:${item.person}`).sort();
+      if (!firstKeys.length) firstKeys.push(...keys);
+      expect(keys).toEqual(firstKeys);
+      if (replay) {
+        expect(items.map((item) => `${item.tense}:${item.person}:${item.type}:${item.ending_pattern}`).sort()).toEqual(
+          replay
+            .map((cell) => `${cell.tense}:${cell.person}:${cell.type}:${cell.ending}`)
+            .sort(),
+        );
+      }
+      attempts = [
+        ...attempts,
+        ...items.map((item) =>
+          typed(item.tense, item.person, true, {
+            verb: item.verb,
+            type: item.type,
+            ending: item.ending_pattern,
+          }),
+        ),
+      ];
+      replay = items.map((item) => ({
+        tense: item.tense,
+        person: item.person,
+        type: item.type,
+        ending: item.ending_pattern,
+        verb: item.verb,
+      }));
+      const fill = namedLevels(attempts).find((level) => level.id === "fill");
+      if (round === 0) {
+        expect(fill.known).toBe(0);
+        expect(fill.checked).toBe(false);
+        expect(cellPips(attempts, items[0].tense, items[0].person)).toBe(1);
+      }
+      if (round === 1) {
+        expect(fill.known).toBe(0);
+        expect(cellPips(attempts, items[0].tense, items[0].person)).toBe(2);
+      }
+    }
+    const filled = namedLevels(attempts).find((level) => level.id === "fill");
+    expect(filled.known).toBe(10);
+    expect(filled.checked).toBe(true);
+    expect(cellPips(attempts, replay[0].tense, replay[0].person)).toBe(5);
+    expect(
+      youKnowThis(attempts, {
+        mood: "indicative",
+        time: replay[0].tense,
+        person: replay[0].person,
+        type: replay[0].type,
+        ending: replay[0].ending,
+      }),
+    ).toBe(true);
+    expect(buildRound(DEFAULT_SETTINGS, attempts, mulberry32(99), 10, replay)).toEqual([]);
   });
 });
 

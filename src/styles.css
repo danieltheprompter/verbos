@@ -1119,6 +1119,36 @@ p {
 .mini-cell {
   min-height: 40px;
   aspect-ratio: 1;
+  position: relative;
+  display: grid;
+  place-items: center;
+}
+
+.cell-marks,
+.mini-marks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  justify-content: center;
+  align-items: center;
+  max-width: 28px;
+  pointer-events: none;
+}
+
+.cell-marks i,
+.mini-marks i {
+  width: 5px;
+  height: 5px;
+  border-radius: 99px;
+  background: rgba(255, 236, 200, 0.88);
+}
+
+.mini-marks i {
+  background: #d8cbb6;
+}
+
+.mini-cell.is-know .mini-marks i {
+  background: #fff6e4;
 }
 
 .session-bell {

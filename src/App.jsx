@@ -22,6 +22,7 @@ import {
   rememberCells,
   renameProfile,
   saveSettings,
+  saveWarmupBell,
   switchProfile,
 } from "./engine/storage.js";
 
@@ -34,7 +35,6 @@ export function App() {
   const [playId, setPlayId] = useState(0);
   const [playMode, setPlayMode] = useState("play");
   const [sessionSec, setSessionSec] = useState(null);
-  const [warmupBell, setWarmupBell] = useState(false);
 
   const profile = activeProfile(store);
   const playSettings =
@@ -78,8 +78,8 @@ export function App() {
                 )
               : ""
           }
-          warmupBell={warmupBell}
-          onWarmupBell={setWarmupBell}
+          warmupBell={Boolean(store.warmupBell)}
+          onWarmupBell={(on) => setStore((prev) => saveWarmupBell(prev, on))}
           onPlay={() => start({ replay: profile.finishedRound })}
           onWarmup={(bell) =>
             start({

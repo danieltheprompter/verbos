@@ -48,6 +48,7 @@ import {
   loadState,
   recordAttempt,
   saveSettings,
+  saveWarmupBell,
   switchProfile,
 } from "./storage.js";
 import { endingPattern, verbType } from "./verbs.js";
@@ -169,6 +170,7 @@ describe("named levels do not lock Customize", () => {
 
     const mini = readFileSync(join(root, "components/MiniBoard.jsx"), "utf8");
     expect(mini).toMatch(/miniCellPaint/);
+    expect(mini).toMatch(/cellPips/);
     expect(mini).toMatch(/is-know/);
     expect(mini).not.toMatch(/is-not_enough|color-visit|cell-visit/);
     const css = readFileSync(join(root, "styles.css"), "utf8");
@@ -203,9 +205,13 @@ describe("named levels do not lock Customize", () => {
     const visited = first[0];
     expect(miniCellState(round1, visited.tense, visited.person)).toBe("not_enough");
     expect(miniCellPaint(round1, visited.tense, visited.person)).toBe("empty");
+    const boardUi = readFileSync(join(root, "components/Board.jsx"), "utf8");
+    expect(boardUi).toMatch(/cell-marks/);
+    expect(boardUi).not.toMatch(/pips/i);
     const styles = readFileSync(join(root, "styles.css"), "utf8");
     expect(styles).not.toMatch(/\.mini-cell\.is-not_enough[\s\S]{0,80}color-visit/);
     expect(styles).toMatch(/\.cell-visit/);
+    expect(styles).toMatch(/\.mini-marks/);
 
     const board = cellsFor(DEFAULT_SETTINGS);
     const six = board.slice(0, 6).flatMap((cell) => [
@@ -233,7 +239,7 @@ describe("warm-up and class set", () => {
     expect(home).not.toMatch(/useState\(false\)/);
     const app = readFileSync(join(root, "App.jsx"), "utf8");
     expect(app).toMatch(/warmupBell/);
-    expect(app).toMatch(/setWarmupBell/);
+    expect(app).toMatch(/saveWarmupBell/);
     const play = readFileSync(join(root, "components/Play.jsx"), "utf8");
     const warmupRecap = play.split("{warmup ? (")[1]?.split(") : (")[0] || "";
     expect(warmupRecap).toMatch(/Done/);
@@ -246,6 +252,11 @@ describe("warm-up and class set", () => {
     expect(WARMUP_BELL_SEC).toBe(300);
     expect(timerExpireAction({ session: true })).toBe("bell");
     expect(timerFailsItem(timerExpireAction({ session: true }))).toBe(false);
+    memoryStore();
+    const withBell = saveWarmupBell(loadState(), true);
+    expect(withBell.warmupBell).toBe(true);
+    expect(loadState().warmupBell).toBe(true);
+    expect(saveWarmupBell(withBell, false).warmupBell).toBe(false);
     const settings = warmupSettings({ ...DEFAULT_SETTINGS, mc: true, timer: true, timerSec: 8 });
     expect(settings.mc).toBe(false);
     expect(settings.timer).toBe(false);

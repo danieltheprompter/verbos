@@ -22,6 +22,43 @@ function pickVerb(verbs, used, rng) {
   return pick(fresh.length ? fresh : verbs, rng);
 }
 
+function lastPromptOnCell(attempts, cell) {
+  for (let index = attempts.length - 1; index >= 0; index -= 1) {
+    const attempt = attempts[index];
+    if (attempt.tense === cell.tense && attempt.person === cell.person) {
+      return {
+        type: cell.type || attempt.type || attempt.verb_type,
+        ending: cell.ending || attempt.ending_pattern || attempt.ending,
+        verb: cell.verb || attempt.verb,
+      };
+    }
+  }
+  return { type: cell.type, ending: cell.ending, verb: cell.verb };
+}
+
+function verbForCell(cell, verbs, types, verbsByType, attempts, usedVerbs, rng) {
+  const pinned = lastPromptOnCell(attempts, cell);
+  const type =
+    pinned.type && verbsByType[pinned.type]?.length
+      ? pinned.type
+      : pickTypeForCell(types, verbsByType, cell, attempts, rng);
+  let pool = verbsByType[type] || verbs;
+  if (pinned.ending) {
+    const matched = pool.filter((verb) => endingPattern(verb.inf) === pinned.ending);
+    if (matched.length) pool = matched;
+  }
+  if (pinned.verb) {
+    const same =
+      pool.find((verb) => verb.inf === pinned.verb) ||
+      verbs.find((verb) => verb.inf === pinned.verb);
+    if (same) {
+      usedVerbs.add(same.inf);
+      return same;
+    }
+  }
+  return pickVerb(pool, usedVerbs, rng);
+}
+
 function itemFrom(cell, verb) {
   return {
     tense: cell.tense,
@@ -36,19 +73,18 @@ function itemFrom(cell, verb) {
 }
 
 function cellHasUnknown(cell, attempts, types, verbs) {
-  return types.some((type) => {
+  return !types.some((type) => {
     const endings = [
       ...new Set(verbs.filter((verb) => verb.type === type).map((verb) => endingPattern(verb.inf))),
     ];
-    return endings.some(
-      (ending) =>
-        !youKnowThis(attempts, {
-          mood: moodOf(cell.tense),
-          time: timeOf(cell.tense),
-          person: cell.person,
-          type,
-          ending,
-        }),
+    return endings.some((ending) =>
+      youKnowThis(attempts, {
+        mood: moodOf(cell.tense),
+        time: timeOf(cell.tense),
+        person: cell.person,
+        type,
+        ending,
+      }),
     );
   });
 }
@@ -90,8 +126,7 @@ function fillCells(cover, verbs, types, verbsByType, attempts, rng) {
   const items = [];
   const usedVerbs = new Set();
   for (const cell of cover) {
-    const type = pickTypeForCell(types, verbsByType, cell, attempts, rng);
-    const verb = pickVerb(verbsByType[type] || verbs, usedVerbs, rng);
+    const verb = verbForCell(cell, verbs, types, verbsByType, attempts, usedVerbs, rng);
     usedVerbs.add(verb.inf);
     items.push(itemFrom(cell, verb));
   }
@@ -99,8 +134,7 @@ function fillCells(cover, verbs, types, verbsByType, attempts, rng) {
 }
 
 function pushItem(items, cell, verbs, types, verbsByType, attempts, usedVerbs, rng) {
-  const type = pickTypeForCell(types, verbsByType, cell, attempts, rng);
-  const verb = pickVerb(verbsByType[type] || verbs, usedVerbs, rng);
+  const verb = verbForCell(cell, verbs, types, verbsByType, attempts, usedVerbs, rng);
   usedVerbs.add(verb.inf);
   items.push(itemFrom(cell, verb));
 }
