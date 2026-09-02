@@ -54,6 +54,10 @@ export function parseFormKey(key) {
   return { mood, time, person, type, ending };
 }
 
+export function uniqueFormKeys(keys = []) {
+  return [...new Set((keys || []).filter((key) => key && String(key).split(":").length === 5))];
+}
+
 export function sittingIncomplete(attempts, sittingKeys = []) {
   if (!sittingKeys.length) return false;
   return sittingKeys.some(

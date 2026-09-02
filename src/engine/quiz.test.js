@@ -22,6 +22,7 @@ import {
   RECAP_HEAD,
   RECAP_SAME_TEN,
   RECAP_SUB,
+  STORAGE_KEY,
   TENSES,
   VERB_BUCKETS,
   WORDMARK,
@@ -61,7 +62,8 @@ import { atlasCopyAt, atlasFillName, atlasFillStats, atlasRank, buildAtlas } fro
 import { recapHitsToward, recapStory } from "./recap.js";
 import { mulberry32 } from "./random.js";
 import { buildRound, makeDistractors } from "./round.js";
-import { activeProfile, clearProgress, rememberSitting, saveSettings, toLogAttempt } from "./storage.js";
+import { activeProfile, clearProgress, loadClassSet, loadState, rememberSitting, saveSettings, toLogAttempt } from "./storage.js";
+import { classSetFromSettings } from "./classSet.js";
 import {
   conjugate,
   endingPattern,
@@ -1001,6 +1003,92 @@ describe("sitting keys lock type and ending", () => {
     );
   });
 
+  it("keeps the same unique 10 formKeys across five consecutive Play-agains", () => {
+    const first = buildRound(DEFAULT_SETTINGS, [], mulberry32(7));
+    const sitting = first.map(itemFormKey);
+    expect(sitting).toHaveLength(10);
+    expect(new Set(sitting).size).toBe(10);
+    let attempts = playClean(first);
+    for (let round = 2; round <= 5; round += 1) {
+      const items = buildRound(
+        DEFAULT_SETTINGS,
+        attempts,
+        mulberry32(20 + round),
+        10,
+        itemsToCells(first),
+      );
+      const keys = items.map(itemFormKey);
+      expect(keys).toHaveLength(10);
+      expect(new Set(keys).size).toBe(10);
+      expect([...keys].sort()).toEqual([...sitting].sort());
+      attempts = playClean(items, attempts);
+    }
+  });
+
+  it("does not duplicate or drop a sitting key when lastCells is corrupted", () => {
+    const first = buildRound(DEFAULT_SETTINGS, [], mulberry32(7));
+    const sitting = first.map(itemFormKey);
+    const yoPreterito = sitting.find((key) => key === "indicative:preterito:yo:regular:ar")
+      || sitting.find((key) => key.includes("preterito:yo:"));
+    expect(yoPreterito).toBeTruthy();
+    const elPresente = sitting.find((key) => key.includes("presente:el:"));
+    const round1 = playClean(first);
+    const round2 = buildRound(DEFAULT_SETTINGS, round1, mulberry32(21), 10, itemsToCells(first), sitting);
+    const after2 = playClean(round2, round1);
+    const round3 = buildRound(DEFAULT_SETTINGS, after2, mulberry32(22), 10, itemsToCells(first), sitting);
+    const after3 = playClean(round3, after2);
+    const badCells = [
+      ...itemsToCells(first).slice(0, 9),
+      itemsToCells(first)[2],
+    ];
+    const badKeys = [...sitting.slice(0, 9), sitting[0]];
+    const round4 = buildRound(DEFAULT_SETTINGS, after3, mulberry32(23), 10, badCells, badKeys);
+    const keys4 = round4.map(itemFormKey);
+    expect(keys4).toHaveLength(10);
+    expect(new Set(keys4).size).toBe(10);
+    expect([...keys4].sort()).toEqual([...sitting].sort());
+    expect(keys4.filter((key) => key === elPresente).length).toBe(1);
+    expect(keys4).toContain(yoPreterito);
+  });
+
+  it("writes the 10 sittingKeys into the localStorage blob during a sitting", () => {
+    const memory = {};
+    globalThis.localStorage = {
+      getItem: (key) => memory[key] ?? null,
+      setItem: (key, value) => {
+        memory[key] = String(value);
+      },
+    };
+    const first = buildRound(DEFAULT_SETTINGS, [], mulberry32(7));
+    const sitting = first.map(itemFormKey);
+    let state = rememberSitting(loadState(), first, { fresh: true });
+    const blob1 = JSON.parse(localStorage.getItem(STORAGE_KEY));
+    expect(blob1.sittingKeys).toEqual(sitting);
+    expect(blob1.sittingKeys).toHaveLength(10);
+    expect(new Set(blob1.sittingKeys).size).toBe(10);
+    expect(activeProfile(state).sittingKeys).toEqual(sitting);
+    const after = playClean(first);
+    const second = buildRound(
+      DEFAULT_SETTINGS,
+      after,
+      mulberry32(11),
+      10,
+      activeProfile(state).lastCells,
+      blob1.sittingKeys,
+    );
+    state = rememberSitting(state, second);
+    const blob2 = JSON.parse(localStorage.getItem(STORAGE_KEY));
+    expect(blob2.sittingKeys).toEqual(sitting);
+    expect(blob2.sittingKeys).toHaveLength(10);
+    expect(activeProfile(state).sittingKeys).toEqual(sitting);
+    expect([...second.map(itemFormKey)].sort()).toEqual([...sitting].sort());
+    state = loadClassSet(state, classSetFromSettings({ ...DEFAULT_SETTINGS, types: ["stem"] }));
+    const afterLoad = JSON.parse(localStorage.getItem(STORAGE_KEY));
+    expect(afterLoad.sittingKeys).toEqual([]);
+    expect(activeProfile(state).sittingKeys).toEqual([]);
+    expect(activeProfile(state).atlasKeys).toEqual(sitting);
+  });
+
   it("serializes formKeys from two consecutive Play-agains as the same set", () => {
     const first = buildRound(DEFAULT_SETTINGS, [], mulberry32(7));
     const keys1 = [...first.map(itemFormKey)].sort();
@@ -1225,7 +1313,8 @@ describe("teaching + UX freeze", () => {
     ];
     const items = buildRound(DEFAULT_SETTINGS, [...visits, ...knownPresenteYo], mulberry32(9));
     expect(items).toHaveLength(10);
-    expect(items.every((item) => `${item.tense}:${item.person}` !== "presente:yo")).toBe(true);
+    expect(new Set(items.map(itemFormKey)).size).toBe(10);
+    expect(sittingIncomplete([...visits, ...knownPresenteYo], items.map(itemFormKey))).toBe(true);
   });
 
   it("names the atlas fill and keeps three states, no points", () => {

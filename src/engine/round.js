@@ -1,4 +1,4 @@
-import { MASTERY_MIN, ROUND_SIZE } from "./config.js";
+import { ROUND_SIZE } from "./config.js";
 import { cellKey, cellPips, cellsFor, sameBoard } from "./board.js";
 import { moodOf, pack, tenses as packTenses, tenseFor, timeOf } from "./pack.js";
 import { lastMiss, miniCellState } from "./levels.js";
@@ -7,11 +7,12 @@ import {
   completePassDone,
   formKey,
   isVisited,
+  itemFormKey,
   parseFormKey,
   sittingIncomplete,
   sittingKeysFromAttempts,
-  typedAttemptsFor,
   typeKnownAtCell,
+  uniqueFormKeys,
   youKnowThis,
 } from "./mastery.js";
 import { pick, shuffle, weightedPick } from "./random.js";
@@ -84,15 +85,18 @@ function pickVerbForSpec(verbs, spec, used, rng, prefer) {
   const pool = verbs.filter(
     (verb) => verb.type === spec.type && endingPattern(verb.inf) === spec.ending,
   );
+  if (!pool.length) return null;
   if (prefer) {
-    const same = pool.find((verb) => verb.inf === prefer) || verbs.find((verb) => verb.inf === prefer);
+    const same = pool.find((verb) => verb.inf === prefer);
     if (same) {
       used.add(same.inf);
       return same;
     }
   }
   const fresh = pool.filter((verb) => !used.has(verb.inf));
-  return pick(fresh.length ? fresh : pool, rng);
+  const verb = pick(fresh.length ? fresh : pool, rng);
+  if (verb) used.add(verb.inf);
+  return verb;
 }
 
 function keysFromReplayCells(cells = []) {
@@ -111,28 +115,32 @@ function keysFromReplayCells(cells = []) {
       }),
     );
   }
-  return keys;
+  return uniqueFormKeys(keys);
 }
 
-function openSittingKeys(attempts, keys) {
-  return keys.filter((key) => typedAttemptsFor(attempts, parseFormKey(key)).length < MASTERY_MIN);
+function resolveSittingKeys(sittingKeys, replay, attempts, cells) {
+  const pinned = uniqueFormKeys(sittingKeys);
+  if (pinned.length === cells.length) return pinned;
+  const recovered = uniqueFormKeys(sittingKeysFromAttempts(attempts, cells));
+  if (recovered.length === cells.length) return recovered;
+  const fromReplay = keysFromReplayCells(replay || []);
+  if (fromReplay.length === cells.length) return fromReplay;
+  return pinned.length ? pinned : recovered.length ? recovered : fromReplay;
 }
 
-function fillFromSittingKeys(keys, verbs, rng, size, attempts = []) {
-  if (!keys.length) return [];
-  const order = [];
-  while (order.length < size) {
-    order.push(...shuffle(keys, rng));
-  }
+function fillFromSittingKeys(keys, verbs, rng, _size, attempts = []) {
+  const unique = uniqueFormKeys(keys);
+  if (!unique.length) return [];
   const items = [];
   const used = new Set();
-  for (const key of order.slice(0, size)) {
+  for (const key of shuffle(unique, rng)) {
     const spec = parseFormKey(key);
     const tense = tenseFor(spec.mood, spec.time);
     const verb = pickVerbForSpec(verbs, spec, used, rng, lastVerbOnKey(attempts, spec));
     if (!verb || !tense) continue;
-    used.add(verb.inf);
-    items.push(itemFrom({ tense, person: spec.person }, verb));
+    const item = itemFrom({ tense, person: spec.person }, verb);
+    if (itemFormKey(item) !== key) continue;
+    items.push(item);
   }
   return items;
 }
@@ -250,15 +258,10 @@ export function buildRound(
   if (!verbs.length || !cells.length) return [];
   if (allSelectedKnown(settings, attempts)) return [];
 
-  const fromReplay = keysFromReplayCells(replay || []);
-  const lockedKeys = sittingKeys?.length
-    ? sittingKeys
-    : fromReplay.length === cells.length
-      ? fromReplay
-      : sittingKeysFromAttempts(attempts, cells);
-  if (sittingIncomplete(attempts, lockedKeys)) {
-    const open = openSittingKeys(attempts, lockedKeys);
-    if (open.length) return fillFromSittingKeys(open, verbs, rng, size, attempts);
+  const lockedKeys = resolveSittingKeys(sittingKeys, replay, attempts, cells);
+  if (lockedKeys.length === size && sittingIncomplete(attempts, lockedKeys)) {
+    const pinned = fillFromSittingKeys(lockedKeys, verbs, rng, size, attempts);
+    if (pinned.length) return pinned;
   }
 
   // Round 1 / still nothing you-know-this: one visit per cell, no retries stuffed in.

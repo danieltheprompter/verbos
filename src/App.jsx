@@ -19,7 +19,6 @@ import {
   loadState,
   markFinished,
   recordAttempt,
-  rememberCells,
   rememberSitting,
   renameProfile,
   saveSettings,
@@ -69,8 +68,11 @@ export function App() {
       setScreen(mode === "warmup" ? "home" : "customize");
       return;
     }
-    const keepSitting = !newSitting && who.sittingKeys?.length;
-    setStore(keepSitting ? rememberCells(from, nextItems) : rememberSitting(from, nextItems));
+    setStore(
+      rememberSitting(from, nextItems, {
+        fresh: Boolean(newSitting) || !who.sittingKeys?.length,
+      }),
+    );
     setItems(nextItems);
     setPlayMode(mode);
     setSessionSec(session);

@@ -187,8 +187,12 @@ describe("named levels do not lock Customize", () => {
     const first = buildRound(DEFAULT_SETTINGS, [], mulberry32(7));
     let state = rememberSitting(loadState(), first);
     expect(activeProfile(state).sittingKeys).toHaveLength(10);
+    expect(JSON.parse(localStorage.getItem(STORAGE_KEY)).sittingKeys).toEqual(
+      activeProfile(state).sittingKeys,
+    );
     state = saveSettings(state, { ...DEFAULT_SETTINGS, types: ["stem"] });
     expect(activeProfile(state).sittingKeys).toEqual([]);
+    expect(JSON.parse(localStorage.getItem(STORAGE_KEY)).sittingKeys).toEqual([]);
     expect(customizeLockedByLevels(namedLevels(activeProfile(state).attempts))).toBe(false);
   });
 
@@ -375,7 +379,9 @@ describe("warm-up and class set", () => {
     const before = activeProfile(state).attempts.length;
     state = loadClassSet(state, classSetFromSettings({ ...DEFAULT_SETTINGS, types: ["stem"] }));
     expect(activeProfile(state).sittingKeys).toEqual([]);
+    expect(JSON.parse(localStorage.getItem(STORAGE_KEY)).sittingKeys).toEqual([]);
     expect(activeProfile(state).atlasKeys).toEqual(keys);
+    expect(JSON.parse(localStorage.getItem(STORAGE_KEY)).atlasKeys).toEqual(keys);
     expect(activeProfile(state).attempts).toHaveLength(before);
     const fill = namedLevels(
       activeProfile(state).attempts,
@@ -424,7 +430,8 @@ describe("Next Play and projector recap", () => {
       ...knownAt("presente", "yo", "comer"),
     ];
     const items = buildRound(DEFAULT_SETTINGS, [...visits, ...knownPresenteYo], mulberry32(9));
-    expect(items.every((item) => `${item.tense}:${item.person}` !== "presente:yo")).toBe(true);
+    expect(items).toHaveLength(10);
+    expect(new Set(items.map((item) => itemFormKey(item))).size).toBe(10);
   });
 
   it("keeps recap as a still-lit glance with Board lit / Clean board and no class scores", () => {

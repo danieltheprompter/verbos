@@ -2,7 +2,7 @@ import { CONTENT_VERSION, STORAGE_KEY } from "./config.js";
 import { DEFAULT_SETTINGS, typesFromLegacyPool } from "./constants.js";
 import { settingsLookLikeClassSet } from "./classSet.js";
 import { moodOf, pack, timeOf } from "./pack.js";
-import { itemFormKey } from "./mastery.js";
+import { itemFormKey, uniqueFormKeys } from "./mastery.js";
 import { endingPattern, verbType } from "./verbs.js";
 
 function normalizeSettings(raw = {}) {
@@ -78,12 +78,25 @@ export function ensureProfiles(state = {}) {
     const activeProfileId = profiles.some((profile) => profile.id === state.activeProfileId)
       ? state.activeProfileId
       : profiles[0].id;
+    const topKeys = uniqueFormKeys(state.sittingKeys);
+    const topAtlas = uniqueFormKeys(state.atlasKeys);
     return {
       settings: normalizeSettings(state.settings),
       hasClassSet: Boolean(state.hasClassSet),
       warmupBell: Boolean(state.warmupBell),
+      sittingKeys: topKeys,
+      atlasKeys: topAtlas,
       activeProfileId,
-      profiles,
+      profiles: profiles.map((profile) => {
+        if (profile.id !== activeProfileId) return profile;
+        const sittingKeys = profile.sittingKeys.length ? profile.sittingKeys : topKeys;
+        const atlasKeys = profile.atlasKeys.length
+          ? profile.atlasKeys
+          : topAtlas.length
+            ? topAtlas
+            : sittingKeys;
+        return { ...profile, sittingKeys, atlasKeys };
+      }),
     };
   }
   const profile = normalizeProfile(
@@ -102,6 +115,8 @@ export function ensureProfiles(state = {}) {
     settings: normalizeSettings(state.settings),
     hasClassSet: Boolean(state.hasClassSet) || settingsLookLikeClassSet(state.settings),
     warmupBell: Boolean(state.warmupBell),
+    sittingKeys: profile.sittingKeys,
+    atlasKeys: profile.atlasKeys,
     activeProfileId: profile.id,
     profiles: [profile],
   };
@@ -175,12 +190,15 @@ export function loadState() {
 
 export function saveState(state) {
   const current = ensureProfiles(state);
+  const who = activeProfile(current);
   localStorage.setItem(
     STORAGE_KEY,
     JSON.stringify({
       settings: current.settings,
       hasClassSet: current.hasClassSet,
       warmupBell: Boolean(current.warmupBell),
+      sittingKeys: who.sittingKeys || [],
+      atlasKeys: who.atlasKeys || [],
       activeProfileId: current.activeProfileId,
       profiles: current.profiles.map((profile) => ({
         ...profile,
@@ -211,6 +229,7 @@ export function saveSettings(state, settings) {
     ...current,
     settings: normalizeSettings(settings),
     hasClassSet: true,
+    sittingKeys: [],
     profiles: current.profiles.map((profile) =>
       profile.id === current.activeProfileId ? { ...profile, sittingKeys: [] } : profile,
     ),
@@ -240,26 +259,37 @@ export function saveWarmupBell(state, on) {
   return next;
 }
 
-export function rememberSitting(state, items) {
+export function rememberSitting(state, items, { fresh = false } = {}) {
   const profile = activeProfile(state);
-  const keys = (items || []).map(itemFormKey);
-  const next = patchActive(state, {
-    lastCells: (items || []).map((cell) => ({
-      tense: cell.tense,
-      person: cell.person,
-      type: cell.type || cell.verb_type,
-      ending: cell.ending_pattern || cell.ending,
-      verb: cell.verb,
-    })),
+  const incoming = uniqueFormKeys((items || []).map((item) => (typeof item === "string" ? item : itemFormKey(item))));
+  const existing = uniqueFormKeys(profile.sittingKeys);
+  const keys = !fresh && existing.length ? existing : incoming;
+  const atlasKeys = profile.atlasKeys?.length ? profile.atlasKeys : keys;
+  const next = {
+    ...patchActive(state, {
+      lastCells: (items || []).map((cell) => ({
+        tense: cell.tense,
+        person: cell.person,
+        type: cell.type || cell.verb_type,
+        ending: cell.ending_pattern || cell.ending,
+        verb: cell.verb,
+      })),
+      sittingKeys: keys,
+      atlasKeys,
+    }),
     sittingKeys: keys,
-    atlasKeys: profile.atlasKeys?.length ? profile.atlasKeys : keys,
-  });
+    atlasKeys,
+  };
   saveState(next);
   return next;
 }
 
 export function clearProgress(state) {
-  const next = patchActive(state, { attempts: [], sittingKeys: [], atlasKeys: [] });
+  const next = {
+    ...patchActive(state, { attempts: [], sittingKeys: [], atlasKeys: [] }),
+    sittingKeys: [],
+    atlasKeys: [],
+  };
   saveState(next);
   return next;
 }
@@ -303,6 +333,7 @@ export function loadClassSet(state, payload) {
       timerSec: current.settings.timerSec,
     }),
     hasClassSet: true,
+    sittingKeys: [],
     profiles: current.profiles.map((profile) =>
       profile.id === current.activeProfileId ? { ...profile, sittingKeys: [] } : profile,
     ),
