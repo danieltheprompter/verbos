@@ -396,12 +396,15 @@ describe("round board ignores mastery", () => {
     const root = join(dirname(fileURLToPath(import.meta.url)), "..");
     const board = readFileSync(join(root, "components/Board.jsx"), "utf8");
     expect(board).toMatch(/false \? <p className="board-note">\{BOARD_NOTE\}<\/p>/);
+    expect(board).toMatch(/answeredHere \? 1 : 0/);
+    expect(board).toMatch(/sittingCellMarks/);
     const play = readFileSync(join(root, "components/Play.jsx"), "utf8");
     const judge = play.split("function judge")[1]?.split("function next")[0] || "";
     expect(judge).toMatch(/item\.correct = ok/);
     expect(judge).toMatch(/setLand\(\{ tense: item\.tense, person: item\.person \}\)/);
     expect(judge.indexOf("setLand")).toBeLessThan(judge.indexOf("if (!ok"));
     expect(play).toMatch(/result\.miss\.message/);
+    expect(play).toMatch(/is-flick-col|data-result/);
   });
 
   it("does not treat lifetime attempts as this-round answers", () => {
@@ -446,8 +449,8 @@ describe("recap hero", () => {
     expect(story.banner).toBe(RECAP_SAME_BOARD);
     expect(story.head).toBe("Clean board");
     expect(story.line).toBe(RECAP_SAME_TEN);
-    expect(RECAP_SAME_TEN).toBe("Same 10. Fill the meters.");
-    expect(RECAP_SAME_TEN).not.toMatch(/wells|sitting|hits toward|you know this/i);
+    expect(RECAP_SAME_TEN).toBe("Same 10. Fill the wells.");
+    expect(RECAP_SAME_TEN).not.toMatch(/meters|sitting|hits toward|you know this/i);
     expect(story.pips).toBe("1/5");
     expect(story.hits).toBe(1);
     expect(story.need).toBe(5);
@@ -487,7 +490,7 @@ describe("recap hero", () => {
     expect(formState(after, spec())).toBe("learning");
     const story = recapStory([item], after);
     expect(story.line).toBe(RECAP_SAME_TEN);
-    expect(story.line).not.toMatch(/sitting|hits toward knowing|you know this|still learning|wells/i);
+    expect(story.line).not.toMatch(/sitting|hits toward knowing|you know this|still learning|meters/i);
     expect(story.pips).toBe("5/5");
     expect(story.next).toBe("Play those squares again.");
     expect(story.action).toBe("again");
@@ -1017,7 +1020,7 @@ describe("sitting keys lock type and ending", () => {
     expect(story1.pips).toBe("1/5");
     expect(recapHitsToward(round1, keys).label).toBe("1/5");
     expect(story1.line).toBe(RECAP_SAME_TEN);
-    expect(story1.line).not.toMatch(/0\/10|sitting|hits toward|wells/i);
+    expect(story1.line).not.toMatch(/0\/10|sitting|hits toward|meters/i);
     expect(`${story1.line} ${story1.pips}`).not.toMatch(
       new RegExp(`0/${LEVEL_FILL_TOTAL} ${FORM_COPY.know}`),
     );
@@ -1040,8 +1043,8 @@ describe("sitting keys lock type and ending", () => {
     expect(recapHitsToward(after2, keys).label).toBe("2/5");
     expect(story2.line).toBe(RECAP_SAME_TEN);
     expect(story2.banner).toBe(RECAP_SAME_BOARD);
-    expect(RECAP_SAME_TEN).toBe("Same 10. Fill the meters.");
-    expect(story2.line).not.toMatch(/0\/10|you know this|sitting|hits toward|wells/i);
+    expect(RECAP_SAME_TEN).toBe("Same 10. Fill the wells.");
+    expect(story2.line).not.toMatch(/0\/10|you know this|sitting|hits toward|meters/i);
     expect(`${story2.head} ${story2.line} ${story2.pips}`).not.toMatch(
       new RegExp(`0/${LEVEL_FILL_TOTAL} ${FORM_COPY.know}`),
     );
@@ -1147,7 +1150,7 @@ describe("sitting keys lock type and ending", () => {
     expect(play).toMatch(/sittingKeys=\{sittingKeys\}/);
     expect(play).toMatch(/is-flick-col/);
     expect(play).toMatch(/setLand/);
-    expect(RECAP_SAME_TEN).toBe("Same 10. Fill the meters.");
+    expect(RECAP_SAME_TEN).toBe("Same 10. Fill the wells.");
     expect(RECAP_SAME_BOARD).toBe("Same board.");
   });
 

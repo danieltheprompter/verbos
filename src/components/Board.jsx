@@ -53,7 +53,14 @@ export function Board({
                 const isLand = Boolean(
                   land && land.tense === row.id && land.person === column.id,
                 );
-                const marks = sittingCellMarks(attempts, row.id, column.id, sittingKeys);
+                const sittingMarks = sittingCellMarks(
+                  attempts,
+                  row.id,
+                  column.id,
+                  sittingKeys,
+                );
+                const answeredHere = answered.has(`${row.id}:${column.id}`);
+                const marks = sittingMarks || (answeredHere ? 1 : 0);
                 return (
                   <div
                     key={column.id}
