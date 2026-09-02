@@ -7,8 +7,7 @@ import { Profile } from "./components/Profile.jsx";
 import { Progress } from "./components/Progress.jsx";
 import { cellsFor } from "./engine/board.js";
 import { DEFAULT_SETTINGS, WARMUP_BELL_SEC } from "./engine/constants.js";
-import { allSelectedKnown, itemFormKey, sameFormKeySet, sittingIncomplete, sittingKeysFromAttempts, uniqueFormKeys } from "./engine/mastery.js";
-import { nextPlayLine } from "./engine/levels.js";
+import { itemFormKey, sameFormKeySet, sittingIncomplete, sittingKeysFromAttempts, uniqueFormKeys } from "./engine/mastery.js";
 import { buildRound, playAgainRound } from "./engine/round.js";
 import { classSetFromSettings } from "./engine/classSet.js";
 import { warmupSettings } from "./engine/warmup.js";
@@ -100,15 +99,6 @@ export function App() {
         <Home
           finishedRound={profile.finishedRound}
           hasClassSet={store.hasClassSet}
-          nextPlay={
-            profile.finishedRound
-              ? nextPlayLine(
-                  profile.attempts,
-                  !allSelectedKnown(playSettings, profile.attempts),
-                  playSettings,
-                )
-              : ""
-          }
           warmupBell={Boolean(store.warmupBell)}
           onWarmupBell={(on) => setStore((prev) => saveWarmupBell(prev, on))}
           onPlay={() => start()}
@@ -120,6 +110,7 @@ export function App() {
           }
           onCustomize={() => setScreen("customize")}
           onProfile={() => setScreen("profile")}
+          onProgress={() => setScreen("progress")}
           onClassSet={() => setScreen("classset")}
         />
       ) : null}
@@ -196,7 +187,9 @@ export function App() {
           profiles={store.profiles}
           settings={playSettings}
           onBack={() => setScreen("home")}
-          onCustomize={profile.finishedRound ? () => setScreen("customize") : null}
+          onCustomize={
+            profile.finishedRound || store.hasClassSet ? () => setScreen("customize") : null
+          }
           onProgress={() => setScreen("progress")}
           onPlay={() => start()}
           onSwitch={(id) => setStore((prev) => switchProfile(prev, id))}
@@ -210,7 +203,9 @@ export function App() {
         <Progress
           attempts={profile.attempts}
           onBack={() => setScreen("profile")}
-          onCustomize={profile.finishedRound ? () => setScreen("customize") : null}
+          onCustomize={
+            profile.finishedRound || store.hasClassSet ? () => setScreen("customize") : null
+          }
           onClear={() => setStore((prev) => clearProgress(prev))}
         />
       ) : null}

@@ -1,36 +1,36 @@
 import {
   CLASS_SET_LOAD,
   LEDE,
-  PROFILE_TITLE,
   WARMUP,
   WARMUP_BELL,
+  WHAT_YOU_KNOW,
   WORDMARK,
+  YOU,
 } from "../engine/config.js";
 
 export function Home({
   finishedRound,
   hasClassSet,
-  nextPlay,
   warmupBell = false,
   onWarmupBell,
   onPlay,
   onWarmup,
   onCustomize,
   onProfile,
+  onProgress,
   onClassSet,
 }) {
-  const afterRoundOrSet = Boolean(finishedRound || hasClassSet);
+  const opened = finishedRound || hasClassSet;
 
   return (
     <section className="home">
       <h1 className="wordmark">{WORDMARK}</h1>
       <p className="lede">{LEDE}</p>
-      {nextPlay ? <p className="next-play-home">{nextPlay}</p> : null}
       <div className="home-actions">
         <button className="btn btn-primary" type="button" onClick={onPlay}>
           {finishedRound ? "Play again" : "Play"}
         </button>
-        {afterRoundOrSet ? (
+        {opened ? (
           <>
             <button
               className="btn btn-ghost"
@@ -52,15 +52,18 @@ export function Home({
                 </span>
               </label>
             ) : null}
+            <button className="text-back" type="button" onClick={onProfile}>
+              {YOU}
+            </button>
             <button className="btn btn-ghost" type="button" onClick={onCustomize}>
               Customize
             </button>
-            <button className="text-back" type="button" onClick={onProfile}>
-              {PROFILE_TITLE}
+            <button className="text-back" type="button" onClick={onProgress}>
+              {WHAT_YOU_KNOW}
             </button>
           </>
         ) : null}
-        {afterRoundOrSet && onClassSet ? (
+        {opened && onClassSet ? (
           <button className="text-back" type="button" onClick={onClassSet}>
             {CLASS_SET_LOAD}
           </button>

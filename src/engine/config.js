@@ -18,10 +18,12 @@ export const SOUND_MUTED = true;
 export const RECAP_SUB = "Same 10. Fill the wells.";
 export const RECAP_ROUND1 = RECAP_SUB;
 export const RECAP_STILL = RECAP_SUB;
-export const RECAP_SAME_TEN = RECAP_SUB;
+export const RECAP_SAME_TEN = "Same 10. Fill the wells.";
 export const RECAP_NEXT_AGAIN = "Play those squares again.";
 export const RECAP_NEXT_REST = "Play the ones that are not you know this.";
 export const RECAP_NEXT_MAP = "Open What you know.";
+export const YOU = "You";
+export const WHAT_YOU_KNOW = "What you know";
 
 export const FARM_NOTE =
   "These are forms you already know. Add another time or kind of verb.";

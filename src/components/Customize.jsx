@@ -7,6 +7,7 @@ import {
   CLASS_SET_NOTE,
   CLASS_SET_OK,
   FARM_NOTE,
+  WHAT_YOU_KNOW,
 } from "../engine/config.js";
 import {
   applyClassSet,
@@ -264,7 +265,7 @@ export function Customize({ settings, attempts = [], onSave, onBack, onProgress,
         </button>
         {onProgress ? (
           <button className="btn btn-ghost" type="button" onClick={onProgress}>
-            What you know
+            {WHAT_YOU_KNOW}
           </button>
         ) : null}
         <button className="btn btn-ghost" type="button" onClick={onBack}>

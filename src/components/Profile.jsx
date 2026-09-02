@@ -9,6 +9,7 @@ import {
   PEOPLE_LEGEND,
   PROFILE_LEDE,
   PROFILE_TITLE,
+  WHAT_YOU_KNOW,
 } from "../engine/config.js";
 import { namedLevels, nextPlayLine } from "../engine/levels.js";
 import { allSelectedKnown } from "../engine/mastery.js";
@@ -117,7 +118,7 @@ export function Profile({
       <div className="home-actions">
         {onProgress ? (
           <button className="btn btn-ghost" type="button" onClick={onProgress}>
-            What you know
+            {WHAT_YOU_KNOW}
           </button>
         ) : null}
         {onCustomize ? (

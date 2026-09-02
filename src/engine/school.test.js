@@ -240,6 +240,7 @@ describe("named levels do not lock Customize", () => {
     const keys = first.map(itemFormKey);
     const story1 = recapStory(first.map((item) => ({ ...item, correct: true })), round1);
     expect(story1.pips).toBe("1/5");
+    expect(story1.line).toBe(RECAP_SAME_TEN);
     expect(recapHitsToward(round1, keys).label).toBe("1/5");
     const second = buildRound(DEFAULT_SETTINGS, round1, mulberry32(11), 10, itemsToCells(first), keys);
     const after2 = [
@@ -249,7 +250,8 @@ describe("named levels do not lock Customize", () => {
     const story2 = recapStory(second.map((item) => ({ ...item, correct: true })), after2);
     expect(story2.pips).toBe("2/5");
     expect(story2.line).toBe(RECAP_SAME_TEN);
-    expect(story2.line).not.toMatch(/0\/10|you know this/);
+    expect(RECAP_SAME_TEN).toBe("Same 10. Fill the wells.");
+    expect(story2.line).not.toMatch(/0\/10|you know this|sitting|hits toward|meter/i);
     expect(namedLevels(after2, keys).find((level) => level.id === "fill").known).toBe(0);
     expect(namedLevels(after2, keys).find((level) => level.id === "fill").detail).toBe(
       `0/${LEVEL_FILL_TOTAL} ${FORM_COPY.know}`,
@@ -279,25 +281,36 @@ describe("named levels do not lock Customize", () => {
 });
 
 describe("warm-up and class set", () => {
-  it("keeps first Play one tap and Warm-up only after a class set", () => {
+  it("keeps first Home as Play only until a round or a class set", () => {
     const home = readFileSync(join(root, "components/Home.jsx"), "utf8");
     expect(home).toMatch(/finishedRound \? "Play again" : "Play"/);
-    expect(home).toMatch(/nextPlay/);
+    expect(home).toMatch(/const opened = finishedRound \|\| hasClassSet/);
     expect(home).toMatch(/LEDE/);
     expect(home).toMatch(/hasClassSet/);
     expect(home).toMatch(/WARMUP/);
     expect(home).toMatch(/onWarmup/);
     expect(home).toMatch(/warmupBell/);
     expect(home).toMatch(/onWarmupBell/);
+    expect(home).toMatch(/\{YOU\}/);
+    expect(home).toMatch(/\{WHAT_YOU_KNOW\}/);
     expect(home).not.toMatch(/useState\(false\)/);
+    expect(home).not.toMatch(/nextPlay/);
     expect(home).toMatch(/finishedRound \|\| hasClassSet/);
     expect(home).toMatch(/hasClassSet \?/);
     const classSetBlock = home.split("hasClassSet ?")[1]?.split(") : null}")[0] || "";
     expect(classSetBlock).toMatch(/warmup-bell/);
     expect(classSetBlock).toMatch(/WARMUP_BELL/);
+    expect(home.indexOf("{opened ? (")).toBeGreaterThan(home.indexOf('finishedRound ? "Play again" : "Play"'));
+    expect(home.indexOf("{WARMUP}")).toBeGreaterThan(home.indexOf("{opened ? ("));
+    expect(home.indexOf("{YOU}")).toBeGreaterThan(home.indexOf("{opened ? ("));
+    expect(home.indexOf("Customize")).toBeGreaterThan(home.indexOf("{opened ? ("));
+    expect(home.indexOf("{WHAT_YOU_KNOW}")).toBeGreaterThan(home.indexOf("{opened ? ("));
     const actions = home.split('className="home-actions"')[1] || "";
     expect(actions.indexOf("{WARMUP}")).toBeGreaterThan(actions.indexOf("Play"));
     expect(actions.indexOf("{WARMUP_BELL}")).toBeGreaterThan(actions.indexOf("{WARMUP}"));
+    expect(actions.indexOf("{YOU}")).toBeGreaterThan(actions.indexOf("{WARMUP}"));
+    expect(actions.indexOf("Customize")).toBeGreaterThan(actions.indexOf("{YOU}"));
+    expect(actions.indexOf("{WHAT_YOU_KNOW}")).toBeGreaterThan(actions.indexOf("Customize"));
     const customize = readFileSync(join(root, "components/Customize.jsx"), "utf8");
     expect(customize).toMatch(/classSetFromSettings/);
     expect(customize).not.toMatch(/warmupBell|WARMUP_BELL|5:00/);
@@ -545,11 +558,18 @@ describe("Next Play and projector recap", () => {
     expect(play).toMatch(/is-glance/);
     expect(play).not.toMatch(/recap-pips/);
     expect(play).toMatch(/Play again/);
+    expect(play).not.toMatch(/PROFILE_TITLE/);
     expect(play).not.toMatch(/class score|live score|roster|leaderboard|improved/i);
     expect(RECAP_SAME_TEN).toBe("Same 10. Fill the wells.");
     expect(RECAP_SAME_TEN).not.toMatch(/sitting|hits toward knowing|you know this|meters/i);
+    const recapActions = play.split("play-done")[1] || "";
+    expect(recapActions).toMatch(/btn-primary/);
+    expect(recapActions).not.toMatch(/Customize/);
+    expect(recapActions).not.toMatch(/WHAT_YOU_KNOW|What you know/);
     const recap = readFileSync(join(root, "engine/recap.js"), "utf8");
-    expect(recap).not.toMatch(/\bscore\b|\bXP\b|streak|loot/i);
+    expect(recap).toMatch(/line: RECAP_SAME_TEN/);
+    expect(recap).not.toMatch(/\bscore\b|\bXP\b|streak|loot|hits toward|Fill the meters/i);
+    expect(RECAP_SAME_TEN).toBe("Same 10. Fill the wells.");
   });
 });
 

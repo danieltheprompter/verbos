@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { FORM_COPY, RANK_PATH } from "../engine/config.js";
+import { FORM_COPY, RANK_PATH, WHAT_YOU_KNOW } from "../engine/config.js";
 import { pack } from "../engine/pack.js";
 import { atlasFillStats, atlasPersons, buildAtlas } from "../engine/progress.js";
 import { ClearProgress } from "./ClearProgress.jsx";
@@ -18,7 +18,7 @@ export function Progress({ attempts, onBack, onCustomize, onClear }) {
         <button className="text-back" type="button" onClick={onBack}>
           Back
         </button>
-        <p className="career-kicker">What you know</p>
+        <p className="career-kicker">{WHAT_YOU_KNOW}</p>
         <h1 className="atlas-rank">{fill.line}</h1>
         <ol className="rank-path" aria-label="Path">
           {RANK_PATH.map((rank) => (
