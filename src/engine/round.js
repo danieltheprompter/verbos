@@ -119,6 +119,10 @@ function keysFromReplayCells(cells = []) {
   return uniqueFormKeys(keys);
 }
 
+export function playAgainRound(sittingKeys, settings, attempts = [], rng = Math.random) {
+  return mapSittingKeys(sittingKeys, settings, attempts, rng);
+}
+
 export function mapSittingKeys(keys, settings, attempts = [], rng = Math.random) {
   const unique = uniqueFormKeys(keys);
   if (unique.length !== ROUND_SIZE) {

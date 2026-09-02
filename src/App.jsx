@@ -5,11 +5,11 @@ import { Home } from "./components/Home.jsx";
 import { Play } from "./components/Play.jsx";
 import { Profile } from "./components/Profile.jsx";
 import { Progress } from "./components/Progress.jsx";
-import { cellsFor, sameBoard } from "./engine/board.js";
+import { cellsFor } from "./engine/board.js";
 import { DEFAULT_SETTINGS, WARMUP_BELL_SEC } from "./engine/constants.js";
-import { allSelectedKnown, itemFormKey, sameFormKeySet, sittingKeysFromAttempts, uniqueFormKeys } from "./engine/mastery.js";
+import { allSelectedKnown, itemFormKey, sameFormKeySet, sittingIncomplete, sittingKeysFromAttempts, uniqueFormKeys } from "./engine/mastery.js";
 import { nextPlayLine } from "./engine/levels.js";
-import { buildRound } from "./engine/round.js";
+import { buildRound, playAgainRound } from "./engine/round.js";
 import { warmupSettings } from "./engine/warmup.js";
 import {
   activeProfile,
@@ -40,50 +40,57 @@ export function App() {
   const playSettings =
     store.hasClassSet || profile.finishedRound ? store.settings : DEFAULT_SETTINGS;
 
-  function start({
-    nextSettings = playSettings,
-    replay = false,
-    mode = "play",
-    session = null,
-    newSitting = false,
-  } = {}) {
-    const roundSettings = mode === "warmup" ? warmupSettings(nextSettings) : nextSettings;
-    let from = storeRef.current;
-    let who = activeProfile(from);
-    const recovered = sittingKeysFromAttempts(who.attempts, cellsFor(roundSettings));
-    if (!newSitting && !who.sittingKeys?.length && recovered.length) {
-      from = rememberSitting(from, who.lastCells, { fresh: true, keys: recovered });
-      storeRef.current = from;
-      who = activeProfile(from);
-    }
-    const sittingKeys = newSitting
-      ? []
-      : who.sittingKeys?.length
-        ? who.sittingKeys
-        : recovered;
-    const replayCells = replay && sameBoard(who.lastCells, roundSettings) ? who.lastCells : null;
-    const nextItems = buildRound(
-      roundSettings,
-      who.attempts,
-      Math.random,
-      undefined,
-      replayCells,
-      sittingKeys,
-    );
-    if (!nextItems.length) {
-      setScreen(mode === "warmup" ? "home" : "customize");
-      return;
-    }
-    const pin = uniqueFormKeys(sittingKeys);
+  function beginRound(nextItems, from, { mode, session, fresh }) {
+    const pin = uniqueFormKeys(activeProfile(from).sittingKeys);
     if (pin.length === 10 && !sameFormKeySet(nextItems.map(itemFormKey), pin)) {
       throw new Error("built round set ≠ sittingKeys");
     }
-    setStore(rememberSitting(from, nextItems, { fresh: Boolean(newSitting) }));
+    setStore(rememberSitting(from, nextItems, { fresh }));
     setItems(nextItems);
     setPlayMode(mode);
     setSessionSec(session);
     setPlayId((id) => id + 1);
     setScreen("play");
+  }
+
+  function playAgain({ mode = "play", session = null } = {}) {
+    const roundSettings = mode === "warmup" ? warmupSettings(playSettings) : playSettings;
+    let from = storeRef.current;
+    let who = activeProfile(from);
+    let pin = uniqueFormKeys(who.sittingKeys);
+    if (pin.length !== 10) {
+      pin = uniqueFormKeys(sittingKeysFromAttempts(who.attempts, cellsFor(roundSettings)));
+      if (pin.length !== 10) {
+        throw new Error("Play again has no unique sittingKeys pin");
+      }
+      from = rememberSitting(from, who.lastCells, { fresh: true, keys: pin });
+      storeRef.current = from;
+      who = activeProfile(from);
+    }
+    const nextItems = playAgainRound(pin, roundSettings, who.attempts, Math.random);
+    beginRound(nextItems, from, { mode, session, fresh: false });
+  }
+
+  function start({
+    nextSettings = playSettings,
+    mode = "play",
+    session = null,
+    newSitting = false,
+  } = {}) {
+    const roundSettings = mode === "warmup" ? warmupSettings(nextSettings) : nextSettings;
+    const from = storeRef.current;
+    const who = activeProfile(from);
+    const pin = uniqueFormKeys(who.sittingKeys);
+    if (!newSitting && pin.length === 10 && sittingIncomplete(who.attempts, pin)) {
+      playAgain({ mode, session });
+      return;
+    }
+    const nextItems = buildRound(roundSettings, who.attempts, Math.random);
+    if (!nextItems.length) {
+      setScreen(mode === "warmup" ? "home" : "customize");
+      return;
+    }
+    beginRound(nextItems, from, { mode, session, fresh: true });
   }
 
   return (
@@ -103,7 +110,7 @@ export function App() {
           }
           warmupBell={Boolean(store.warmupBell)}
           onWarmupBell={(on) => setStore((prev) => saveWarmupBell(prev, on))}
-          onPlay={() => start({ replay: profile.finishedRound })}
+          onPlay={() => start()}
           onWarmup={(bell) =>
             start({
               mode: "warmup",
@@ -131,8 +138,7 @@ export function App() {
             setStore((prev) => markFinished(prev));
           }}
           onPlayAgain={() =>
-            start({
-              replay: true,
+            playAgain({
               mode: playMode,
               session: playMode === "warmup" ? sessionSec : null,
             })
@@ -191,7 +197,7 @@ export function App() {
           onBack={() => setScreen("home")}
           onCustomize={profile.finishedRound ? () => setScreen("customize") : null}
           onProgress={() => setScreen("progress")}
-          onPlay={() => start({ replay: true })}
+          onPlay={() => start()}
           onSwitch={(id) => setStore((prev) => switchProfile(prev, id))}
           onAdd={() => setStore((prev) => addProfile(prev))}
           onRename={(name) => setStore((prev) => renameProfile(prev, name))}

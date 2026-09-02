@@ -40,7 +40,7 @@ import {
 import { formCopy, itemFormKey } from "./mastery.js";
 import { personLabel, tenseLabel } from "./pack.js";
 import { recapHitsToward, recapStory } from "./recap.js";
-import { buildRound } from "./round.js";
+import { buildRound, playAgainRound } from "./round.js";
 import { mulberry32 } from "./random.js";
 import {
   activeProfile,
@@ -200,17 +200,13 @@ describe("named levels do not lock Customize", () => {
     const first = buildRound(DEFAULT_SETTINGS, [], mulberry32(7));
     const keys = first.map(itemFormKey);
     const round1 = first.map((item) => typed(item.tense, item.person, true, { verb: item.verb }));
-    const warm = buildRound(
-      warmupSettings(DEFAULT_SETTINGS),
-      round1,
-      mulberry32(8),
-      10,
-      itemsToCells(first),
-      keys,
-    );
+    const warm = playAgainRound(keys, warmupSettings(DEFAULT_SETTINGS), round1, mulberry32(8));
     expect(warm.map(itemFormKey).sort()).toEqual([...keys].sort());
     const app = readFileSync(join(root, "App.jsx"), "utf8");
     expect(app).toMatch(/sittingKeysFromAttempts/);
+    expect(app).toMatch(/playAgainRound/);
+    expect(app.split("function playAgain")[1]?.split("function start")[0] || "").not.toMatch(/buildRound/);
+    expect(app).toMatch(/onPlayAgain=\{\(\) =>\s*playAgain\(/);
     expect(app).toMatch(/built round set ≠ sittingKeys/);
     expect(app).toMatch(/sittingKeys=\{profile\.sittingKeys\}/);
     const play = readFileSync(join(root, "components/Play.jsx"), "utf8");

@@ -62,7 +62,7 @@ import { explainMiss } from "./miss.js";
 import { atlasCopyAt, atlasFillName, atlasFillStats, atlasRank, buildAtlas } from "./progress.js";
 import { recapHitsToward, recapStory } from "./recap.js";
 import { mulberry32 } from "./random.js";
-import { buildRound, makeDistractors, mapSittingKeys } from "./round.js";
+import { buildRound, makeDistractors, mapSittingKeys, playAgainRound } from "./round.js";
 import { activeProfile, clearProgress, loadClassSet, loadState, rememberSitting, saveSettings, toLogAttempt } from "./storage.js";
 import { classSetFromSettings } from "./classSet.js";
 import {
@@ -961,6 +961,10 @@ describe("sitting keys lock type and ending", () => {
 
   function expectSittingSet(items, sitting) {
     const keys = items.map(itemFormKey);
+    const counts = {};
+    for (const key of keys) counts[key] = (counts[key] || 0) + 1;
+    const twice = Object.entries(counts).filter(([, n]) => n > 1);
+    expect(twice).toEqual([]);
     expect(keys).toHaveLength(sitting.length);
     expect(new Set(keys).size).toBe(sitting.length);
     expect(sameFormKeySet(keys, sitting)).toBe(true);
@@ -1033,14 +1037,18 @@ describe("sitting keys lock type and ending", () => {
       /10 unique formKeys|built round set/,
     );
     const src = readFileSync(join(dirname(fileURLToPath(import.meta.url)), "round.js"), "utf8");
-    const sittingPath = src.split("if (pin.length === ROUND_SIZE && sittingIncomplete")[1]?.split(
-      "// Round 1",
-    )[0];
-    expect(sittingPath).toMatch(/return mapSittingKeys\(pin/);
-    expect(sittingPath).not.toMatch(/pickTypeForCell|fillWeighted|fillCells/);
+    expect(src).toMatch(/export function playAgainRound/);
+    expect(src.split("export function playAgainRound")[1].split("export function mapSittingKeys")[0]).not.toMatch(
+      /buildRound|pickTypeForCell|fillWeighted/,
+    );
+    const app = readFileSync(join(dirname(fileURLToPath(import.meta.url)), "../App.jsx"), "utf8");
+    const again = app.split("function playAgain")[1]?.split("function start")[0] || "";
+    expect(again).toMatch(/playAgainRound/);
+    expect(again).not.toMatch(/buildRound/);
+    expect(app).toMatch(/onPlayAgain=\{\(\) =>\s*playAgain\(/);
     let attempts = [];
     for (let round = 1; round <= 5; round += 1) {
-      const items = buildRound(DEFAULT_SETTINGS, attempts, mulberry32(17 * round), 10, null, sitting);
+      const items = playAgainRound(sitting, DEFAULT_SETTINGS, attempts, mulberry32(17 * round));
       expectSittingSet(items, sitting);
       expect(items.filter((item) => itemFormKey(item) === "indicative:preterito:tu:regular:ar")).toHaveLength(1);
       expect(items.map(itemFormKey)).toContain("indicative:presente:ellos:regular:er_ir");
@@ -1055,14 +1063,7 @@ describe("sitting keys lock type and ending", () => {
     expect(new Set(sitting).size).toBe(10);
     let attempts = playClean(first);
     for (let round = 2; round <= 5; round += 1) {
-      const items = buildRound(
-        DEFAULT_SETTINGS,
-        attempts,
-        mulberry32(20 + round),
-        10,
-        itemsToCells(first),
-        sitting,
-      );
+      const items = playAgainRound(sitting, DEFAULT_SETTINGS, attempts, mulberry32(20 + round));
       expectSittingSet(items, sitting);
       attempts = playClean(items, attempts);
     }
