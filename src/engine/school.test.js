@@ -5,6 +5,7 @@ import { describe, expect, it } from "vitest";
 import {
   DEFAULT_SETTINGS,
   FORM_COPY,
+  LEDE,
   LEVELS_NOTE,
   LEVEL_FILL_NEED,
   LEVEL_FILL_TOTAL,
@@ -308,6 +309,9 @@ describe("warm-up and class set", () => {
     expect(home).toMatch(/finishedRound \? "Play again" : "Play"/);
     expect(home).toMatch(/const opened = finishedRound \|\| hasClassSet/);
     expect(home).toMatch(/LEDE/);
+    expect(LEDE).toBe("The conjugation quiz.");
+    expect(LEDE).not.toMatch(/spanish|ultimate|french|german|latin/i);
+    expect(home).not.toMatch(/spanish|ultimate/i);
     expect(home).toMatch(/hasClassSet/);
     expect(home).toMatch(/WARMUP/);
     expect(home).toMatch(/onWarmup/);
