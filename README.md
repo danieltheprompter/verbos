@@ -4,7 +4,7 @@ The conjugation quiz.
 
 This repository is a **playable prototype**. The quiz shell is language-agnostic. The shipped content pack is Spanish (`src/packs/spanish/`), including Rioplatense **vos**. There is no language picker yet.
 
-**Prototype checkpoint (do not move):** tag `prototype-2026-09-02` (also `prototype-checkpoint`) at commit `044396d4120ed1e5a2c2a3bf93d856e490a332de`. A major overhaul is planned. These tags are a restore point.
+**Prototype checkpoint (do not move):** tag `prototype-2026-09-02` (also `prototype-checkpoint`) at commit `044396d4120ed1e5a2c2a3bf93d856e490a332de`. That tag is a parachute only — not the base of every future commit. Keep stacking changes on the current branch. Check out the tag only if Daniel asks to revert.
 
 ## Run
 
@@ -19,7 +19,9 @@ Vite serves the app at [http://localhost:5173](http://localhost:5173).
 npm test
 ```
 
-## Restore the prototype
+## Restore the prototype (only if asked to revert)
+
+Keep working on the current branch. Do not rebuild later work from this tag.
 
 ```bash
 git checkout prototype-2026-09-02
@@ -40,7 +42,7 @@ git checkout prototype-2026-09-02
 
 ## Docs
 
-- [docs/PROTOTYPE.md](docs/PROTOTYPE.md) — checkpoint SHA, date, how to revert
+- [docs/PROTOTYPE.md](docs/PROTOTYPE.md) — checkpoint SHA, date, revert only if asked
 - [docs/PLAYER.md](docs/PLAYER.md) — screens and play loop
 - [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) — shell vs pack, file map, storage
 - [docs/DATA.md](docs/DATA.md) — attempt log, formKey, settings, class-set payload

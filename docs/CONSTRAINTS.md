@@ -37,4 +37,4 @@ Freeze list for `044396d` / tag `prototype-2026-09-02`. Do not treat later docs 
 
 ## Checkpoint
 
-Gameplay, UI copy, tests, and engine behavior at `044396d` are the prototype. Documentation after the tag describes that commit; it must not retag or move `prototype-2026-09-02` / `prototype-checkpoint`.
+Gameplay, UI copy, tests, and engine behavior at `044396d` are the tagged prototype. That tag is a parachute, not the base of every future commit. Keep stacking changes on the current branch unless Daniel asks to revert. Documentation after the tag must not retag or move `prototype-2026-09-02` / `prototype-checkpoint`.

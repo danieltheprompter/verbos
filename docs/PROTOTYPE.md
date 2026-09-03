@@ -1,6 +1,8 @@
 # Prototype checkpoint
 
-This is a **playable prototype**, not a final product. A major overhaul is planned. Use this checkpoint to restore the passing build before that work.
+This is a **playable prototype**, not a final product. A major overhaul is planned.
+
+This checkpoint is a **parachute**, not the base of every future commit. Keep stacking changes on the current branch and preserve prior work. Check out the tag / `044396d` only if Daniel asks to revert.
 
 ## Frozen commit
 
@@ -36,7 +38,11 @@ Tag message: “Playable prototype checkpoint. Do not move this tag.”
 - Home cleanup: first visit is Play only; tagline “The conjugation quiz.”
 - Recap: misses **Play again for a new mix.** / clean **Nailed it. Play again so it sticks.**
 
-## How to revert
+## How to revert (only if asked)
+
+Do not start later work from this tag. Subsequent commits stay on the current branch.
+
+If Daniel explicitly asks to revert:
 
 ```bash
 git fetch origin tag prototype-2026-09-02
