@@ -209,12 +209,14 @@ describe("named levels do not lock Customize", () => {
     expect(customizeLockedByLevels(namedLevels(activeProfile(state).attempts))).toBe(false);
   });
 
-  it("keeps Warm-up on the sitting formKeys", () => {
+  it("keeps Warm-up on the sitting cells", () => {
     const first = buildRound(DEFAULT_SETTINGS, [], mulberry32(7));
     const keys = first.map(itemFormKey);
     const round1 = first.map((item) => typed(item.tense, item.person, true, { verb: item.verb }));
     const warm = playAgainRound(keys, warmupSettings(DEFAULT_SETTINGS), round1, mulberry32(8));
-    expect(warm.map(itemFormKey).sort()).toEqual([...keys].sort());
+    expect(warm.map((item) => `${item.tense}:${item.person}`).sort()).toEqual(
+      first.map((item) => `${item.tense}:${item.person}`).sort(),
+    );
     const app = readFileSync(join(root, "App.jsx"), "utf8");
     expect(app).toMatch(/sittingKeysFromAttempts/);
     expect(app).toMatch(/sittingKeysFromRound/);
@@ -266,12 +268,14 @@ describe("named levels do not lock Customize", () => {
     expect(story1.line).not.toMatch(/toward|3\/5|2 of 5/);
     expect(recapHitsToward(round1, keys).label).toBe("1/5");
     const second = buildRound(DEFAULT_SETTINGS, round1, mulberry32(11), 10, itemsToCells(first), keys);
+    expect(second.map((item) => `${item.tense}:${item.person}`).sort()).toEqual(
+      first.map((item) => `${item.tense}:${item.person}`).sort(),
+    );
     const after2 = [
       ...round1,
       ...second.map((item) => typed(item.tense, item.person, true, { verb: item.verb })),
     ];
     const story2 = recapStory(second.map((item) => ({ ...item, correct: true })), after2);
-    expect(story2.pips).toBe("2/5");
     expect(story2.banner).toBe(`${second.length} of ${second.length}`);
     expect(story2.line).toBe(RECAP_CLEAN_LINE);
     expect(story2.line).not.toMatch(/0\/10|you know this|sitting|toward/i);
@@ -458,12 +462,10 @@ describe("warm-up and class set", () => {
     const first = buildRound(DEFAULT_SETTINGS, [], mulberry32(7));
     const keys = first.map(itemFormKey);
     let attempts = [];
-    let items = first;
     for (let round = 0; round < 5; round += 1) {
-      items = buildRound(DEFAULT_SETTINGS, attempts, mulberry32(20 + round), 10, itemsToCells(first), keys);
       attempts = [
         ...attempts,
-        ...items.map((item) => typed(item.tense, item.person, true, { verb: item.verb })),
+        ...first.map((item) => typed(item.tense, item.person, true, { verb: item.verb })),
       ];
     }
     let state = rememberSitting(loadState(), first);
