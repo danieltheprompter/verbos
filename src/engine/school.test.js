@@ -24,6 +24,8 @@ import {
   VERB_PICK_LEGEND,
   SOUND_MUTED,
   STORAGE_KEY,
+  WARMUP_BELL_HOME,
+  WARMUP_BELL_LABEL,
   WARMUP_BELL_SEC,
 } from "./constants.js";
 import { cellsFor, itemsToCells } from "./board.js";
@@ -311,24 +313,37 @@ describe("warm-up and class set", () => {
     expect(home).toMatch(/onWarmup/);
     expect(home).toMatch(/warmupBell/);
     expect(home).toMatch(/onWarmupBell/);
-    expect(home).toMatch(/\{YOU\}/);
+    expect(home).not.toMatch(/\{YOU\}/);
+    expect(home).not.toMatch(/Never fails the item/);
+    expect(home).not.toMatch(/5:00/);
+    expect(home).toMatch(/WARMUP_BELL_LABEL/);
+    expect(home).toMatch(/WARMUP_BELL_HOME/);
     expect(home).toMatch(/\{WHAT_YOU_KNOW\}/);
+    expect(home).toMatch(/home-links/);
+    expect(home).toMatch(/home-warmup/);
     expect(home).not.toMatch(/useState\(false\)/);
     expect(home).not.toMatch(/nextPlay/);
     expect(home).toMatch(/finishedRound \|\| hasClassSet/);
     expect(home).toMatch(/hasClassSet \?/);
     const classSetBlock = home.split("hasClassSet ?")[1]?.split(") : null}")[0] || "";
+    expect(classSetBlock).toMatch(/home-warmup/);
     expect(classSetBlock).toMatch(/warmup-bell/);
-    expect(classSetBlock).toMatch(/WARMUP_BELL/);
-    expect(home.indexOf("{opened ? (")).toBeGreaterThan(home.indexOf('finishedRound ? "Play again" : "Play"'));
-    expect(home.indexOf("{WARMUP}")).toBeGreaterThan(home.indexOf("{opened ? ("));
-    expect(home.indexOf("{YOU}")).toBeGreaterThan(home.indexOf("{opened ? ("));
-    expect(home.indexOf("{WHAT_YOU_KNOW}")).toBeGreaterThan(home.indexOf("{opened ? ("));
+    expect(classSetBlock).toMatch(/\{WARMUP\}/);
+    expect(classSetBlock).toMatch(/WARMUP_BELL_LABEL/);
+    expect(classSetBlock.indexOf("{WARMUP}")).toBeLessThan(classSetBlock.indexOf("warmup-bell"));
+    expect(home.indexOf("{hasClassSet ? (")).toBeGreaterThan(home.indexOf('finishedRound ? "Play again" : "Play"'));
+    expect(home.indexOf("{WARMUP}")).toBeGreaterThan(home.indexOf("home-warmup"));
+    expect(home.indexOf("{opened ? (")).toBeGreaterThan(home.indexOf("{WARMUP}"));
+    expect(home.indexOf("{WHAT_YOU_KNOW}")).toBeGreaterThan(home.indexOf("home-links"));
+    expect(home.indexOf("finishedRound ? (")).toBeGreaterThan(home.indexOf("home-links"));
     const actions = home.split('className="home-actions"')[1] || "";
     expect(actions.indexOf("{WARMUP}")).toBeGreaterThan(actions.indexOf("Play"));
-    expect(actions.indexOf("{WARMUP_BELL}")).toBeGreaterThan(actions.indexOf("{WARMUP}"));
-    expect(actions.indexOf("{YOU}")).toBeGreaterThan(actions.indexOf("{WARMUP}"));
-    expect(actions).toMatch(/\{YOU\}[\s\S]*Customize[\s\S]*\{WHAT_YOU_KNOW\}/);
+    expect(actions.indexOf("WARMUP_BELL_LABEL")).toBeGreaterThan(actions.indexOf("{WARMUP}"));
+    expect(actions).toMatch(/Customize[\s\S]*\{WHAT_YOU_KNOW\}[\s\S]*CLASS_SET_LOAD/);
+    expect(actions).toMatch(/text-back[\s\S]*Customize/);
+    expect(actions.match(/btn-primary/g)).toHaveLength(1);
+    expect(WARMUP_BELL_LABEL).toBe("5 minutes");
+    expect(WARMUP_BELL_HOME).toBe("Stops the round. Misses still just mark red.");
     const customize = readFileSync(join(root, "components/Customize.jsx"), "utf8");
     expect(customize).toMatch(/classSetFromSettings/);
     expect(customize).toMatch(/aria-checked=\{on\}/);

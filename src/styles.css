@@ -127,7 +127,21 @@ button.wordmark-mini,
 .home-actions {
   display: flex;
   flex-direction: column;
+  gap: 12px;
+}
+
+.home-warmup {
+  display: flex;
+  flex-direction: column;
   gap: 10px;
+}
+
+.home-links {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 18px;
+  align-items: center;
 }
 
 .home .btn-primary {
@@ -1306,7 +1320,28 @@ button.wordmark-mini,
 }
 
 .warmup-bell {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
   text-align: left;
+  padding: 0 2px;
+  border: 0;
+  background: none;
+}
+
+.warmup-bell input {
+  margin-top: 4px;
+  accent-color: var(--ink);
+}
+
+.warmup-bell strong {
+  display: block;
+  color: var(--ink);
+}
+
+.warmup-bell span {
+  font-size: 0.9rem;
+  color: var(--ink-soft);
 }
 
 .play-done.is-glance {

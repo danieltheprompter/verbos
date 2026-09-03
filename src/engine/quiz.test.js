@@ -195,6 +195,9 @@ describe("visual tokens", () => {
     expect(home).toMatch(/Customize/);
     expect(home).toMatch(/finishedRound \|\| hasClassSet/);
     expect(home).toMatch(/WHAT_YOU_KNOW/);
+    expect(home).not.toMatch(/\{YOU\}/);
+    expect(home).toMatch(/home-links/);
+    expect(home).toMatch(/WARMUP_BELL_LABEL/);
     expect(board).toMatch(/false \? <p className="board-note">\{BOARD_NOTE\}<\/p>/);
   });
 });
