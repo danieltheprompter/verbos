@@ -625,7 +625,8 @@ describe("Next Play and projector recap", () => {
     expect(play).not.toMatch(/PROFILE_TITLE/);
     expect(play).not.toMatch(/class score|live score|roster|leaderboard|improved/i);
     expect(RECAP_SAME_TEN).toBe(RECAP_TURN_RED);
-    expect(RECAP_TURN_RED).toBe("Play again — turn the red ones green.");
+    expect(RECAP_TURN_RED).toBe("Play again for a new mix.");
+    expect(RECAP_TURN_RED).not.toMatch(/turn the red|wells|Same board|Board lit/i);
     expect(RECAP_CLEAN_LINE).toBe("Nailed it. Play again so it sticks.");
     const recapActions = play.split("play-done")[1] || "";
     expect(recapActions).toMatch(/btn-primary/);

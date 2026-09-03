@@ -10,7 +10,7 @@ export const PIP_SLOTS = 5;
 export const BOARD_NOTE =
   "This board is this round. A square fills when you answer. Right or wrong shows on what you typed.";
 
-export const RECAP_TURN_RED = "Play again — turn the red ones green.";
+export const RECAP_TURN_RED = "Play again for a new mix.";
 export const RECAP_CLEAN_LINE = "Nailed it. Play again so it sticks.";
 export const RECAP_TOWARD_SET = "toward knowing this set";
 export const RECAP_MISSED = "Missed";
