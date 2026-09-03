@@ -284,7 +284,7 @@ describe("named levels do not lock Customize", () => {
     expect(miniCellState(round1, visited.tense, visited.person)).toBe("not_enough");
     expect(miniCellPaint(round1, visited.tense, visited.person)).toBe("empty");
     const boardUi = readFileSync(join(root, "components/Board.jsx"), "utf8");
-    expect(boardUi).toMatch(/cell-marks/);
+    expect(boardUi).not.toMatch(/cell-marks|sittingCellMarks/);
     expect(boardUi).not.toMatch(/pips/i);
     const styles = readFileSync(join(root, "styles.css"), "utf8");
     expect(styles).not.toMatch(/\.mini-cell\.is-not_enough[\s\S]{0,80}color-visit/);
@@ -641,8 +641,9 @@ describe("Next Play and projector recap", () => {
     expect(recap).not.toMatch(/toward knowing this set/);
     expect(recap).not.toMatch(/\bscore\b|\bXP\b|streak|loot/i);
     const board = readFileSync(join(root, "components/Board.jsx"), "utf8");
-    expect(board).toMatch(/sittingCellMarks/);
+    expect(board).not.toMatch(/sittingCellMarks|sittingVisitCellKeys/);
     expect(board).toMatch(/lastRoundResult/);
+    expect(board).toMatch(/answeredCellKeys/);
     expect(board).toMatch(/data-result/);
     expect(board).not.toMatch(/recap \?\s*0/);
     const styles = readFileSync(join(root, "styles.css"), "utf8");

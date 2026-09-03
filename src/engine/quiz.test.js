@@ -408,10 +408,10 @@ describe("round board ignores mastery", () => {
     const root = join(dirname(fileURLToPath(import.meta.url)), "..");
     const board = readFileSync(join(root, "components/Board.jsx"), "utf8");
     expect(board).toMatch(/false \? <p className="board-note">\{BOARD_NOTE\}<\/p>/);
-    expect(board).toMatch(/visitPieceCount/);
-    expect(board).toMatch(/visitCounts/);
-    expect(board).toMatch(/sittingCellMarks/);
-    expect(board).toMatch(/data-marks/);
+    expect(board).toMatch(/lastRoundResult/);
+    expect(board).toMatch(/answeredCellKeys/);
+    expect(board).not.toMatch(/sittingCellMarks|sittingVisitCellKeys/);
+    expect(board).not.toMatch(/visitPieceCount|cell-marks|data-marks/);
     expect(board).toMatch(/if \(land\) answered\.add/);
     const play = readFileSync(join(root, "components/Play.jsx"), "utf8");
     const judge = play.split("function judge")[1]?.split("function next")[0] || "";
@@ -1177,7 +1177,7 @@ describe("sitting keys lock type and ending", () => {
     }
   });
 
-  it("walks sittingKeys row-major and keeps visit wells lit without owned rust", () => {
+  it("shuffles prompt order each round and keeps the play board this-round only", () => {
     const sitting = [
       "indicative:preterito:yo:regular:er_ir",
       "indicative:presente:el:regular:er_ir",
@@ -1190,10 +1190,7 @@ describe("sitting keys lock type and ending", () => {
       "indicative:preterito:el:regular:er_ir",
       "indicative:preterito:ellos:regular:er_ir",
     ];
-    const items = playAgainRound(sitting, DEFAULT_SETTINGS, [], mulberry32(3));
-    expectSittingSet(items, sitting);
-    const order = items.map((item) => `${item.tense}:${item.person}`);
-    expect(order).toEqual([
+    const rowMajor = [
       "presente:yo",
       "presente:tu",
       "presente:el",
@@ -1204,22 +1201,28 @@ describe("sitting keys lock type and ending", () => {
       "preterito:el",
       "preterito:nos",
       "preterito:ellos",
-    ]);
-    const attempts = playClean(items);
-    const wells = sittingVisitCellKeys(attempts, sitting);
-    expect(wells.size).toBe(cellsFor(DEFAULT_SETTINGS).length);
-    expect(roundCellState("presente", "yo", items[0], wells)).toBe("answered-now");
-    expect(sittingCellMarks(attempts, "presente", "yo", sitting)).toBe(1);
+    ];
+    const a = playAgainRound(sitting, DEFAULT_SETTINGS, [], mulberry32(3));
+    const b = playAgainRound(sitting, DEFAULT_SETTINGS, [], mulberry32(4));
+    expectSittingSet(a, sitting);
+    expectSittingSet(b, sitting);
+    expect(a.map((item) => `${item.tense}:${item.person}`)).not.toEqual(rowMajor);
+    expect(a.map(itemFormKey).join("|")).not.toBe(b.map(itemFormKey).join("|"));
+    const src = readFileSync(join(dirname(fileURLToPath(import.meta.url)), "round.js"), "utf8");
+    const mapped = src.split("export function mapSittingKeys")[1] || "";
+    expect(mapped).toMatch(/shuffle\(/);
+    expect(mapped).not.toMatch(/rows\.indexOf|cols\.indexOf/);
     const board = readFileSync(join(dirname(fileURLToPath(import.meta.url)), "../components/Board.jsx"), "utf8");
-    expect(board).toMatch(/sittingVisitCellKeys/);
-    expect(board).toMatch(/sittingCellMarks/);
+    expect(board).toMatch(/lastRoundResult/);
+    expect(board).toMatch(/answeredCellKeys/);
+    expect(board).not.toMatch(/sittingVisitCellKeys|sittingCellMarks/);
+    expect(board).not.toMatch(/visitPieceCount|cell-marks/);
     expect(board).toMatch(/is-land/);
     expect(board).not.toMatch(/color-owned|cell-owned/);
     const play = readFileSync(join(dirname(fileURLToPath(import.meta.url)), "../components/Play.jsx"), "utf8");
     expect(play).toMatch(/sittingKeys=\{sittingKeys\}/);
     expect(play).toMatch(/is-flick-col/);
     expect(play).toMatch(/setLand/);
-    expect(play).toMatch(/visitCounts=\{visitCounts\}/);
     expect(play).toMatch(/\{story\.line\}/);
     expect(play).not.toMatch(/Same 10\. Fill the wells\.|Same board\.|Board lit/);
     expect(RECAP_SAME_TEN).toBe(RECAP_TURN_RED);

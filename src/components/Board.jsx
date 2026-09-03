@@ -6,16 +6,11 @@ import {
   columnLabels,
   lastRoundResult,
   roundCellState,
-  visitPieceCount,
 } from "../engine/board.js";
-import { sittingCellMarks, sittingVisitCellKeys } from "../engine/mastery.js";
 
 export function Board({
   settings,
   items = [],
-  attempts = [],
-  sittingKeys = [],
-  visitCounts = {},
   current,
   recap = false,
   land = null,
@@ -23,10 +18,7 @@ export function Board({
 }) {
   const columns = columnLabels(settings);
   const rows = packTenses.filter((tense) => settings.tenses.includes(tense.id));
-  const answered = new Set([
-    ...answeredCellKeys(items),
-    ...sittingVisitCellKeys(attempts, sittingKeys),
-  ]);
+  const answered = new Set(answeredCellKeys(items));
   if (land) answered.add(`${land.tense}:${land.person}`);
   return (
     <div className={`board-wrap${recap ? " is-recap" : ""}`}>
@@ -57,15 +49,6 @@ export function Board({
                 const isLand = Boolean(
                   land && land.tense === row.id && land.person === column.id,
                 );
-                const sittingMarks = sittingCellMarks(
-                  attempts,
-                  row.id,
-                  column.id,
-                  sittingKeys,
-                );
-                const visits = Number(visitCounts[`${row.id}:${column.id}`]) || 0;
-                const answeredHere = answered.has(`${row.id}:${column.id}`);
-                const marks = visitPieceCount(sittingMarks, visits, answeredHere || isLand);
                 const last = lastRoundResult(items, row.id, column.id);
                 const result = last === true ? "ok" : last === false ? "bad" : undefined;
                 return (
@@ -75,17 +58,8 @@ export function Board({
                       result === "ok" ? " is-ok" : result === "bad" ? " is-bad" : ""
                     }`}
                     title={`${row.label} · ${column.label}`}
-                    data-marks={marks || undefined}
                     data-result={result}
-                  >
-                    {marks ? (
-                      <span className="cell-marks" aria-hidden="true">
-                        {Array.from({ length: marks }, (_, index) => (
-                          <i key={index} />
-                        ))}
-                      </span>
-                    ) : null}
-                  </div>
+                  />
                 );
               })}
             </div>
