@@ -1,121 +1,48 @@
-import { useState } from "react";
-import { FORM_COPY, RANK_PATH, WHAT_YOU_KNOW } from "../engine/config.js";
-import { pack } from "../engine/pack.js";
-import { atlasFillStats, atlasPersons, buildAtlas } from "../engine/progress.js";
+import { FORM_COPY, WHAT_YOU_KNOW } from "../engine/config.js";
+import { pack, personLabel, tenseFor, tenseLabel } from "../engine/pack.js";
+import { knowChecklist } from "../engine/progress.js";
+import { specsForSettings, formKey } from "../engine/mastery.js";
+import { trialSittingKeys, journeyCatalog } from "../engine/journey.js";
 import { ClearProgress } from "./ClearProgress.jsx";
-import { MiniBoard } from "./MiniBoard.jsx";
+
+function labelFor(row) {
+  const tense = tenseFor(row.mood, row.time);
+  const type = pack.verbBuckets.find((bucket) => bucket.id === row.type)?.label || row.type;
+  const ending = pack.endingPatterns.find((pattern) => pattern.id === row.ending)?.label || row.ending;
+  return `${tenseLabel(tense)} · ${personLabel(row.person)} · ${type} · ${ending}`;
+}
 
 export function Progress({
   attempts,
   sittingKeys = [],
   atlasKeys = [],
+  settings,
   onBack,
   onCustomize,
   onClear,
 }) {
-  const [mood, setMood] = useState(pack.moods[0]?.id);
-  const [type, setType] = useState(pack.verbBuckets[0]?.id);
-  const [ending, setEnding] = useState(pack.endingPatterns[0]?.id);
-  const rows = buildAtlas(attempts, { mood, type, ending });
-  const persons = atlasPersons(mood);
-  const fill = atlasFillStats(attempts, { mood, type, ending });
+  const practiceKeys = (settings ? specsForSettings(settings) : []).map((spec) => formKey(spec));
+  const journeyKeys = journeyCatalog().flatMap((trial) => trialSittingKeys(trial));
+  const keys = [...practiceKeys, ...journeyKeys, ...atlasKeys, ...sittingKeys];
+  const rows = knowChecklist(attempts, keys);
 
   return (
     <section className="panel career">
-      <header className="panel-head career-head">
+      <header className="panel-head">
         <button className="text-back" type="button" onClick={onBack}>
           Back
         </button>
-        <p className="career-kicker">{WHAT_YOU_KNOW}</p>
-        <h1 className="atlas-rank">{fill.line}</h1>
-        <ol className="rank-path" aria-label="Path">
-          {RANK_PATH.map((rank) => (
-            <li key={rank.id} className={rank.id === fill.rank ? "is-now" : ""}>
-              {rank.label}
-            </li>
-          ))}
-        </ol>
-        <p className="atlas-fill">{fill.name}</p>
+        <h1>{WHAT_YOU_KNOW}</h1>
       </header>
 
-      <div className="atlas-tabs" role="tablist" aria-label="Mood">
-        {pack.moods.map((item) => (
-          <button
-            key={item.id}
-            type="button"
-            role="tab"
-            aria-selected={mood === item.id}
-            className={`atlas-tab ${mood === item.id ? "is-on" : ""}`}
-            onClick={() => setMood(item.id)}
-          >
-            {item.label}
-          </button>
-        ))}
-      </div>
-
-      <div className="atlas-filters">
-        <p className="times-mood">Kind of verb</p>
-        <div className="chips">
-          {pack.verbBuckets.map((bucket) => (
-            <button
-              key={bucket.id}
-              type="button"
-              className={`chip ${type === bucket.id ? "is-on" : ""}`}
-              onClick={() => setType(bucket.id)}
-            >
-              {bucket.label}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {pack.endingPatterns?.length ? (
-        <div className="atlas-filters">
-          <p className="times-mood">{pack.chrome?.endingFilter || "Ending"}</p>
-          <div className="chips chips-2">
-            {pack.endingPatterns.map((pattern) => (
-              <button
-                key={pattern.id}
-                type="button"
-                className={`chip ${ending === pattern.id ? "is-on" : ""}`}
-                onClick={() => setEnding(pattern.id)}
-              >
-                {pattern.label}
-              </button>
-            ))}
-          </div>
-        </div>
-      ) : null}
-
-      <MiniBoard attempts={attempts} sittingKeys={sittingKeys} atlasKeys={atlasKeys} />
-
-      <div className="atlas" style={{ "--cols": persons.length }} aria-label={`${mood} atlas`}>
-        <div className="board-corner" />
-        {persons.map((person) => (
-          <div className="board-col" key={person.id}>
-            {(person.lines || [person.label]).map((line) => (
-              <span key={line}>{line}</span>
-            ))}
-          </div>
-        ))}
+      <ul className="know-list">
         {rows.map((row) => (
-          <div className="board-row-wrap" key={row.tense}>
-            <div className="board-row-label">{row.label}</div>
-            {row.cells.map((cell) =>
-              cell.allowed ? (
-                <div
-                  key={cell.person}
-                  className={`atlas-cell is-${cell.state}${cell.opened ? " is-open" : ""}`}
-                  title={`${row.label} · ${cell.label}`}
-                  aria-label={`${row.label} · ${cell.label}: ${cell.copy}`}
-                />
-              ) : (
-                <div key={cell.person} className="atlas-cell is-na" />
-              ),
-            )}
-          </div>
+          <li key={row.key} className={`know-row is-${row.state}`}>
+            <span>{labelFor(row)}</span>
+            <em>{row.copy}</em>
+          </li>
         ))}
-      </div>
+      </ul>
 
       <ul className="atlas-key">
         <li>
@@ -134,7 +61,6 @@ export function Progress({
 
       {onClear ? (
         <section className="clear-block">
-          <p className="times-mood">Atlas</p>
           <ClearProgress onClear={onClear} />
         </section>
       ) : null}

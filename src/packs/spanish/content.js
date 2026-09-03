@@ -37,6 +37,10 @@ export const targetGroups = [
       { id: "imperfecto", label: "Imperfecto", boardLabel: "Imperfecto", mood: "indicative", time: "imperfecto" },
       { id: "futuro", label: "Futuro", boardLabel: "Futuro", mood: "indicative", time: "futuro" },
       { id: "condicional", label: "Condicional", boardLabel: "Condicional", mood: "indicative", time: "condicional" },
+      { id: "perfecto", label: "Perfecto", boardLabel: "Perfecto", mood: "indicative", time: "perfecto" },
+      { id: "pluscuamperfecto", label: "Pluscuamperfecto", boardLabel: "Pluscuamperfecto", mood: "indicative", time: "pluscuamperfecto" },
+      { id: "futuro_perf", label: "Futuro perfecto", boardLabel: "Futuro perfecto", mood: "indicative", time: "futuro_perfecto" },
+      { id: "condicional_perf", label: "Condicional perfecto", boardLabel: "Condicional perfecto", mood: "indicative", time: "condicional_perfecto" },
     ],
   },
   {
@@ -45,6 +49,8 @@ export const targetGroups = [
     items: [
       { id: "subjuntivo", label: "Presente", boardLabel: "Presente de subjuntivo", mood: "subjunctive", time: "presente" },
       { id: "subjuntivo_imp", label: "Imperfecto", boardLabel: "Imperfecto de subjuntivo", mood: "subjunctive", time: "imperfecto" },
+      { id: "subjuntivo_perf", label: "Perfecto", boardLabel: "Perfecto de subjuntivo", mood: "subjunctive", time: "perfecto" },
+      { id: "subjuntivo_pluscuam", label: "Pluscuamperfecto", boardLabel: "Pluscuamperfecto de subjuntivo", mood: "subjunctive", time: "pluscuamperfecto" },
     ],
   },
   {

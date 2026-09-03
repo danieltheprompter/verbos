@@ -31,6 +31,10 @@ git checkout prototype-2026-09-02
 
 [Release: Prototype checkpoint 2026-09-02](https://github.com/danieltheprompter/verbos/releases/tag/prototype-2026-09-02)
 
+## Practice and Journey
+
+Home has two entries. **Practice** is the free loop (Play, Customize, What you know). First visit is one-tap Practice. **Journey** is a gated path of trials (unlocked by default for playtest). See [docs/JOURNEY.md](docs/JOURNEY.md).
+
 ## What this snapshot does
 
 - First Home visit: **VERBOS**, “The conjugation quiz.”, one **Play** button.
@@ -47,3 +51,4 @@ git checkout prototype-2026-09-02
 - [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) — shell vs pack, file map, storage
 - [docs/DATA.md](docs/DATA.md) — attempt log, formKey, settings, class-set payload
 - [docs/CONSTRAINTS.md](docs/CONSTRAINTS.md) — freeze list for this snapshot
+- [docs/JOURNEY.md](docs/JOURNEY.md) — Practice vs Journey, trial order, gate

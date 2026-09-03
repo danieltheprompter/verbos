@@ -68,6 +68,9 @@ export function blankProfile(id = newId("p"), name = "") {
     lastCells: [],
     sittingKeys: [],
     atlasKeys: [],
+    journeyUnlocked: true,
+    journeyNodeId: null,
+    journeySittingKeys: [],
   };
 }
 
@@ -97,6 +100,9 @@ function normalizeProfile(raw, fallbackId) {
       : Array.isArray(raw?.sittingKeys)
         ? raw.sittingKeys
         : [],
+    journeyUnlocked: raw?.journeyUnlocked !== false,
+    journeyNodeId: raw?.journeyNodeId || null,
+    journeySittingKeys: Array.isArray(raw?.journeySittingKeys) ? raw.journeySittingKeys : [],
   };
 }
 
@@ -342,11 +348,35 @@ export function rememberSitting(state, items, { fresh = false, keys: pinKeys } =
 }
 
 export function clearProgress(state) {
+  const who = activeProfile(state);
   const next = {
-    ...patchActive(state, { attempts: [], sittingKeys: [], atlasKeys: [] }),
+    ...patchActive(state, {
+      attempts: [],
+      sittingKeys: [],
+      atlasKeys: [],
+      journeyNodeId: null,
+      journeySittingKeys: [],
+      journeyUnlocked: who.journeyUnlocked !== false,
+    }),
     sittingKeys: [],
     atlasKeys: [],
   };
+  saveState(next);
+  return next;
+}
+
+export function setJourneyUnlocked(state, on) {
+  const next = patchActive(state, { journeyUnlocked: Boolean(on) });
+  saveState(next);
+  return next;
+}
+
+export function rememberJourney(state, { nodeId, keys = [] } = {}) {
+  const next = patchActive(state, {
+    journeyNodeId: nodeId || activeProfile(state).journeyNodeId,
+    journeySittingKeys: uniqueFormKeys(keys),
+    journeyUnlocked: activeProfile(state).journeyUnlocked !== false,
+  });
   saveState(next);
   return next;
 }

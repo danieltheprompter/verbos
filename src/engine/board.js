@@ -15,11 +15,17 @@ export function addressPersons(settings) {
 export function personsFor(settings, tense) {
   const address = new Set(addressPersons(settings));
   const mood = moodOf(tense);
+  const pinned = Array.isArray(settings.persons) ? settings.persons : null;
   return pack.persons
     .filter((person) => {
       if (person.skipMoods?.includes(mood)) return false;
-      if (person.optionalColumn && !settings.extraColumn) return false;
-      if (person.address && !address.has(person.id)) return false;
+      if (person.optionalColumn && !settings.extraColumn && !pinned?.includes(person.id)) {
+        return false;
+      }
+      if (person.address && !address.has(person.id) && !pinned?.includes(person.id)) {
+        return false;
+      }
+      if (pinned && !pinned.includes(person.id)) return false;
       return true;
     })
     .map((person) => person.id);

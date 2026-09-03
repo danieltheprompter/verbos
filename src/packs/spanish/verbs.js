@@ -121,7 +121,101 @@ const ENDINGS = {
   },
 };
 
+const COMPOUND_TENSES = new Set([
+  "perfecto",
+  "pluscuamperfecto",
+  "futuro_perf",
+  "condicional_perf",
+  "subjuntivo_perf",
+  "subjuntivo_pluscuam",
+]);
+
+const HABER = {
+  perfecto: {
+    yo: "he",
+    tu: "has",
+    vos: "has",
+    el: "ha",
+    nos: "hemos",
+    vosotros: "habéis",
+    ellos: "han",
+  },
+  pluscuamperfecto: {
+    yo: "había",
+    tu: "habías",
+    vos: "habías",
+    el: "había",
+    nos: "habíamos",
+    vosotros: "habíais",
+    ellos: "habían",
+  },
+  futuro_perf: {
+    yo: "habré",
+    tu: "habrás",
+    vos: "habrás",
+    el: "habrá",
+    nos: "habremos",
+    vosotros: "habréis",
+    ellos: "habrán",
+  },
+  condicional_perf: {
+    yo: "habría",
+    tu: "habrías",
+    vos: "habrías",
+    el: "habría",
+    nos: "habríamos",
+    vosotros: "habríais",
+    ellos: "habrían",
+  },
+  subjuntivo_perf: {
+    yo: "haya",
+    tu: "hayas",
+    vos: "hayas",
+    el: "haya",
+    nos: "hayamos",
+    vosotros: "hayáis",
+    ellos: "hayan",
+  },
+  subjuntivo_pluscuam: {
+    yo: "hubiera",
+    tu: "hubieras",
+    vos: "hubieras",
+    el: "hubiera",
+    nos: "hubiéramos",
+    vosotros: "hubierais",
+    ellos: "hubieran",
+  },
+};
+
+const PARTICIPLES = {
+  hacer: "hecho",
+  decir: "dicho",
+  escribir: "escrito",
+  poner: "puesto",
+  ver: "visto",
+  volver: "vuelto",
+  abrir: "abierto",
+  romper: "roto",
+};
+
+export function participleOf(infinitive) {
+  if (PARTICIPLES[infinitive]) return PARTICIPLES[infinitive];
+  const group = infinitive.slice(-2);
+  return infinitive.slice(0, -2) + (group === "ar" ? "ado" : "ido");
+}
+
+export function compoundForm(infinitive, tense, person) {
+  const haber = HABER[tense]?.[person];
+  if (!haber) throw new Error(`Missing haber ${tense} ${person}`);
+  return `${haber} ${participleOf(infinitive)}`;
+}
+
+export function isCompoundTense(tense) {
+  return COMPOUND_TENSES.has(tense);
+}
+
 export function regularForm(infinitive, tense, person) {
+  if (isCompoundTense(tense)) return compoundForm(infinitive, tense, person);
   const group = infinitive.slice(-2);
   const stem = infinitive.slice(0, -2);
   if (tense === "futuro") return infinitive + FUTURO[person];
@@ -209,6 +303,18 @@ export function commandForm(infinitive, polarity, person) {
 }
 
 export const SPECIAL_VERBS = [
+  {
+    inf: "haber",
+    pool: POOL.IRREGULARS,
+    forms: pack({
+      presente: "he has has ha hemos habéis han",
+      preterito: "hube hubiste hubiste hubo hubimos hubisteis hubieron",
+      imperfecto: "había habías habías había habíamos habíais habían",
+      futuro: "habré habrás habrás habrá habremos habréis habrán",
+      condicional: "habría habrías habrías habría habríamos habríais habrían",
+      subjuntivo: "haya hayas hayás haya hayamos hayáis hayan",
+    }),
+  },
   {
     inf: "ser",
     pool: POOL.IRREGULARS,
@@ -701,9 +807,12 @@ export function verbsForSettings(settings) {
     ...pickedVerbsFrom(settings),
     ...parseCustomList(settings.customList),
   ]);
-  if (chosen.length) return chosen;
   const types = settings.types?.length ? settings.types : ["regular"];
-  return ALL_VERBS.filter((verb) => types.includes(verb.type));
+  let pool = chosen.length ? chosen : ALL_VERBS.filter((verb) => types.includes(verb.type));
+  if (settings.endings?.length) {
+    pool = pool.filter((verb) => settings.endings.includes(endingPattern(verb.inf)));
+  }
+  return pool;
 }
 
 export function activeTypes(settings) {
@@ -728,6 +837,7 @@ export function verbsOfType(level, type) {
 }
 
 export function conjugate(infinitive, tense, person) {
+  if (isCompoundTense(tense)) return compoundForm(infinitive, tense, person);
   if (tense === "subjuntivo_imp") return imperfectSubjunctive(infinitive, person);
   if (tense === "mandato_af") return commandForm(infinitive, "af", person);
   if (tense === "mandato_neg") return commandForm(infinitive, "neg", person);

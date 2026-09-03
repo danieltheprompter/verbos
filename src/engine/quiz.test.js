@@ -216,13 +216,15 @@ describe("visual tokens", () => {
     expect(tokens).not.toMatch(/New map|RANK_PATH|Finding your feet/);
     const root = join(dirname(fileURLToPath(import.meta.url)), "..");
     const home = readFileSync(join(root, "components/Home.jsx"), "utf8");
+    const practice = readFileSync(join(root, "components/Practice.jsx"), "utf8");
     const board = readFileSync(join(root, "components/Board.jsx"), "utf8");
-    expect(home).toMatch(/Customize/);
-    expect(home).toMatch(/finishedRound \|\| hasClassSet/);
-    expect(home).toMatch(/WHAT_YOU_KNOW/);
+    expect(home).toMatch(/PRACTICE/);
+    expect(home).toMatch(/JOURNEY/);
     expect(home).not.toMatch(/\{YOU\}/);
-    expect(home).toMatch(/home-links/);
-    expect(home).toMatch(/WARMUP_BELL_LABEL/);
+    expect(practice).toMatch(/Customize/);
+    expect(practice).toMatch(/WHAT_YOU_KNOW/);
+    expect(practice).toMatch(/home-links/);
+    expect(practice).toMatch(/WARMUP_BELL_LABEL/);
     expect(board).toMatch(/false \? <p className="board-note">\{BOARD_NOTE\}<\/p>/);
   });
 });
@@ -236,6 +238,8 @@ describe("content pack stays out of the quiz shell", () => {
       "components/Play.jsx",
       "components/Board.jsx",
       "components/Home.jsx",
+      "components/Practice.jsx",
+      "components/JourneyMap.jsx",
       "components/Progress.jsx",
       "components/Customize.jsx",
       "components/ClearProgress.jsx",
@@ -243,6 +247,7 @@ describe("content pack stays out of the quiz shell", () => {
       "components/MiniBoard.jsx",
       "components/ClassSet.jsx",
       "engine/round.js",
+      "engine/journey.js",
       "engine/check.js",
       "engine/miss.js",
       "engine/board.js",
@@ -345,6 +350,8 @@ describe("pedagogy freeze", () => {
     expect(TENSES.filter((tense) => tense.mood === "subjunctive").map((tense) => tense.time)).toEqual([
       "presente",
       "imperfecto",
+      "perfecto",
+      "pluscuamperfecto",
     ]);
     expect(TENSES.filter((tense) => tense.mood === "commands").map((tense) => tense.label)).toEqual([
       "Afirmativo",

@@ -28,3 +28,5 @@ export {
   verbsForSettings,
   verbsInBucket,
 } from "./verbs.js";
+
+export { journeyTrials, trialSettings } from "./journey.js";

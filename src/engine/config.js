@@ -95,3 +95,7 @@ export const STORAGE_KEY = "verbos.v1";
 /** Product chrome — not a language identity. */
 export const WORDMARK = "VERBOS";
 export const LEDE = "The conjugation quiz.";
+export const PRACTICE = "Practice";
+export const JOURNEY = "Journey";
+export const JOURNEY_LOCKED = "Locked. Practice is still open.";
+export const JOURNEY_MAP = "Map";

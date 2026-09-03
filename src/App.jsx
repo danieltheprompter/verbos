@@ -2,11 +2,22 @@ import { useRef, useState } from "react";
 import { ClassSet } from "./components/ClassSet.jsx";
 import { Customize } from "./components/Customize.jsx";
 import { Home } from "./components/Home.jsx";
+import { JourneyMap } from "./components/JourneyMap.jsx";
 import { Play } from "./components/Play.jsx";
+import { Practice } from "./components/Practice.jsx";
 import { Profile } from "./components/Profile.jsx";
 import { Progress } from "./components/Progress.jsx";
 import { cellsFor } from "./engine/board.js";
 import { DEFAULT_SETTINGS, WARMUP_BELL_SEC } from "./engine/constants.js";
+import {
+  currentJourneyId,
+  isJourneyUnlocked,
+  journeyMap,
+  journeyPlayable,
+  journeySettings,
+  journeyTrial,
+  trialSittingKeys,
+} from "./engine/journey.js";
 import { sittingIncomplete, sittingKeysFromAttempts, sittingKeysFromRound, uniqueFormKeys } from "./engine/mastery.js";
 import { buildRound, playAgainRound } from "./engine/round.js";
 import { classSetFromSettings } from "./engine/classSet.js";
@@ -19,6 +30,7 @@ import {
   loadState,
   markFinished,
   recordAttempt,
+  rememberJourney,
   rememberSitting,
   renameProfile,
   saveSettings,
@@ -35,13 +47,19 @@ export function App() {
   const [playId, setPlayId] = useState(0);
   const [playMode, setPlayMode] = useState("play");
   const [sessionSec, setSessionSec] = useState(null);
+  const [journeyId, setJourneyId] = useState(null);
 
   const profile = activeProfile(store);
   const playSettings =
     store.hasClassSet || profile.finishedRound ? store.settings : DEFAULT_SETTINGS;
+  const journeyOn = isJourneyUnlocked(profile);
 
   function beginRound(nextItems, from, { mode, session, fresh }) {
-    setStore(rememberSitting(from, nextItems, { fresh }));
+    if (mode !== "journey") {
+      setStore(rememberSitting(from, nextItems, { fresh }));
+    } else {
+      setStore(from);
+    }
     setItems(nextItems);
     setPlayMode(mode);
     setSessionSec(session);
@@ -49,7 +67,11 @@ export function App() {
     setScreen("play");
   }
 
-  function playAgain({ mode = "play", session = null } = {}) {
+  function playAgain({ mode = playMode, session = null } = {}) {
+    if (mode === "journey") {
+      startJourney(journeyId || profile.journeyNodeId, { again: true });
+      return;
+    }
     const roundSettings = mode === "warmup" ? warmupSettings(playSettings) : playSettings;
     const need = cellsFor(roundSettings).length;
     let from = storeRef.current;
@@ -88,7 +110,7 @@ export function App() {
       }
     }
     if (!nextItems) {
-      setScreen("home");
+      setScreen("practice");
       return;
     }
     beginRound(nextItems, from, { mode, session, fresh: false });
@@ -111,16 +133,86 @@ export function App() {
     }
     const nextItems = buildRound(roundSettings, who.attempts, Math.random);
     if (!nextItems.length) {
-      setScreen(mode === "warmup" ? "home" : "customize");
+      setScreen(mode === "warmup" ? "practice" : "customize");
       return;
     }
     beginRound(nextItems, from, { mode, session, fresh: true });
+  }
+
+  function openPractice() {
+    if (!profile.finishedRound && !store.hasClassSet) {
+      start();
+      return;
+    }
+    setScreen("practice");
+  }
+
+  function startJourney(id, { again = false } = {}) {
+    if (!journeyOn) {
+      setScreen("home");
+      return;
+    }
+    const who = activeProfile(storeRef.current);
+    const trial = journeyTrial(id) || journeyTrial(currentJourneyId(who.attempts));
+    if (!trial) {
+      setScreen("journey");
+      return;
+    }
+    if (!again && !journeyPlayable(trial, who.attempts) && trial.id !== who.journeyNodeId) {
+      setScreen("journey");
+      return;
+    }
+    const settings = journeySettings(trial);
+    const stored = uniqueFormKeys(who.journeySittingKeys);
+    const keys =
+      again && stored.length
+        ? stored
+        : stored.length && who.journeyNodeId === trial.id
+          ? stored
+          : trialSittingKeys(trial);
+    let nextItems = null;
+    try {
+      nextItems = playAgainRound(keys, settings, who.attempts, Math.random, { matchForm: true });
+    } catch {
+      nextItems = null;
+    }
+    if (!nextItems) {
+      setScreen("journey");
+      return;
+    }
+    const from = rememberJourney(storeRef.current, { nodeId: trial.id, keys });
+    storeRef.current = from;
+    setJourneyId(trial.id);
+    beginRound(nextItems, from, { mode: "journey", session: null, fresh: false });
+  }
+
+  const journeyTrialSettings = journeyId ? journeySettings(journeyTrial(journeyId)) : null;
+  const activePlaySettings =
+    playMode === "warmup"
+      ? warmupSettings(playSettings)
+      : playMode === "journey"
+        ? journeyTrialSettings || playSettings
+        : playSettings;
+
+  function leavePlay() {
+    setScreen(playMode === "journey" ? "journey" : profile.finishedRound || store.hasClassSet ? "practice" : "home");
   }
 
   return (
     <main className="shell">
       {screen === "home" ? (
         <Home
+          journeyUnlocked={journeyOn}
+          onPractice={openPractice}
+          onJourney={() => {
+            if (!journeyOn) return;
+            setScreen("journey");
+          }}
+        />
+      ) : null}
+
+      {screen === "practice" ? (
+        <Practice
           finishedRound={profile.finishedRound}
           hasClassSet={store.hasClassSet}
           warmupBell={Boolean(store.warmupBell)}
@@ -133,24 +225,32 @@ export function App() {
             })
           }
           onCustomize={() => setScreen("customize")}
-          onProfile={() => setScreen("profile")}
           onProgress={() => setScreen("progress")}
           onClassSet={() => setScreen("classset")}
+          onBack={() => setScreen("home")}
+        />
+      ) : null}
+
+      {screen === "journey" ? (
+        <JourneyMap
+          nodes={journeyMap(profile.attempts)}
+          onPlay={(id) => startJourney(id)}
+          onBack={() => setScreen("home")}
         />
       ) : null}
 
       {screen === "play" && items?.length ? (
         <Play
           key={playId}
-          settings={playMode === "warmup" ? warmupSettings(playSettings) : playSettings}
+          settings={activePlaySettings}
           items={items}
           attempts={profile.attempts}
-          sittingKeys={profile.sittingKeys}
-          mode={playMode}
+          sittingKeys={playMode === "journey" ? profile.journeySittingKeys : profile.sittingKeys}
+          mode={playMode === "journey" ? "play" : playMode}
           sessionSec={sessionSec}
           onAttempt={(attempt) => setStore((prev) => recordAttempt(prev, attempt))}
           onDone={() => {
-            if (playMode === "warmup") return;
+            if (playMode === "warmup" || playMode === "journey") return;
             setStore((prev) => markFinished(prev));
           }}
           onPlayAgain={() =>
@@ -161,7 +261,7 @@ export function App() {
           }
           onCustomize={() => setScreen("customize")}
           onProgress={() => setScreen("profile")}
-          onHome={() => setScreen("home")}
+          onHome={leavePlay}
         />
       ) : null}
 
@@ -169,8 +269,8 @@ export function App() {
         <Customize
           settings={store.settings}
           attempts={profile.attempts}
-          onBack={() => setScreen("home")}
-          onProgress={() => setScreen("profile")}
+          onBack={() => setScreen("practice")}
+          onProgress={() => setScreen("progress")}
           onApplySet={(next) =>
             setStore((prev) => {
               const loaded = loadClassSet(prev, classSetFromSettings(next));
@@ -194,13 +294,13 @@ export function App() {
         <ClassSet
           settings={store.settings}
           hasClassSet={store.hasClassSet}
-          onBack={() => setScreen("home")}
+          onBack={() => setScreen("practice")}
           onLoad={(next) => {
             setStore((prev) => {
               const loaded = loadClassSet(prev, classSetFromSettings(next));
               return { ...loaded, warmupBell: Boolean(prev.warmupBell) };
             });
-            setScreen("home");
+            setScreen("practice");
           }}
         />
       ) : null}
@@ -228,7 +328,8 @@ export function App() {
           attempts={profile.attempts}
           sittingKeys={profile.sittingKeys}
           atlasKeys={profile.atlasKeys}
-          onBack={() => setScreen("profile")}
+          settings={playSettings}
+          onBack={() => setScreen("practice")}
           onCustomize={
             profile.finishedRound || store.hasClassSet ? () => setScreen("customize") : null
           }

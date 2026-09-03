@@ -74,6 +74,28 @@ export function atlasRank({ known = 0, opened = 0, allowed = 0 } = {}) {
   return RANK_PATH[5];
 }
 
+export function knowChecklist(attempts, keys = []) {
+  const seen = new Set();
+  const rows = [];
+  for (const key of keys) {
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    const [mood, time, person, type, ending] = String(key).split(":");
+    const spec = atlasSpec(mood, time, person, type, ending);
+    rows.push({
+      key,
+      mood,
+      time,
+      person,
+      type,
+      ending,
+      copy: formCopy(attempts, spec),
+      state: formState(attempts, spec),
+    });
+  }
+  return rows;
+}
+
 export function atlasFillStats(attempts, { mood, type, ending }) {
   const rows = buildAtlas(attempts, { mood, type, ending });
   let allowed = 0;

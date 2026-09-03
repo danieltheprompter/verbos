@@ -26,6 +26,13 @@ function pickVerb(verbs, used, rng) {
   return pick(fresh.length ? fresh : verbs, rng);
 }
 
+function pickVerbMatching(verbs, spec, used, rng) {
+  const pool = verbs.filter(
+    (verb) => verb.type === spec.type && endingPattern(verb.inf) === spec.ending,
+  );
+  return pickVerb(pool.length ? pool : verbs, used, rng);
+}
+
 function verbForCell(_cell, verbs, _types, _verbsByType, _attempts, usedVerbs, rng) {
   return pickVerb(verbs, usedVerbs, rng);
 }
@@ -49,11 +56,11 @@ function keysFromReplayCells(cells = []) {
   return uniqueFormKeys(keys);
 }
 
-export function playAgainRound(sittingKeys, settings, attempts = [], rng = Math.random) {
-  return mapSittingKeys(sittingKeys, settings, attempts, rng);
+export function playAgainRound(sittingKeys, settings, attempts = [], rng = Math.random, opts = {}) {
+  return mapSittingKeys(sittingKeys, settings, attempts, rng, opts);
 }
 
-export function mapSittingKeys(keys, settings, _attempts = [], rng = Math.random) {
+export function mapSittingKeys(keys, settings, _attempts = [], rng = Math.random, opts = {}) {
   const unique = uniqueFormKeys(keys);
   const need = cellsFor(settings).length;
   const verbs = verbsForSettings(settings);
@@ -67,14 +74,16 @@ export function mapSittingKeys(keys, settings, _attempts = [], rng = Math.random
     const cell = `${tense}:${spec.person}`;
     if (seen.has(cell)) continue;
     seen.add(cell);
-    cover.push({ tense, person: spec.person });
+    cover.push({ tense, person: spec.person, spec });
   }
   if (cover.length !== need) {
     throw new Error(`sittingKeys must be ${need} unique formKeys, got ${unique.length}`);
   }
   const used = new Set();
   return shuffle(cover, rng).map((cell) => {
-    const verb = pickVerb(verbs, used, rng);
+    const verb = opts.matchForm
+      ? pickVerbMatching(verbs, cell.spec, used, rng)
+      : pickVerb(verbs, used, rng);
     used.add(verb.inf);
     return itemFrom(cell, verb);
   });
