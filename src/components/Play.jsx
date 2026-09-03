@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { CONTENT_VERSION, RECAP_BEAT_MS, WARMUP_BELL_NOTE, WORDMARK } from "../engine/config.js";
+import { CONTENT_VERSION, WARMUP_BELL_NOTE, WORDMARK } from "../engine/config.js";
 import { moodOf, pack, personLabel, tenseLabel, timeOf } from "../engine/pack.js";
 import { answersMatch, isBlankAnswer } from "../engine/check.js";
 import { explainMiss } from "../engine/miss.js";
@@ -41,11 +41,9 @@ export function Play({
   const [lockIn, setLockIn] = useState(false);
   const [showMiss, setShowMiss] = useState(false);
   const [motion, setMotion] = useState("");
-  const [beat, setBeat] = useState("hold");
   const [log, setLog] = useState(attempts);
   const inputRef = useRef(null);
   const playAgainRef = useRef(null);
-  const playAgainReady = useRef(false);
   const submitted = useRef(false);
   const startedAt = useRef(Date.now());
 
@@ -93,33 +91,18 @@ export function Play({
   }, [sessionSec, finished]);
 
   useEffect(() => {
-    if (!finished) {
-      playAgainReady.current = false;
-      return undefined;
-    }
-    setBeat("hold");
-    const swallow = (event) => {
-      if (!playAgainReady.current && (event.key === "Enter" || event.key === " ")) {
-        event.preventDefault();
-        event.stopImmediatePropagation();
-      }
+    if (!finished) return undefined;
+    playAgainRef.current?.focus();
+    const onKey = (event) => {
+      if (event.key !== "Enter") return;
+      if (event.defaultPrevented) return;
+      if (event.target?.closest?.("button, a, input, textarea")) return;
+      event.preventDefault();
+      onPlayAgain?.();
     };
-    window.addEventListener("keydown", swallow, true);
-    window.addEventListener("keyup", swallow, true);
-    const pipsAt = window.setTimeout(() => setBeat("pips"), 420);
-    const goAt = window.setTimeout(() => setBeat("go"), Math.min(1100, RECAP_BEAT_MS - 200));
-    const armAt = window.setTimeout(() => {
-      playAgainReady.current = true;
-      playAgainRef.current?.focus();
-    }, Math.min(1100, RECAP_BEAT_MS - 200) + 500);
-    return () => {
-      window.removeEventListener("keydown", swallow, true);
-      window.removeEventListener("keyup", swallow, true);
-      window.clearTimeout(pipsAt);
-      window.clearTimeout(goAt);
-      window.clearTimeout(armAt);
-    };
-  }, [finished]);
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [finished, onPlayAgain]);
 
   function pulse(nextFlick, nextMotion) {
     setFlick(nextFlick);
@@ -217,9 +200,17 @@ export function Play({
   if (finished) {
     const story = recapStory(items, log, sittingKeys);
     return (
-      <section className={`play play-done is-glance is-recap-${beat}`}>
+      <section className="play play-done is-glance">
+        <header className="play-bar">
+          <button type="button" className="wordmark-mini play-home" onClick={onHome}>
+            {WORDMARK}
+          </button>
+          <button className="text-back" type="button" onClick={onHome}>
+            Back
+          </button>
+        </header>
         <h1 className="recap-head">{story.banner}</h1>
-        <p className="recap-hdmi">{story.head}</p>
+        {story.head ? <p className="recap-hdmi">{story.head}</p> : null}
         <Board
           settings={settings}
           items={items}
@@ -228,33 +219,17 @@ export function Play({
           visitCounts={visitCounts}
           recap
         />
-        <p className="recap-sub">Same 10. Fill the wells.</p>
-        {beat === "go" ? (
-          <div className="home-actions">
-            <button
-              ref={playAgainRef}
-              className="btn btn-primary"
-              type="button"
-              onClick={onPlayAgain}
-              onKeyDown={(event) => {
-                if (
-                  !playAgainReady.current &&
-                  (event.key === "Enter" || event.key === " ")
-                ) {
-                  event.preventDefault();
-                  event.stopPropagation();
-                }
-              }}
-            >
-              Play again
+        <p className="recap-sub">{story.line}</p>
+        <div className="home-actions">
+          <button ref={playAgainRef} className="btn btn-primary" type="button" onClick={onPlayAgain}>
+            Play again
+          </button>
+          {warmup ? (
+            <button className="btn btn-ghost" type="button" onClick={onHome}>
+              Done
             </button>
-            {warmup ? (
-              <button className="btn btn-ghost" type="button" onClick={onHome}>
-                Done
-              </button>
-            ) : null}
-          </div>
-        ) : null}
+          ) : null}
+        </div>
       </section>
     );
   }
@@ -262,7 +237,12 @@ export function Play({
   return (
     <section className="play">
       <header className="play-bar">
-        <p className="wordmark-mini">{WORDMARK}</p>
+        <button type="button" className="wordmark-mini play-home" onClick={onHome}>
+          {WORDMARK}
+        </button>
+        <button className="text-back" type="button" onClick={onHome}>
+          Back
+        </button>
       </header>
 
       <Board

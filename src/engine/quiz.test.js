@@ -19,10 +19,12 @@ import {
   RANK_PATH,
   RECAP_BEAT_MS,
   RECAP_CLEAN,
+  RECAP_CLEAN_LINE,
   RECAP_HEAD,
   RECAP_SAME_BOARD,
   RECAP_SAME_TEN,
   RECAP_SUB,
+  RECAP_TURN_RED,
   STORAGE_KEY,
   TENSES,
   VERB_BUCKETS,
@@ -38,6 +40,7 @@ import {
   sameFormKeySet,
   sittingCellMarks,
   sittingIncomplete,
+  sittingKeysFromRound,
   sittingVisitCellKeys,
   youKnowThis,
 } from "./mastery.js";
@@ -63,7 +66,7 @@ import {
 } from "./board.js";
 import { explainMiss } from "./miss.js";
 import { atlasCopyAt, atlasFillName, atlasFillStats, atlasRank, buildAtlas } from "./progress.js";
-import { recapHitsToward, recapStory } from "./recap.js";
+import { recapHitsToward, recapMissedLine, recapStory, recapTally } from "./recap.js";
 import { mulberry32 } from "./random.js";
 import { buildRound, makeDistractors, mapSittingKeys, playAgainRound } from "./round.js";
 import { activeProfile, clearProgress, loadClassSet, loadState, rememberSitting, saveSettings, toLogAttempt } from "./storage.js";
@@ -415,7 +418,8 @@ describe("round board ignores mastery", () => {
     expect(judge).toMatch(/setVisitCounts/);
     expect(play).toMatch(/result\.miss\.message/);
     expect(play).toMatch(/is-flick-col|data-result/);
-    expect(play).toMatch(/Same 10\. Fill the wells\./);
+    expect(play).toMatch(/\{story\.line\}/);
+    expect(play).not.toMatch(/Same 10\. Fill the wells\.|Same board\.|Board lit/);
   });
 
   it("does not treat lifetime attempts as this-round answers", () => {
@@ -440,6 +444,16 @@ describe("recap hero", () => {
     expect(lastRoundResult(items, "presente", "tu")).toBe(false);
     expect(recapCellTone(items, "presente", "yo")).toBe("hit");
     expect(recapCellTone(items, "presente", "tu")).toBe("miss");
+    expect(recapTally(items).label).toBe("1 of 2");
+    expect(recapMissedLine(items)).toBe("Missed tú");
+    expect(recapStory(items, attempts).line).toBe(RECAP_TURN_RED);
+    expect(recapStory(items, attempts).line).not.toMatch(/toward|3\/5|2 of 5/);
+    const boardUi = readFileSync(join(dirname(fileURLToPath(import.meta.url)), "../components/Board.jsx"), "utf8");
+    expect(boardUi).toMatch(/lastRoundResult\(/);
+    expect(boardUi).toMatch(/data-result/);
+    const recapCss = readFileSync(join(dirname(fileURLToPath(import.meta.url)), "../styles.css"), "utf8");
+    expect(recapCss).toMatch(/\.cell\[data-result="ok"\]/);
+    expect(recapCss).toMatch(/\.cell\[data-result="bad"\]/);
     expect(typedPips(attempts, "presente", "yo")).toBe(1);
     expect(cellPips(attempts, "presente", "el")).toBe(0);
     expect(PIP_SLOTS).toBe(5);
@@ -447,29 +461,31 @@ describe("recap hero", () => {
     expect(formCopy(attempts, spec())).toBe("not enough yet");
   });
 
-  it("keeps recap as a short beat and never hardcodes a 2×5", () => {
-    expect(RECAP_HEAD).toBe("Board lit");
-    expect(RECAP_CLEAN).toBe("Clean board");
+  it("keeps recap as a this-round beat and never hardcodes a 2×5", () => {
+    expect(RECAP_HEAD).toBe(RECAP_TURN_RED);
+    expect(RECAP_CLEAN).toBe(RECAP_CLEAN_LINE);
     expect(RECAP_BEAT_MS).toBe(1600);
-    expect(`${RECAP_HEAD} ${RECAP_CLEAN}`).not.toMatch(/8\/10|5 of last 7/);
+    expect(`${RECAP_HEAD} ${RECAP_CLEAN}`).not.toMatch(/5 of last 7/);
     expect(RECAP_SUB).not.toMatch(/2\s*[×x]\s*5|5 of last 7/);
     const first = buildRound(DEFAULT_SETTINGS, [], mulberry32(7));
     const attempts = first.map((item) => typed(item.tense, item.person, true, { verb: item.verb }));
     const clean = first.map((item) => ({ ...item, correct: true }));
     const story = recapStory(clean, attempts);
-    expect(story.banner).toBe(RECAP_SAME_BOARD);
-    expect(story.head).toBe("Clean board");
-    expect(story.line).toBe(RECAP_SAME_TEN);
-    expect(RECAP_SAME_TEN).toBe("Same 10. Fill the wells.");
-    expect(RECAP_SAME_TEN).not.toMatch(/sitting|you know this/i);
+    expect(story.banner).toBe(`${clean.length} of ${clean.length}`);
+    expect(story.head).toBe("");
+    expect(story.line).toBe(RECAP_CLEAN_LINE);
+    expect(story.line).not.toMatch(/sitting|3\/5|2 of 5|toward/i);
     expect(story.pips).toBe("1/5");
     expect(story.hits).toBe(1);
     expect(story.need).toBe(5);
-    expect(story.line.split(/\s+/).length).toBeLessThanOrEqual(6);
     expect(story.action).toBe("again");
-    expect(story.line).not.toMatch(/xp|streak|loot|8\/10|0\/10|2\s*[×x]\s*5|5 of last 7/i);
+    expect(story.line).not.toMatch(/xp|streak|loot|5 of last 7/i);
     const mixed = clean.map((item, index) => ({ ...item, correct: index !== 0 }));
-    expect(recapStory(mixed, attempts).head).toBe("Board lit");
+    const mixedStory = recapStory(mixed, attempts);
+    expect(mixedStory.banner).toBe(recapTally(mixed).label);
+    expect(mixedStory.head).toMatch(/^Missed /);
+    expect(mixedStory.line).toBe(RECAP_TURN_RED);
+    expect(mixedStory.line).not.toMatch(/toward|3\/5|2 of 5/);
     const commands = [
       { tense: "mandato_af", person: "tu", correct: true },
       { tense: "mandato_af", person: "el", correct: true },
@@ -478,7 +494,9 @@ describe("recap hero", () => {
     ];
     const commandAttempts = commands.map((item) => typed(item.tense, item.person, true));
     const commandStory = recapStory(commands, commandAttempts);
-    expect(commandStory.head).toBe("Clean board");
+    expect(commandStory.banner).toBe("4 of 4");
+    expect(commandStory.head).toBe("");
+    expect(commandStory.line).toBe(RECAP_CLEAN_LINE);
     expect(commandStory.line).not.toMatch(/2\s*[×x]\s*5/);
     const boardUi = readFileSync(
       join(dirname(fileURLToPath(import.meta.url)), "../components/Board.jsx"),
@@ -500,10 +518,11 @@ describe("recap hero", () => {
     const after = [...prior, typed("presente", "yo", true)];
     expect(formState(after, spec())).toBe("learning");
     const story = recapStory([item], after);
-    expect(story.line).toBe(RECAP_SAME_TEN);
-    expect(story.line).not.toMatch(/sitting|you know this|still learning/i);
+    expect(story.banner).toBe("0 of 1");
+    expect(story.line).toBe(RECAP_TURN_RED);
+    expect(story.line).not.toMatch(/sitting|you know this|still learning|toward/i);
     expect(story.pips).toBe("5/5");
-    expect(story.next).toBe("Play those squares again.");
+    expect(story.next).toBe(RECAP_TURN_RED);
     expect(story.action).toBe("again");
   });
 });
@@ -766,9 +785,9 @@ describe("attempt log", () => {
 describe("round builder", () => {
   it("first pass is one item per default cell", () => {
     const items = buildRound(DEFAULT_SETTINGS, [], mulberry32(7));
-    expect(items).toHaveLength(10);
+    expect(items).toHaveLength(cellsFor(DEFAULT_SETTINGS).length);
     const keys = items.map((item) => `${item.tense}:${item.person}`);
-    expect(new Set(keys).size).toBe(10);
+    expect(new Set(keys).size).toBe(cellsFor(DEFAULT_SETTINGS).length);
     const expected = cellsFor(DEFAULT_SETTINGS).map((cell) => `${cell.tense}:${cell.person}`);
     expect(keys.sort()).toEqual(expected.sort());
     expect(items.every((item) => item.expected && item.type === "regular")).toBe(true);
@@ -867,18 +886,23 @@ describe("round builder", () => {
       typed(cell.tense, cell.person, true),
       typed(cell.tense, cell.person, cell.person === "yo"),
     ]);
-    const knownYo = Array.from({ length: 5 }, () => typed("presente", "yo", true));
+    const knownYo = [
+      ...Array.from({ length: 5 }, () => typed("presente", "yo", true, { verb: "hablar" })),
+      ...Array.from({ length: 5 }, () => typed("presente", "yo", true, { verb: "comer" })),
+    ];
     const all = [...attempts, ...knownYo];
     const counts = {};
     for (let i = 0; i < 80; i += 1) {
       const items = buildRound(wide, all, mulberry32(100 + i));
+      expect(items).toHaveLength(cells.length);
+      expect(new Set(items.map((item) => `${item.tense}:${item.person}`)).size).toBe(cells.length);
       for (const item of items) {
         const key = `${item.tense}:${item.person}`;
         counts[key] = (counts[key] || 0) + 1;
       }
     }
-    expect(counts["presente:yo"] || 0).toBe(0);
-    expect(counts["preterito:tu"]).toBeGreaterThan(0);
+    expect(counts["preterito:tu"]).toBe(80);
+    expect(counts["presente:yo"]).toBe(80);
   });
 
   it("builds four MC options including the key", () => {
@@ -900,7 +924,7 @@ describe("round builder", () => {
 
   it("replays the same 10 cells so a second pass can deepen the same squares", () => {
     const first = buildRound(DEFAULT_SETTINGS, [], mulberry32(7));
-    expect(first).toHaveLength(10);
+    expect(first).toHaveLength(cellsFor(DEFAULT_SETTINGS).length);
     const cells = itemsToCells(first);
     const keys = first.map(itemFormKey);
     expect(sameBoard(cells, DEFAULT_SETTINGS)).toBe(true);
@@ -933,7 +957,7 @@ describe("round builder", () => {
     const firstKeys = [];
     for (let round = 0; round < 5; round += 1) {
       const items = buildRound(DEFAULT_SETTINGS, attempts, mulberry32(20 + round), 10, replay, sitting);
-      expect(items).toHaveLength(10);
+      expect(items).toHaveLength(cellsFor(DEFAULT_SETTINGS).length);
       const keys = items.map((item) => `${item.tense}:${item.person}`).sort();
       if (!firstKeys.length) firstKeys.push(...keys);
       expect(keys).toEqual(firstKeys);
@@ -1020,8 +1044,8 @@ describe("sitting keys lock type and ending", () => {
   it("logs the same formKey two rounds in a row; a new key before 5 typed fails", () => {
     const first = buildRound(DEFAULT_SETTINGS, [], mulberry32(7));
     const keys = first.map(itemFormKey);
-    expect(keys).toHaveLength(10);
-    expect(new Set(keys).size).toBe(10);
+    expect(keys).toHaveLength(cellsFor(DEFAULT_SETTINGS).length);
+    expect(new Set(keys).size).toBe(cellsFor(DEFAULT_SETTINGS).length);
     const round1 = playClean(first);
     expect(namedLevels(round1, keys).find((level) => level.id === "fill").known).toBe(0);
     expect(namedLevels(round1, keys).find((level) => level.id === "fill").detail).toBe(
@@ -1030,8 +1054,9 @@ describe("sitting keys lock type and ending", () => {
     const story1 = recapStory(recapItems(first), round1);
     expect(story1.pips).toBe("1/5");
     expect(recapHitsToward(round1, keys).label).toBe("1/5");
-    expect(story1.line).toBe(RECAP_SAME_TEN);
-    expect(story1.line).not.toMatch(/0\/10|sitting/i);
+    expect(story1.banner).toBe(`${first.length} of ${first.length}`);
+    expect(story1.line).toBe(RECAP_CLEAN_LINE);
+    expect(story1.line).not.toMatch(/0\/10|sitting|toward/i);
     expect(`${story1.line} ${story1.pips}`).not.toMatch(
       new RegExp(`0/${LEVEL_FILL_TOTAL} ${FORM_COPY.know}`),
     );
@@ -1052,10 +1077,9 @@ describe("sitting keys lock type and ending", () => {
     const story2 = recapStory(recapItems(second), after2);
     expect(story2.pips).toBe("2/5");
     expect(recapHitsToward(after2, keys).label).toBe("2/5");
-    expect(story2.line).toBe(RECAP_SAME_TEN);
-    expect(story2.banner).toBe(RECAP_SAME_BOARD);
-    expect(RECAP_SAME_TEN).toBe("Same 10. Fill the wells.");
-    expect(story2.line).not.toMatch(/0\/10|you know this|sitting/i);
+    expect(story2.line).toBe(RECAP_CLEAN_LINE);
+    expect(story2.banner).toBe(`${second.length} of ${second.length}`);
+    expect(story2.line).not.toMatch(/0\/10|you know this|sitting|toward/i);
     expect(`${story2.head} ${story2.line} ${story2.pips}`).not.toMatch(
       new RegExp(`0/${LEVEL_FILL_TOTAL} ${FORM_COPY.know}`),
     );
@@ -1078,13 +1102,13 @@ describe("sitting keys lock type and ending", () => {
       "indicative:preterito:el:regular:er_ir",
       "indicative:preterito:ellos:regular:er_ir",
     ];
-    expect(new Set(sitting).size).toBe(10);
+    expect(new Set(sitting).size).toBe(cellsFor(DEFAULT_SETTINGS).length);
     const esperasteTwice = sitting.map((key) =>
       key === "indicative:presente:ellos:regular:er_ir" ? "indicative:preterito:tu:regular:ar" : key,
     );
     expect(new Set(esperasteTwice).size).toBe(9);
     expect(() => mapSittingKeys(esperasteTwice, DEFAULT_SETTINGS, [], mulberry32(2))).toThrow(
-      /10 unique formKeys|built round set/,
+      /unique formKeys|built round set/,
     );
     const src = readFileSync(join(dirname(fileURLToPath(import.meta.url)), "round.js"), "utf8");
     expect(src).toMatch(/export function playAgainRound/);
@@ -1094,7 +1118,10 @@ describe("sitting keys lock type and ending", () => {
     const app = readFileSync(join(dirname(fileURLToPath(import.meta.url)), "../App.jsx"), "utf8");
     const again = app.split("function playAgain")[1]?.split("function start")[0] || "";
     expect(again).toMatch(/playAgainRound/);
+    expect(again).toMatch(/sittingKeysFromRound/);
     expect(again).not.toMatch(/buildRound/);
+    expect(again).not.toMatch(/throw new Error/);
+    expect(app).not.toMatch(/Play again has no unique sittingKeys pin/);
     expect(app).toMatch(/onPlayAgain=\{\(\) =>\s*playAgain\(/);
     let attempts = [];
     for (let round = 1; round <= 5; round += 1) {
@@ -1106,11 +1133,39 @@ describe("sitting keys lock type and ending", () => {
     }
   });
 
-  it("keeps the same unique 10 formKeys across five consecutive Play-agains", () => {
+  it("recovers sittingKeys from the just-played round when the pin is empty", () => {
+    const first = buildRound(DEFAULT_SETTINGS, [], mulberry32(7));
+    const keys = first.map(itemFormKey);
+    const attempts = playClean(first);
+    expect(sittingKeysFromRound(first, []).sort()).toEqual([...keys].sort());
+    expect(sittingKeysFromRound([], attempts).sort()).toEqual([...keys].sort());
+    expect(sittingKeysFromRound([], []).length).toBe(0);
+  });
+
+  it("sizes a round to the current board, not a fixed count", () => {
+    const base = cellsFor(DEFAULT_SETTINGS).length;
+    expect(buildRound(DEFAULT_SETTINGS, [], mulberry32(3))).toHaveLength(base);
+    const wide = { ...DEFAULT_SETTINGS, extraColumn: true };
+    const wideNeed = cellsFor(wide).length;
+    expect(wideNeed).not.toBe(base);
+    const wideItems = buildRound(wide, [], mulberry32(3));
+    expect(wideItems).toHaveLength(wideNeed);
+    expect(new Set(wideItems.map((item) => `${item.tense}:${item.person}`)).size).toBe(wideNeed);
+    const slim = { ...DEFAULT_SETTINGS, tenses: [DEFAULT_SETTINGS.tenses[0]] };
+    const slimNeed = cellsFor(slim).length;
+    expect(slimNeed).toBeLessThan(base);
+    expect(buildRound(slim, [], mulberry32(4))).toHaveLength(slimNeed);
+    const src = readFileSync(join(dirname(fileURLToPath(import.meta.url)), "round.js"), "utf8");
+    expect(src).toMatch(/const need = Number\(size\) > 0 \? size : cells\.length/);
+    expect(src).not.toMatch(/ROUND_SIZE/);
+    expect(src).toMatch(/cellsFor\(settings\)\.length/);
+  });
+
+  it("keeps the same unique sitting formKeys across five consecutive Play-agains", () => {
     const first = buildRound(DEFAULT_SETTINGS, [], mulberry32(7));
     const sitting = first.map(itemFormKey);
-    expect(sitting).toHaveLength(10);
-    expect(new Set(sitting).size).toBe(10);
+    expect(sitting).toHaveLength(cellsFor(DEFAULT_SETTINGS).length);
+    expect(new Set(sitting).size).toBe(cellsFor(DEFAULT_SETTINGS).length);
     let attempts = playClean(first);
     for (let round = 2; round <= 5; round += 1) {
       const items = playAgainRound(sitting, DEFAULT_SETTINGS, attempts, mulberry32(20 + round));
@@ -1149,7 +1204,7 @@ describe("sitting keys lock type and ending", () => {
     ]);
     const attempts = playClean(items);
     const wells = sittingVisitCellKeys(attempts, sitting);
-    expect(wells.size).toBe(10);
+    expect(wells.size).toBe(cellsFor(DEFAULT_SETTINGS).length);
     expect(roundCellState("presente", "yo", items[0], wells)).toBe("answered-now");
     expect(sittingCellMarks(attempts, "presente", "yo", sitting)).toBe(1);
     const board = readFileSync(join(dirname(fileURLToPath(import.meta.url)), "../components/Board.jsx"), "utf8");
@@ -1162,9 +1217,10 @@ describe("sitting keys lock type and ending", () => {
     expect(play).toMatch(/is-flick-col/);
     expect(play).toMatch(/setLand/);
     expect(play).toMatch(/visitCounts=\{visitCounts\}/);
-    expect(play).toMatch(/Same 10\. Fill the wells\./);
-    expect(RECAP_SAME_TEN).toBe("Same 10. Fill the wells.");
-    expect(RECAP_SAME_BOARD).toBe("Same board.");
+    expect(play).toMatch(/\{story\.line\}/);
+    expect(play).not.toMatch(/Same 10\. Fill the wells\.|Same board\.|Board lit/);
+    expect(RECAP_SAME_TEN).toBe(RECAP_TURN_RED);
+    expect(RECAP_SAME_BOARD).toBe(RECAP_TURN_RED);
   });
 
   it("does not duplicate or drop a sitting key when lastCells is corrupted", () => {
@@ -1203,7 +1259,7 @@ describe("sitting keys lock type and ending", () => {
       "indicative:preterito:nos:regular:er_ir",
       "indicative:preterito:ellos:regular:er_ir",
     ];
-    expect(new Set(sitting).size).toBe(10);
+    expect(new Set(sitting).size).toBe(cellsFor(DEFAULT_SETTINGS).length);
     let attempts = [];
     for (let round = 0; round < 3; round += 1) {
       attempts = [
@@ -1293,10 +1349,10 @@ describe("sitting keys lock type and ending", () => {
     expect(new Set(duplicateRebuild.map(itemFormKey)).size).toBe(9);
     state = rememberSitting(state, duplicateRebuild, { fresh: true });
     const blob = JSON.parse(localStorage.getItem(STORAGE_KEY));
-    expect(blob.sittingKeys).toHaveLength(10);
-    expect(new Set(blob.sittingKeys).size).toBe(10);
+    expect(blob.sittingKeys).toHaveLength(cellsFor(DEFAULT_SETTINGS).length);
+    expect(new Set(blob.sittingKeys).size).toBe(cellsFor(DEFAULT_SETTINGS).length);
     expect([...blob.sittingKeys].sort()).toEqual([...sitting].sort());
-    expect(activeProfile(state).sittingKeys).toHaveLength(10);
+    expect(activeProfile(state).sittingKeys).toHaveLength(cellsFor(DEFAULT_SETTINGS).length);
     const next = buildRound(
       DEFAULT_SETTINGS,
       attempts,
@@ -1321,8 +1377,8 @@ describe("sitting keys lock type and ending", () => {
     let state = rememberSitting(loadState(), first, { fresh: true });
     const blob1 = JSON.parse(localStorage.getItem(STORAGE_KEY));
     expect(blob1.sittingKeys).toEqual(sitting);
-    expect(blob1.sittingKeys).toHaveLength(10);
-    expect(new Set(blob1.sittingKeys).size).toBe(10);
+    expect(blob1.sittingKeys).toHaveLength(cellsFor(DEFAULT_SETTINGS).length);
+    expect(new Set(blob1.sittingKeys).size).toBe(cellsFor(DEFAULT_SETTINGS).length);
     expect(activeProfile(state).sittingKeys).toEqual(sitting);
     const after = playClean(first);
     const second = buildRound(
@@ -1336,7 +1392,7 @@ describe("sitting keys lock type and ending", () => {
     state = rememberSitting(state, second);
     const blob2 = JSON.parse(localStorage.getItem(STORAGE_KEY));
     expect(blob2.sittingKeys).toEqual(sitting);
-    expect(blob2.sittingKeys).toHaveLength(10);
+    expect(blob2.sittingKeys).toHaveLength(cellsFor(DEFAULT_SETTINGS).length);
     expect(activeProfile(state).sittingKeys).toEqual(sitting);
     expect([...second.map(itemFormKey)].sort()).toEqual([...sitting].sort());
     state = loadClassSet(state, classSetFromSettings({ ...DEFAULT_SETTINGS, types: ["stem"] }));
@@ -1349,12 +1405,12 @@ describe("sitting keys lock type and ending", () => {
   it("serializes formKeys from two consecutive Play-agains as the same set", () => {
     const first = buildRound(DEFAULT_SETTINGS, [], mulberry32(7));
     const keys1 = [...first.map(itemFormKey)].sort();
-    expect(keys1).toHaveLength(10);
+    expect(keys1).toHaveLength(cellsFor(DEFAULT_SETTINGS).length);
     const round1 = playClean(first);
     const second = buildRound(DEFAULT_SETTINGS, round1, mulberry32(11), 10, itemsToCells(first));
     const keys2 = [...second.map(itemFormKey)].sort();
     expect(keys2).toEqual(keys1);
-    expect(new Set(keys2).size).toBe(10);
+    expect(new Set(keys2).size).toBe(cellsFor(DEFAULT_SETTINGS).length);
 
     const qaFlipped = [
       "indicative:presente:el:regular:ar",
@@ -1422,7 +1478,7 @@ describe("sitting keys lock type and ending", () => {
     const mixed = { ...DEFAULT_SETTINGS, types: ["regular", "stem"] };
     const first = buildRound(mixed, [], mulberry32(3));
     const keys = first.map(itemFormKey);
-    expect(keys).toHaveLength(10);
+    expect(keys).toHaveLength(cellsFor(DEFAULT_SETTINGS).length);
     const visits = first.map((item) => ({
       tense: item.tense,
       person: item.person,
@@ -1569,8 +1625,8 @@ describe("teaching + UX freeze", () => {
       ...Array.from({ length: 5 }, () => typed("presente", "yo", true, { verb: "comer" })),
     ];
     const items = buildRound(DEFAULT_SETTINGS, [...visits, ...knownPresenteYo], mulberry32(9));
-    expect(items).toHaveLength(10);
-    expect(new Set(items.map(itemFormKey)).size).toBe(10);
+    expect(items).toHaveLength(cellsFor(DEFAULT_SETTINGS).length);
+    expect(new Set(items.map(itemFormKey)).size).toBe(cellsFor(DEFAULT_SETTINGS).length);
     expect(sittingIncomplete([...visits, ...knownPresenteYo], items.map(itemFormKey))).toBe(true);
   });
 

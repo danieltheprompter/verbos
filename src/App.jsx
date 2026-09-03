@@ -7,7 +7,7 @@ import { Profile } from "./components/Profile.jsx";
 import { Progress } from "./components/Progress.jsx";
 import { cellsFor } from "./engine/board.js";
 import { DEFAULT_SETTINGS, WARMUP_BELL_SEC } from "./engine/constants.js";
-import { itemFormKey, sameFormKeySet, sittingIncomplete, sittingKeysFromAttempts, uniqueFormKeys } from "./engine/mastery.js";
+import { sittingIncomplete, sittingKeysFromAttempts, sittingKeysFromRound, uniqueFormKeys } from "./engine/mastery.js";
 import { buildRound, playAgainRound } from "./engine/round.js";
 import { classSetFromSettings } from "./engine/classSet.js";
 import { warmupSettings } from "./engine/warmup.js";
@@ -41,10 +41,6 @@ export function App() {
     store.hasClassSet || profile.finishedRound ? store.settings : DEFAULT_SETTINGS;
 
   function beginRound(nextItems, from, { mode, session, fresh }) {
-    const pin = uniqueFormKeys(activeProfile(from).sittingKeys);
-    if (pin.length === 10 && !sameFormKeySet(nextItems.map(itemFormKey), pin)) {
-      throw new Error("built round set ≠ sittingKeys");
-    }
     setStore(rememberSitting(from, nextItems, { fresh }));
     setItems(nextItems);
     setPlayMode(mode);
@@ -55,19 +51,46 @@ export function App() {
 
   function playAgain({ mode = "play", session = null } = {}) {
     const roundSettings = mode === "warmup" ? warmupSettings(playSettings) : playSettings;
+    const need = cellsFor(roundSettings).length;
     let from = storeRef.current;
     let who = activeProfile(from);
     let pin = uniqueFormKeys(who.sittingKeys);
-    if (pin.length !== 10) {
-      pin = uniqueFormKeys(sittingKeysFromAttempts(who.attempts, cellsFor(roundSettings)));
-      if (pin.length !== 10) {
-        throw new Error("Play again has no unique sittingKeys pin");
+    if (pin.length !== need) {
+      pin = sittingKeysFromRound(items, who.attempts, need);
+      if (pin.length !== need) {
+        pin = uniqueFormKeys(sittingKeysFromAttempts(who.attempts, cellsFor(roundSettings)));
       }
-      from = rememberSitting(from, who.lastCells, { fresh: true, keys: pin });
-      storeRef.current = from;
-      who = activeProfile(from);
+      if (pin.length === need) {
+        from = rememberSitting(from, items || who.lastCells, { fresh: true, keys: pin });
+        storeRef.current = from;
+        who = activeProfile(from);
+      }
     }
-    const nextItems = playAgainRound(pin, roundSettings, who.attempts, Math.random);
+    let nextItems = null;
+    if (pin.length === need) {
+      try {
+        nextItems = playAgainRound(pin, roundSettings, who.attempts, Math.random);
+      } catch {
+        nextItems = null;
+      }
+    }
+    if (!nextItems) {
+      const recovered = sittingKeysFromRound(items, who.attempts, need);
+      if (recovered.length === need) {
+        from = rememberSitting(from, items, { fresh: true, keys: recovered });
+        storeRef.current = from;
+        who = activeProfile(from);
+        try {
+          nextItems = playAgainRound(recovered, roundSettings, who.attempts, Math.random);
+        } catch {
+          nextItems = null;
+        }
+      }
+    }
+    if (!nextItems) {
+      setScreen("home");
+      return;
+    }
     beginRound(nextItems, from, { mode, session, fresh: false });
   }
 
@@ -81,7 +104,8 @@ export function App() {
     const from = storeRef.current;
     const who = activeProfile(from);
     const pin = uniqueFormKeys(who.sittingKeys);
-    if (!newSitting && pin.length === 10 && sittingIncomplete(who.attempts, pin)) {
+    const need = cellsFor(roundSettings).length;
+    if (!newSitting && pin.length === need && sittingIncomplete(who.attempts, pin)) {
       playAgain({ mode, session });
       return;
     }

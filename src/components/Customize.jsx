@@ -3,15 +3,19 @@ import {
   CLASS_SET,
   CLASS_SET_BAD,
   CLASS_SET_COPY,
+  CLASS_SET_HIDE,
   CLASS_SET_LOAD,
   CLASS_SET_NOTE,
   CLASS_SET_OK,
+  CLASS_SET_SHOW,
   FARM_NOTE,
+  VERB_PICK_LEGEND,
   WHAT_YOU_KNOW,
 } from "../engine/config.js";
 import {
   applyClassSet,
   classSetFromSettings,
+  classSetSummaryLines,
   encodeClassSet,
   parseClassSet,
 } from "../engine/classSet.js";
@@ -33,6 +37,7 @@ export function Customize({ settings, attempts = [], onSave, onBack, onProgress,
     encodeClassSet(classSetFromSettings(settings)),
   );
   const [setNote, setSetNote] = useState("");
+  const [showSetCode, setShowSetCode] = useState(false);
   const farmingKnown = allSelectedKnown(draft, attempts);
 
   function toggleTense(id) {
@@ -81,18 +86,29 @@ export function Customize({ settings, attempts = [], onSave, onBack, onProgress,
 
       <fieldset>
         <legend>Verbs</legend>
-        <div className="buckets">
-          {pack.verbBuckets.map((bucket) => (
-            <button
-              key={bucket.id}
-              type="button"
-              className={`bucket ${draft.types.includes(bucket.id) ? "is-on" : ""}`}
-              onClick={() => toggleType(bucket.id)}
-            >
-              <strong>{bucket.label}</strong>
-              <span>{bucket.examples}</span>
-            </button>
-          ))}
+        <p className="bucket-legend">{VERB_PICK_LEGEND}</p>
+        <div className="buckets" role="group" aria-label="Verb types">
+          {pack.verbBuckets.map((bucket) => {
+            const on = draft.types.includes(bucket.id);
+            return (
+              <button
+                key={bucket.id}
+                type="button"
+                role="checkbox"
+                aria-checked={on}
+                className={`bucket ${on ? "is-on" : ""}`}
+                onClick={() => toggleType(bucket.id)}
+              >
+                <span className="bucket-check" aria-hidden="true">
+                  {on ? "✓" : ""}
+                </span>
+                <span className="bucket-copy">
+                  <strong>{bucket.label}</strong>
+                  <span>{bucket.examples}</span>
+                </span>
+              </button>
+            );
+          })}
         </div>
         <button
           className="btn btn-ghost picker-toggle"
@@ -208,15 +224,32 @@ export function Customize({ settings, attempts = [], onSave, onBack, onProgress,
         <fieldset>
           <legend>{CLASS_SET}</legend>
           <p className="farm-note">{CLASS_SET_NOTE}</p>
-          <label className="custom-list">
-            <span>{CLASS_SET}</span>
-            <textarea
-              value={setDraftText}
-              onChange={(event) => setSetDraftText(event.target.value)}
-              rows={4}
-              spellCheck="false"
-            />
-          </label>
+          <dl className="set-summary">
+            {classSetSummaryLines(draft).map((line) => (
+              <div key={line.label} className="set-summary-row">
+                <dt>{line.label}</dt>
+                <dd>{line.value}</dd>
+              </div>
+            ))}
+          </dl>
+          <button
+            className="text-back"
+            type="button"
+            onClick={() => setShowSetCode((open) => !open)}
+          >
+            {showSetCode ? CLASS_SET_HIDE : CLASS_SET_SHOW}
+          </button>
+          {showSetCode ? (
+            <label className="custom-list">
+              <span>{CLASS_SET}</span>
+              <textarea
+                value={setDraftText}
+                onChange={(event) => setSetDraftText(event.target.value)}
+                rows={4}
+                spellCheck="false"
+              />
+            </label>
+          ) : null}
           {setNote ? <p className="farm-note">{setNote}</p> : null}
           <div className="chips">
             <button

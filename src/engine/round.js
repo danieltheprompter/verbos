@@ -1,4 +1,3 @@
-import { ROUND_SIZE } from "./config.js";
 import { cellKey, cellPips, cellsFor, columnPersons, sameBoard } from "./board.js";
 import { moodOf, pack, tenses as packTenses, tenseFor, timeOf } from "./pack.js";
 import { lastMiss, miniCellState } from "./levels.js";
@@ -125,8 +124,9 @@ export function playAgainRound(sittingKeys, settings, attempts = [], rng = Math.
 
 export function mapSittingKeys(keys, settings, attempts = [], rng = Math.random) {
   const unique = uniqueFormKeys(keys);
-  if (unique.length !== ROUND_SIZE) {
-    throw new Error(`sittingKeys must be ${ROUND_SIZE} unique formKeys, got ${unique.length}`);
+  const need = cellsFor(settings).length;
+  if (unique.length !== need) {
+    throw new Error(`sittingKeys must be ${need} unique formKeys, got ${unique.length}`);
   }
   const verbs = verbsForSettings(settings);
   const items = [];
@@ -159,12 +159,13 @@ export function mapSittingKeys(keys, settings, attempts = [], rng = Math.random)
 }
 
 function pinForRound(sittingKeys, replay, attempts, cells) {
+  const need = cells.length;
   const explicit = uniqueFormKeys(sittingKeys);
-  if (explicit.length === ROUND_SIZE) return explicit;
+  if (explicit.length === need) return explicit;
   const recovered = uniqueFormKeys(sittingKeysFromAttempts(attempts, cells));
-  if (recovered.length === ROUND_SIZE) return recovered;
+  if (recovered.length === need) return recovered;
   const fromReplay = keysFromReplayCells(replay || []);
-  if (fromReplay.length === ROUND_SIZE) return fromReplay;
+  if (fromReplay.length === need) return fromReplay;
   return [];
 }
 
@@ -262,11 +263,12 @@ export function buildRound(
   settings,
   attempts,
   rng = Math.random,
-  size = ROUND_SIZE,
+  size,
   replayCells,
   sittingKeys,
 ) {
   const cells = cellsFor(settings);
+  const need = Number(size) > 0 ? size : cells.length;
   const verbs = verbsForSettings(settings);
   const types = activeTypes(settings);
   const verbsByType = Object.fromEntries(
@@ -282,18 +284,18 @@ export function buildRound(
   if (allSelectedKnown(settings, attempts)) return [];
 
   const pin = pinForRound(sittingKeys, replay, attempts, cells);
-  if (pin.length === ROUND_SIZE && sittingIncomplete(attempts, pin)) {
+  if (pin.length === need && sittingIncomplete(attempts, pin)) {
     return mapSittingKeys(pin, settings, attempts, rng);
   }
 
   // Round 1 / still nothing you-know-this: one visit per cell, no retries stuffed in.
-  if (nothingKnown && cells.length <= size) {
+  if (nothingKnown && cells.length <= need) {
     const order = replay || shuffle(cells, rng);
-    return fillCells(order.slice(0, size), verbs, types, verbsByType, attempts, rng);
+    return fillCells(order.slice(0, need), verbs, types, verbsByType, attempts, rng);
   }
 
   if (firstPass && empty.length) {
-    const cover = shuffle(empty, rng).slice(0, size);
+    const cover = shuffle(empty, rng).slice(0, need);
     return fillCells(cover, verbs, types, verbsByType, attempts, rng);
   }
 
@@ -305,7 +307,7 @@ export function buildRound(
     : [];
   const board = replayOpen.length ? replayOpen : open;
 
-  if (board.length <= size) {
+  if (board.length <= need) {
     const cover = shuffle(board, rng);
     return fillWeighted(
       board,
@@ -314,12 +316,12 @@ export function buildRound(
       verbsByType,
       attempts,
       rng,
-      size,
+      need,
       fillCells(cover, verbs, types, verbsByType, attempts, rng),
     );
   }
 
-  return fillWeighted(board, verbs, types, verbsByType, attempts, rng, size);
+  return fillWeighted(board, verbs, types, verbsByType, attempts, rng, need);
 }
 
 export function makeDistractors(item, rng = Math.random) {

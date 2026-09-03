@@ -1,4 +1,5 @@
-import { ROUND_SIZE, SOUND_MUTED, WARMUP_BELL_SEC } from "./config.js";
+import { SOUND_MUTED, WARMUP_BELL_SEC } from "./config.js";
+import { cellsFor } from "./board.js";
 
 export const TIMER_BELL = "bell";
 export const TIMER_FAIL = "fail";
@@ -11,8 +12,8 @@ export function warmupSettings(settings) {
   };
 }
 
-export function warmupRoundSize() {
-  return ROUND_SIZE;
+export function warmupRoundSize(settings) {
+  return cellsFor(settings).length;
 }
 
 export function warmupMuted() {

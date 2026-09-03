@@ -4,6 +4,7 @@ import {
   answeredCellKeys,
   cellAllowed,
   columnLabels,
+  lastRoundResult,
   roundCellState,
   visitPieceCount,
 } from "../engine/board.js";
@@ -65,12 +66,17 @@ export function Board({
                 const visits = Number(visitCounts[`${row.id}:${column.id}`]) || 0;
                 const answeredHere = answered.has(`${row.id}:${column.id}`);
                 const marks = visitPieceCount(sittingMarks, visits, answeredHere || isLand);
+                const last = lastRoundResult(items, row.id, column.id);
+                const result = last === true ? "ok" : last === false ? "bad" : undefined;
                 return (
                   <div
                     key={column.id}
-                    className={`cell cell-${state}${isLand ? " is-land" : ""}`}
+                    className={`cell cell-${state}${isLand ? " is-land" : ""}${
+                      result === "ok" ? " is-ok" : result === "bad" ? " is-bad" : ""
+                    }`}
                     title={`${row.label} · ${column.label}`}
                     data-marks={marks || undefined}
+                    data-result={result}
                   >
                     {marks ? (
                       <span className="cell-marks" aria-hidden="true">

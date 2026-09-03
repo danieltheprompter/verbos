@@ -4,23 +4,26 @@ export const POOL = {
   STEM: 3,
 };
 
-export const ROUND_SIZE = 10;
 export const CONTENT_VERSION = "v1";
 export const PIP_SLOTS = 5;
 
 export const BOARD_NOTE =
   "This board is this round. A square fills when you answer. Right or wrong shows on what you typed.";
 
-export const RECAP_HEAD = "Board lit";
-export const RECAP_CLEAN = "Clean board";
-export const RECAP_SAME_BOARD = "Same board.";
+export const RECAP_TURN_RED = "Play again — turn the red ones green.";
+export const RECAP_CLEAN_LINE = "Nailed it. Play again so it sticks.";
+export const RECAP_TOWARD_SET = "toward knowing this set";
+export const RECAP_MISSED = "Missed";
+export const RECAP_HEAD = RECAP_TURN_RED;
+export const RECAP_CLEAN = RECAP_CLEAN_LINE;
+export const RECAP_SAME_BOARD = RECAP_TURN_RED;
 export const RECAP_BEAT_MS = 1600;
 export const SOUND_MUTED = true;
-export const RECAP_SUB = "Same 10. Fill the wells.";
+export const RECAP_SUB = RECAP_TURN_RED;
 export const RECAP_ROUND1 = RECAP_SUB;
 export const RECAP_STILL = RECAP_SUB;
-export const RECAP_SAME_TEN = "Same 10. Fill the wells.";
-export const RECAP_NEXT_AGAIN = "Play those squares again.";
+export const RECAP_SAME_TEN = RECAP_TURN_RED;
+export const RECAP_NEXT_AGAIN = RECAP_TURN_RED;
 export const RECAP_NEXT_REST = "Play the ones they still miss.";
 export const RECAP_NEXT_MAP = "Open What you know.";
 export const YOU = "You";
@@ -51,6 +54,9 @@ export const CLASS_SET_LOAD = "Load class set";
 export const CLASS_SET_NOTE = "Yesterday's set stays on this device.";
 export const CLASS_SET_BAD = "Could not load that class set.";
 export const CLASS_SET_OK = "Loaded on this device.";
+export const CLASS_SET_SHOW = "Show code";
+export const CLASS_SET_HIDE = "Hide code";
+export const VERB_PICK_LEGEND = "Pick any that apply.";
 export const CLEAR_ATLAS = "Clear the atlas";
 export const NEXT_PLAY_SUGGEST =
   "Play the ones they still miss. Another mood is in Customize.";

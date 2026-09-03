@@ -51,6 +51,10 @@ export function cellsFor(settings) {
   return cells;
 }
 
+export function roundSize(settings) {
+  return cellsFor(settings).length;
+}
+
 export function cellKey(cell) {
   return `${cell.tense}:${cell.person}`;
 }

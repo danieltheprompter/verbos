@@ -14,11 +14,14 @@ import {
   NEXT_PLAY_SUGGEST,
   PROFILE_TITLE,
   RECAP_CLEAN,
+  RECAP_CLEAN_LINE,
   RECAP_HEAD,
   RECAP_NEXT_REST,
   RECAP_SAME_BOARD,
   RECAP_SAME_TEN,
   RECAP_SUB,
+  RECAP_TURN_RED,
+  VERB_PICK_LEGEND,
   SOUND_MUTED,
   STORAGE_KEY,
   WARMUP_BELL_SEC,
@@ -28,6 +31,7 @@ import {
   applyClassSet,
   CLASS_SET_FIELDS,
   classSetFromSettings,
+  classSetSummaryLines,
   encodeClassSet,
   parseClassSet,
 } from "./classSet.js";
@@ -192,7 +196,7 @@ describe("named levels do not lock Customize", () => {
     memoryStore();
     const first = buildRound(DEFAULT_SETTINGS, [], mulberry32(7));
     let state = rememberSitting(loadState(), first);
-    expect(activeProfile(state).sittingKeys).toHaveLength(10);
+    expect(activeProfile(state).sittingKeys).toHaveLength(cellsFor(DEFAULT_SETTINGS).length);
     expect(JSON.parse(localStorage.getItem(STORAGE_KEY)).sittingKeys).toEqual(
       activeProfile(state).sittingKeys,
     );
@@ -210,13 +214,22 @@ describe("named levels do not lock Customize", () => {
     expect(warm.map(itemFormKey).sort()).toEqual([...keys].sort());
     const app = readFileSync(join(root, "App.jsx"), "utf8");
     expect(app).toMatch(/sittingKeysFromAttempts/);
+    expect(app).toMatch(/sittingKeysFromRound/);
+    expect(app).toMatch(/cellsFor\(roundSettings\)\.length/);
+    expect(app).not.toMatch(/pin\.length !== 10|pin\.length === 10/);
     expect(app).toMatch(/playAgainRound/);
     expect(app.split("function playAgain")[1]?.split("function start")[0] || "").not.toMatch(/buildRound/);
+    expect(app.split("function playAgain")[1]?.split("function start")[0] || "").not.toMatch(/throw new Error/);
     expect(app).toMatch(/onPlayAgain=\{\(\) =>\s*playAgain\(/);
-    expect(app).toMatch(/built round set ≠ sittingKeys/);
+    expect(app).not.toMatch(/Play again has no unique sittingKeys pin/);
+    expect(app).not.toMatch(/built round set ≠ sittingKeys/);
     expect(app).toMatch(/sittingKeys=\{profile\.sittingKeys\}/);
     const play = readFileSync(join(root, "components/Play.jsx"), "utf8");
     expect(play).toMatch(/recapStory\(items, log, sittingKeys\)/);
+    expect(play).toMatch(/onClick=\{onHome\}/);
+    expect(play).toMatch(/>\s*Back\s*</);
+    expect(play).not.toMatch(/beat === "go"/);
+    expect(play).not.toMatch(/stopImmediatePropagation/);
   });
 
   it("does not gate Customize or Subjunctive on levels", () => {
@@ -245,7 +258,9 @@ describe("named levels do not lock Customize", () => {
     const keys = first.map(itemFormKey);
     const story1 = recapStory(first.map((item) => ({ ...item, correct: true })), round1);
     expect(story1.pips).toBe("1/5");
-    expect(story1.line).toBe(RECAP_SAME_TEN);
+    expect(story1.banner).toBe(`${first.length} of ${first.length}`);
+    expect(story1.line).toBe(RECAP_CLEAN_LINE);
+    expect(story1.line).not.toMatch(/toward|3\/5|2 of 5/);
     expect(recapHitsToward(round1, keys).label).toBe("1/5");
     const second = buildRound(DEFAULT_SETTINGS, round1, mulberry32(11), 10, itemsToCells(first), keys);
     const after2 = [
@@ -254,10 +269,9 @@ describe("named levels do not lock Customize", () => {
     ];
     const story2 = recapStory(second.map((item) => ({ ...item, correct: true })), after2);
     expect(story2.pips).toBe("2/5");
-    expect(story2.banner).toBe(RECAP_SAME_BOARD);
-    expect(story2.line).toBe(RECAP_SAME_TEN);
-    expect(RECAP_SAME_TEN).toBe("Same 10. Fill the wells.");
-    expect(story2.line).not.toMatch(/0\/10|you know this|sitting/i);
+    expect(story2.banner).toBe(`${second.length} of ${second.length}`);
+    expect(story2.line).toBe(RECAP_CLEAN_LINE);
+    expect(story2.line).not.toMatch(/0\/10|you know this|sitting|toward/i);
     expect(namedLevels(after2, keys).find((level) => level.id === "fill").known).toBe(0);
     expect(namedLevels(after2, keys).find((level) => level.id === "fill").detail).toBe(
       `0/${LEVEL_FILL_TOTAL} ${FORM_COPY.know}`,
@@ -317,10 +331,18 @@ describe("warm-up and class set", () => {
     expect(actions).toMatch(/\{YOU\}[\s\S]*Customize[\s\S]*\{WHAT_YOU_KNOW\}/);
     const customize = readFileSync(join(root, "components/Customize.jsx"), "utf8");
     expect(customize).toMatch(/classSetFromSettings/);
+    expect(customize).toMatch(/aria-checked=\{on\}/);
+    expect(customize).toMatch(/bucket-check/);
+    expect(customize).toMatch(/VERB_PICK_LEGEND/);
+    expect(customize).toMatch(/set-summary/);
+    expect(customize).toMatch(/CLASS_SET_SHOW/);
     expect(customize).not.toMatch(/warmupBell|WARMUP_BELL|5:00/);
     expect(customize).not.toMatch(/Per item|<strong>Timer<\/strong>|timerSec/);
     const classSet = readFileSync(join(root, "components/ClassSet.jsx"), "utf8");
     expect(classSet).toMatch(/classSetFromSettings/);
+    expect(classSet).toMatch(/set-summary/);
+    expect(classSet).toMatch(/showCode/);
+    expect(classSet).toMatch(/CLASS_SET_SHOW/);
     expect(classSet).not.toMatch(/timer|warmupBell|5:00/);
     const app = readFileSync(join(root, "App.jsx"), "utf8");
     expect(app).toMatch(/warmupBell/);
@@ -392,6 +414,11 @@ describe("warm-up and class set", () => {
     expect(parseClassSet(JSON.stringify({ ...payload, timer: true, warmupBell: false }))).not.toHaveProperty(
       "warmupBell",
     );
+    const summary = classSetSummaryLines(payload);
+    expect(summary.map((line) => line.label)).toEqual(
+      expect.arrayContaining(["People", "Times", "Verb types"]),
+    );
+    expect(summary.find((line) => line.label === "Verb types")?.value).toMatch(/Stem/);
     expect(parseClassSet(text)).toMatchObject({
       types: ["stem"],
       tenses: ["presente", "subjuntivo"],
@@ -555,42 +582,54 @@ describe("Next Play and projector recap", () => {
       ...knownAt("presente", "yo", "comer"),
     ];
     const items = buildRound(DEFAULT_SETTINGS, [...visits, ...knownPresenteYo], mulberry32(9));
-    expect(items).toHaveLength(10);
-    expect(new Set(items.map((item) => itemFormKey(item))).size).toBe(10);
+    expect(items).toHaveLength(cellsFor(DEFAULT_SETTINGS).length);
+    expect(new Set(items.map((item) => itemFormKey(item))).size).toBe(
+      cellsFor(DEFAULT_SETTINGS).length,
+    );
   });
 
-  it("keeps recap as a still-lit glance with Board lit / Clean board and no class scores", () => {
-    expect(RECAP_HEAD).toBe("Board lit");
-    expect(RECAP_CLEAN).toBe("Clean board");
-    expect(RECAP_SAME_BOARD).toBe("Same board.");
+  it("keeps recap as this-round copy with a way home and no class scores", () => {
+    expect(RECAP_HEAD).toBe(RECAP_TURN_RED);
+    expect(RECAP_CLEAN).toBe(RECAP_CLEAN_LINE);
+    expect(RECAP_SAME_BOARD).toBe(RECAP_TURN_RED);
     const play = readFileSync(join(root, "components/Play.jsx"), "utf8");
     expect(play).toMatch(/is-glance/);
     expect(play).toMatch(/\{story\.banner\}/);
     expect(play).toMatch(/recap-hdmi/);
     expect(play).toMatch(/\{story\.head\}/);
-    expect(play).toMatch(/Same 10\. Fill the wells\./);
+    expect(play).toMatch(/\{story\.line\}/);
+    expect(play).not.toMatch(/Same 10\. Fill the wells\.|Same board\.|Board lit/);
     expect(play).not.toMatch(/recap-pips/);
     expect(play).not.toMatch(/\{story\.pips\}/);
     expect(play).not.toMatch(/Pips \{story\.pips\}/);
     expect(play).toMatch(/Play again/);
     expect(play).not.toMatch(/PROFILE_TITLE/);
     expect(play).not.toMatch(/class score|live score|roster|leaderboard|improved/i);
-    expect(RECAP_SAME_TEN).toBe("Same 10. Fill the wells.");
-    expect(RECAP_SAME_TEN).not.toMatch(/sitting|you know this/i);
+    expect(RECAP_SAME_TEN).toBe(RECAP_TURN_RED);
+    expect(RECAP_TURN_RED).toBe("Play again — turn the red ones green.");
+    expect(RECAP_CLEAN_LINE).toBe("Nailed it. Play again so it sticks.");
     const recapActions = play.split("play-done")[1] || "";
     expect(recapActions).toMatch(/btn-primary/);
+    expect(recapActions).toMatch(/>\s*Back\s*</);
+    expect(recapActions).toMatch(/onClick=\{onPlayAgain\}/);
     expect(recapActions).not.toMatch(/Customize/);
     expect(recapActions).not.toMatch(/WHAT_YOU_KNOW|What you know/);
+    expect(play).not.toMatch(/beat === "go"/);
     const recap = readFileSync(join(root, "engine/recap.js"), "utf8");
-    expect(recap).toMatch(/banner: RECAP_SAME_BOARD/);
-    expect(recap).toMatch(/line: RECAP_SAME_TEN/);
+    expect(recap).toMatch(/banner: tally\.label/);
+    expect(recap).toMatch(/RECAP_CLEAN_LINE/);
+    expect(recap).toMatch(/RECAP_TURN_RED/);
+    expect(recap).not.toMatch(/toward knowing this set/);
     expect(recap).not.toMatch(/\bscore\b|\bXP\b|streak|loot/i);
-    expect(RECAP_SAME_TEN).toBe("Same 10. Fill the wells.");
     const board = readFileSync(join(root, "components/Board.jsx"), "utf8");
     expect(board).toMatch(/sittingCellMarks/);
+    expect(board).toMatch(/lastRoundResult/);
+    expect(board).toMatch(/data-result/);
     expect(board).not.toMatch(/recap \?\s*0/);
     const styles = readFileSync(join(root, "styles.css"), "utf8");
     expect(styles).toMatch(/\.recap-hdmi/);
+    expect(styles).toMatch(/\.cell\[data-result="ok"\]/);
+    expect(styles).toMatch(/\.cell\[data-result="bad"\]/);
   });
 });
 

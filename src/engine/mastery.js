@@ -91,6 +91,27 @@ export function sittingKeysFromAttempts(attempts = [], cells = []) {
   return order.map((ck) => first.get(ck));
 }
 
+export function sittingKeysFromRound(items = [], attempts = [], need = 0) {
+  const fromItems = uniqueFormKeys((items || []).map((item) => itemFormKey(item)));
+  const want = need || fromItems.length;
+  if (want && fromItems.length === want) return fromItems;
+  const typed = (attempts || []).filter((attempt) => attempt.typed);
+  const lastTyped = uniqueFormKeys(
+    typed.slice(want ? -want : 0).map((attempt) => itemFormKey(attempt)),
+  );
+  if (want && lastTyped.length === want) return lastTyped;
+  const recovered = [];
+  const seen = new Set();
+  const cap = want || typed.length;
+  for (let i = typed.length - 1; i >= 0 && recovered.length < cap; i -= 1) {
+    const key = itemFormKey(typed[i]);
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    recovered.unshift(key);
+  }
+  return uniqueFormKeys(recovered);
+}
+
 export function sittingKnownCount(attempts, sittingKeys = []) {
   return sittingKeys.filter((key) => youKnowThis(attempts, parseFormKey(key))).length;
 }

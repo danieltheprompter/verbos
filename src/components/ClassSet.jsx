@@ -3,13 +3,16 @@ import {
   CLASS_SET,
   CLASS_SET_BAD,
   CLASS_SET_COPY,
+  CLASS_SET_HIDE,
   CLASS_SET_LOAD,
   CLASS_SET_NOTE,
   CLASS_SET_OK,
+  CLASS_SET_SHOW,
 } from "../engine/config.js";
 import {
   applyClassSet,
   classSetFromSettings,
+  classSetSummaryLines,
   encodeClassSet,
   parseClassSet,
 } from "../engine/classSet.js";
@@ -17,6 +20,9 @@ import {
 export function ClassSet({ settings, hasClassSet, onBack, onLoad }) {
   const [draft, setDraft] = useState(() => encodeClassSet(classSetFromSettings(settings)));
   const [note, setNote] = useState(hasClassSet ? CLASS_SET_NOTE : "");
+  const [showCode, setShowCode] = useState(false);
+  const parsed = parseClassSet(draft);
+  const summary = classSetSummaryLines(parsed || settings);
 
   function copySet() {
     const text = encodeClassSet(classSetFromSettings(settings));
@@ -47,16 +53,31 @@ export function ClassSet({ settings, hasClassSet, onBack, onLoad }) {
         <p>{CLASS_SET_NOTE}</p>
       </header>
 
-      <label className="custom-list">
-        <span>{CLASS_SET}</span>
-        <textarea
-          value={draft}
-          onChange={(event) => setDraft(event.target.value)}
-          rows={7}
-          spellCheck="false"
-          aria-label={CLASS_SET}
-        />
-      </label>
+      <dl className="set-summary">
+        {summary.map((line) => (
+          <div key={line.label} className="set-summary-row">
+            <dt>{line.label}</dt>
+            <dd>{line.value}</dd>
+          </div>
+        ))}
+      </dl>
+
+      <button className="text-back" type="button" onClick={() => setShowCode((open) => !open)}>
+        {showCode ? CLASS_SET_HIDE : CLASS_SET_SHOW}
+      </button>
+
+      {showCode ? (
+        <label className="custom-list">
+          <span>{CLASS_SET}</span>
+          <textarea
+            value={draft}
+            onChange={(event) => setDraft(event.target.value)}
+            rows={7}
+            spellCheck="false"
+            aria-label={CLASS_SET}
+          />
+        </label>
+      ) : null}
 
       {note ? <p className="farm-note">{note}</p> : null}
 

@@ -70,6 +70,29 @@ export function applyClassSet(settings, payload) {
   };
 }
 
+export function classSetSummaryLines(settings = DEFAULT_SETTINGS) {
+  const payload = classSetFromSettings(settings);
+  const times = payload.tenses.map((id) => tenseById[id]?.label).filter(Boolean);
+  const types = payload.types
+    .map((id) => pack.verbBuckets.find((bucket) => bucket.id === id)?.label)
+    .filter(Boolean);
+  const people = [];
+  const address = (pack.addressOptions || []).find((option) => option.id === payload.address);
+  if (address) people.push(address.label);
+  const extra = pack.persons.find((person) => person.optionalColumn);
+  if (extra && payload.extraColumn) people.push(extra.label);
+  const lines = [];
+  if (people.length) lines.push({ label: "People", value: people.join(" · ") });
+  if (times.length) lines.push({ label: "Times", value: times.join(" · ") });
+  if (types.length) lines.push({ label: "Verb types", value: types.join(" · ") });
+  if (payload.pickedVerbs.length) {
+    lines.push({ label: "List", value: payload.pickedVerbs.join(", ") });
+  } else if (String(payload.customList || "").trim()) {
+    lines.push({ label: "List", value: payload.customList.trim() });
+  }
+  return lines;
+}
+
 export function settingsLookLikeClassSet(settings) {
   const payload = classSetFromSettings(settings);
   const baseline = classSetFromSettings(DEFAULT_SETTINGS);

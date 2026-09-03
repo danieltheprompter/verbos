@@ -1,13 +1,7 @@
-import {
-  MASTERY_MIN,
-  RECAP_CLEAN,
-  RECAP_HEAD,
-  RECAP_NEXT_AGAIN,
-  RECAP_SAME_BOARD,
-  RECAP_SAME_TEN,
-} from "./config.js";
+import { RECAP_CLEAN_LINE, RECAP_MISSED, RECAP_TURN_RED } from "./config.js";
 import { formState, itemFormKey, parseFormKey, typedAttemptsFor } from "./mastery.js";
-import { moodOf, timeOf } from "./pack.js";
+import { moodOf, pack, personById, personLabel, timeOf } from "./pack.js";
+import { MASTERY_MIN } from "./config.js";
 
 function specOf(item) {
   return {
@@ -50,18 +44,45 @@ export function recapHitsToward(attempts, keys = []) {
   return { hits, need, label: `${hits}/${need}` };
 }
 
+export function recapTally(items = []) {
+  const total = items.length;
+  const hits = items.filter((item) => item.correct === true).length;
+  return { hits, total, label: `${hits} of ${total}` };
+}
+
+export function personShortLabel(person) {
+  const meta = personById(person);
+  const line = meta?.lines?.[0] || meta?.label || personLabel(person);
+  return String(line).split(/\s*\/\s*/)[0];
+}
+
+export function recapMissedLine(items = []) {
+  const order = pack.persons.map((person) => person.id);
+  const missed = [];
+  const seen = new Set();
+  for (const item of items) {
+    if (item.correct !== false || seen.has(item.person)) continue;
+    seen.add(item.person);
+    missed.push(item.person);
+  }
+  missed.sort((left, right) => order.indexOf(left) - order.indexOf(right));
+  if (!missed.length) return "";
+  return `${RECAP_MISSED} ${missed.map(personShortLabel).join(" / ")}`;
+}
+
 export function recapStory(items = [], attempts = [], sittingKeys = []) {
   const keys = sittingKeys.length ? sittingKeys : items.map(itemFormKey);
   const toward = recapHitsToward(attempts, keys);
-  const clean = items.length > 0 && items.every((item) => item.correct);
+  const tally = recapTally(items);
+  const clean = tally.total > 0 && tally.hits === tally.total;
   return {
-    banner: RECAP_SAME_BOARD,
-    head: clean ? RECAP_CLEAN : RECAP_HEAD,
-    line: RECAP_SAME_TEN,
+    banner: tally.label,
+    head: clean ? "" : recapMissedLine(items),
+    line: clean ? RECAP_CLEAN_LINE : RECAP_TURN_RED,
     pips: toward.label,
     hits: toward.hits,
     need: toward.need,
-    next: RECAP_NEXT_AGAIN,
+    next: clean ? RECAP_CLEAN_LINE : RECAP_TURN_RED,
     action: "again",
   };
 }
