@@ -351,7 +351,8 @@ describe("warm-up and class set", () => {
     expect(actions.indexOf("WARMUP_BELL_LABEL")).toBeGreaterThan(actions.indexOf("{WARMUP}"));
     expect(actions).toMatch(/Customize[\s\S]*\{WHAT_YOU_KNOW\}[\s\S]*CLASS_SET_LOAD/);
     expect(actions).toMatch(/text-back[\s\S]*Customize/);
-    expect(home.split('className="home-actions"')[1] || "").toMatch(/PRACTICE/);
+    expect(home).toMatch(/home-actions[\s\S]*\{PRACTICE\}/);
+    expect(home).toMatch(/home-card/);
     expect(WARMUP_BELL_LABEL).toBe("5 minutes");
     expect(WARMUP_BELL_HOME).toBe("Stops the round. Misses still just mark red.");
     const customize = readFileSync(join(root, "components/Customize.jsx"), "utf8");

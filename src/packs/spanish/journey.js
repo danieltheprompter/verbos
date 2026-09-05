@@ -15,44 +15,51 @@ function trial(spec) {
   };
 }
 
+export const journeyIslands = [
+  { id: "a", label: "Presente", trials: ["1", "2", "3", "4", "5"] },
+  { id: "b", label: "Pretérito", trials: ["6", "7", "8", "9"] },
+  { id: "c", label: "Imperfecto", trials: ["10", "11", "review"] },
+  { id: "d", label: "Futuro / Condicional", trials: ["12", "13"] },
+  { id: "e", label: "Subjuntivo", trials: ["14", "15", "16"] },
+  { id: "f", label: "Mandatos", trials: ["17", "18", "19"] },
+  { id: "g", label: "Compounds", trials: ["20", "21", "22", "23", "24", "25", "26"] },
+];
+
+export function expandPersons(base, address = "tu", extraColumn = false) {
+  const people = [];
+  for (const person of base || CORE) {
+    if (person === "tu") {
+      if (address === "vos") people.push("vos");
+      else if (address === "both") {
+        people.push("tu");
+        people.push("vos");
+      } else people.push("tu");
+      continue;
+    }
+    people.push(person);
+  }
+  if (extraColumn && !people.includes("vosotros")) {
+    const ellos = people.indexOf("ellos");
+    if (ellos >= 0) people.splice(ellos, 0, "vosotros");
+    else people.push("vosotros");
+  }
+  return people;
+}
+
 export const journeyTrials = [
   trial({
     id: "1",
     order: 1,
-    label: "Presente regulars -ar",
+    label: "Regulars -ar",
     requires: [],
     tenses: ["presente"],
     types: ["regular"],
     endings: ["ar"],
   }),
   trial({
-    id: "vos",
-    order: 1.1,
-    label: "Presente vos",
-    optional: true,
-    requires: ["1"],
-    tenses: ["presente"],
-    types: ["regular"],
-    endings: ["ar"],
-    persons: ["vos"],
-    address: "vos",
-  }),
-  trial({
-    id: "vosotros",
-    order: 1.2,
-    label: "Presente vosotros",
-    optional: true,
-    requires: ["1"],
-    tenses: ["presente"],
-    types: ["regular"],
-    endings: ["ar"],
-    persons: ["vosotros"],
-    extraColumn: true,
-  }),
-  trial({
     id: "2",
     order: 2,
-    label: "Presente regulars -er/-ir",
+    label: "Regulars -er/-ir",
     requires: ["1"],
     tenses: ["presente"],
     types: ["regular"],
@@ -61,7 +68,7 @@ export const journeyTrials = [
   trial({
     id: "3",
     order: 3,
-    label: "Presente ser/estar/ir",
+    label: "ser / estar / ir",
     requires: ["2"],
     tenses: ["presente"],
     types: ["irregular"],
@@ -70,7 +77,7 @@ export const journeyTrials = [
   trial({
     id: "4",
     order: 4,
-    label: "Presente high-freq tener, hacer",
+    label: "tener, hacer",
     requires: ["3"],
     tenses: ["presente"],
     types: ["irregular"],
@@ -79,7 +86,7 @@ export const journeyTrials = [
   trial({
     id: "5",
     order: 5,
-    label: "Presente stem-changers",
+    label: "Stem-changers",
     requires: ["4"],
     tenses: ["presente"],
     types: ["stem"],
@@ -87,7 +94,7 @@ export const journeyTrials = [
   trial({
     id: "6",
     order: 6,
-    label: "Pretérito regulars -ar",
+    label: "Regulars -ar",
     requires: ["5"],
     tenses: ["preterito"],
     types: ["regular"],
@@ -96,7 +103,7 @@ export const journeyTrials = [
   trial({
     id: "7",
     order: 7,
-    label: "Pretérito regulars -er/-ir",
+    label: "Regulars -er/-ir",
     requires: ["6"],
     tenses: ["preterito"],
     types: ["regular"],
@@ -105,7 +112,7 @@ export const journeyTrials = [
   trial({
     id: "8",
     order: 8,
-    label: "Pretérito spelling-change",
+    label: "Spelling-change",
     requires: ["6", "7"],
     tenses: ["preterito"],
     types: ["spelling"],
@@ -113,7 +120,7 @@ export const journeyTrials = [
   trial({
     id: "9",
     order: 9,
-    label: "Pretérito irregulars ser/ir, tener, estar, hacer, poder",
+    label: "ser/ir, tener, estar, hacer, poder",
     requires: ["6", "7"],
     tenses: ["preterito"],
     types: ["irregular"],
@@ -122,7 +129,7 @@ export const journeyTrials = [
   trial({
     id: "10",
     order: 10,
-    label: "Imperfecto regulars + ser/ir/ver",
+    label: "Regulars + ser/ir/ver",
     requires: ["8", "9"],
     tenses: ["imperfecto"],
     types: ["regular", "irregular"],
@@ -131,7 +138,7 @@ export const journeyTrials = [
   trial({
     id: "11",
     order: 11,
-    label: "Pretérito vs imperfecto contrast",
+    label: "Pretérito vs imperfecto",
     requires: ["9", "10"],
     tenses: ["preterito", "imperfecto"],
     types: ["regular", "irregular"],
@@ -166,7 +173,7 @@ export const journeyTrials = [
   trial({
     id: "14",
     order: 14,
-    label: "Subjuntivo presente regulars",
+    label: "Presente regulars",
     requires: ["1", "2", "13"],
     tenses: ["subjuntivo"],
     types: ["regular"],
@@ -174,7 +181,7 @@ export const journeyTrials = [
   trial({
     id: "15",
     order: 15,
-    label: "Subjuntivo presente irregulars",
+    label: "Presente irregulars",
     requires: ["14"],
     tenses: ["subjuntivo"],
     types: ["irregular"],
@@ -183,7 +190,7 @@ export const journeyTrials = [
   trial({
     id: "16",
     order: 16,
-    label: "Subjuntivo imperfecto -ra only",
+    label: "Imperfecto -ra",
     requires: ["15"],
     tenses: ["subjuntivo_imp"],
     types: ["regular"],
@@ -191,7 +198,7 @@ export const journeyTrials = [
   trial({
     id: "17",
     order: 17,
-    label: "Mandatos affirmative tú",
+    label: "Affirmative tú",
     requires: ["5"],
     tenses: ["mandato_af"],
     types: ["regular"],
@@ -200,7 +207,7 @@ export const journeyTrials = [
   trial({
     id: "18",
     order: 18,
-    label: "Mandatos negative tú",
+    label: "Negative tú",
     requires: ["14"],
     tenses: ["mandato_neg"],
     types: ["regular"],
@@ -209,7 +216,7 @@ export const journeyTrials = [
   trial({
     id: "19",
     order: 19,
-    label: "Mandatos usted/ustedes",
+    label: "usted / ustedes",
     requires: ["17"],
     tenses: ["mandato_af", "mandato_neg"],
     types: ["regular"],
@@ -218,7 +225,7 @@ export const journeyTrials = [
   trial({
     id: "20",
     order: 20,
-    label: "Indicative perfecto regular participles",
+    label: "Perfecto regulars",
     requires: ["13"],
     tenses: ["perfecto"],
     types: ["regular"],
@@ -226,7 +233,7 @@ export const journeyTrials = [
   trial({
     id: "21",
     order: 21,
-    label: "Indicative perfecto high-freq irregular participles",
+    label: "Perfecto irregular participles",
     requires: ["20"],
     tenses: ["perfecto"],
     types: ["irregular", "regular", "stem"],
@@ -235,7 +242,7 @@ export const journeyTrials = [
   trial({
     id: "22",
     order: 22,
-    label: "Indicative pluscuamperfecto",
+    label: "Pluscuamperfecto",
     requires: ["20"],
     tenses: ["pluscuamperfecto"],
     types: ["regular"],
@@ -274,17 +281,19 @@ export const journeyTrials = [
   }),
 ];
 
-export function trialSettings(spec) {
+export function trialSettings(spec, pronouns = {}) {
+  const address = pronouns.address || defaultSettings.address;
+  const extraColumn = Boolean(pronouns.extraColumn);
   return {
     ...defaultSettings,
     types: [...spec.types],
     tenses: [...spec.tenses],
     pickedVerbs: [...(spec.pickedVerbs || [])],
     customList: "",
-    address: spec.address || "tu",
-    extraColumn: Boolean(spec.extraColumn),
+    address,
+    extraColumn,
     endings: [...(spec.endings || [])],
-    persons: [...spec.persons],
+    persons: expandPersons(spec.persons, address, extraColumn),
     mc: false,
     timer: false,
   };

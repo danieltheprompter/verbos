@@ -12,10 +12,12 @@ import { DEFAULT_SETTINGS, WARMUP_BELL_SEC } from "./engine/constants.js";
 import {
   currentJourneyId,
   isJourneyUnlocked,
-  journeyMap,
+  journeyAtlas,
   journeyPlayable,
+  journeyPronouns,
   journeySettings,
   journeyTrial,
+  sameSittingSet,
   trialSittingKeys,
 } from "./engine/journey.js";
 import { sittingIncomplete, sittingKeysFromAttempts, sittingKeysFromRound, uniqueFormKeys } from "./engine/mastery.js";
@@ -33,6 +35,7 @@ import {
   rememberJourney,
   rememberSitting,
   renameProfile,
+  savePronouns,
   saveSettings,
   saveWarmupBell,
   switchProfile,
@@ -152,24 +155,24 @@ export function App() {
       setScreen("home");
       return;
     }
-    const who = activeProfile(storeRef.current);
-    const trial = journeyTrial(id) || journeyTrial(currentJourneyId(who.attempts));
+    const fromStore = storeRef.current;
+    const who = activeProfile(fromStore);
+    const pronouns = journeyPronouns(fromStore.settings);
+    const trial = journeyTrial(id) || journeyTrial(currentJourneyId(who.attempts, undefined, pronouns));
     if (!trial) {
       setScreen("journey");
       return;
     }
-    if (!again && !journeyPlayable(trial, who.attempts) && trial.id !== who.journeyNodeId) {
+    if (!again && !journeyPlayable(trial, who.attempts, pronouns) && trial.id !== who.journeyNodeId) {
       setScreen("journey");
       return;
     }
-    const settings = journeySettings(trial);
+    const settings = journeySettings(trial, pronouns);
+    const fresh = trialSittingKeys(trial, pronouns);
     const stored = uniqueFormKeys(who.journeySittingKeys);
-    const keys =
-      again && stored.length
-        ? stored
-        : stored.length && who.journeyNodeId === trial.id
-          ? stored
-          : trialSittingKeys(trial);
+    const keep =
+      stored.length && who.journeyNodeId === trial.id && sameSittingSet(stored, fresh);
+    const keys = keep ? stored : fresh;
     let nextItems = null;
     try {
       nextItems = playAgainRound(keys, settings, who.attempts, Math.random, { matchForm: true });
@@ -180,13 +183,15 @@ export function App() {
       setScreen("journey");
       return;
     }
-    const from = rememberJourney(storeRef.current, { nodeId: trial.id, keys });
+    const from = rememberJourney(fromStore, { nodeId: trial.id, keys });
     storeRef.current = from;
     setJourneyId(trial.id);
     beginRound(nextItems, from, { mode: "journey", session: null, fresh: false });
   }
 
-  const journeyTrialSettings = journeyId ? journeySettings(journeyTrial(journeyId)) : null;
+  const journeyTrialSettings = journeyId
+    ? journeySettings(journeyTrial(journeyId), journeyPronouns(store.settings))
+    : null;
   const activePlaySettings =
     playMode === "warmup"
       ? warmupSettings(playSettings)
@@ -203,11 +208,13 @@ export function App() {
       {screen === "home" ? (
         <Home
           journeyUnlocked={journeyOn}
+          finishedRound={profile.finishedRound}
           onPractice={openPractice}
           onJourney={() => {
             if (!journeyOn) return;
             setScreen("journey");
           }}
+          onKnow={() => setScreen("progress")}
         />
       ) : null}
 
@@ -233,7 +240,10 @@ export function App() {
 
       {screen === "journey" ? (
         <JourneyMap
-          nodes={journeyMap(profile.attempts)}
+          atlas={journeyAtlas(profile.attempts, journeyPronouns(store.settings))}
+          address={store.settings.address}
+          extraColumn={Boolean(store.settings.extraColumn)}
+          onPronouns={(next) => setStore((prev) => savePronouns(prev, next))}
           onPlay={(id) => startJourney(id)}
           onBack={() => setScreen("home")}
         />

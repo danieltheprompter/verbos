@@ -29,4 +29,4 @@ export {
   verbsInBucket,
 } from "./verbs.js";
 
-export { journeyTrials, trialSettings } from "./journey.js";
+export { expandPersons, journeyIslands, journeyTrials, trialSettings } from "./journey.js";

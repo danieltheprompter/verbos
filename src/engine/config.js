@@ -99,3 +99,7 @@ export const PRACTICE = "Practice";
 export const JOURNEY = "Journey";
 export const JOURNEY_LOCKED = "Locked. Practice is still open.";
 export const JOURNEY_MAP = "Map";
+export const JOURNEY_DONE = "Journey complete.";
+export const JOURNEY_REVIEW = "Review";
+export const PRACTICE_BLURB = "Any mix. Always open.";
+export const JOURNEY_BLURB = "The required path.";

@@ -12,17 +12,28 @@ import {
   beatenTrialIds,
   currentJourneyId,
   isJourneyUnlocked,
+  journeyAtlas,
   journeyCatalog,
   journeyMap,
   journeyPlayable,
+  journeyPronouns,
   journeySettings,
   journeyTrial,
+  requiredAllBeaten,
+  sameSittingSet,
   trialBeaten,
   trialSittingKeys,
   trialUnlocked,
 } from "./journey.js";
-import { activeProfile, blankProfile, loadState, setJourneyUnlocked } from "./storage.js";
-import { JOURNEY, LEDE, PRACTICE } from "./constants.js";
+import {
+  activeProfile,
+  blankProfile,
+  loadState,
+  rememberSitting,
+  savePronouns,
+  setJourneyUnlocked,
+} from "./storage.js";
+import { JOURNEY, LEDE, PRACTICE, WHAT_YOU_KNOW } from "./constants.js";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 
@@ -44,20 +55,29 @@ function mintKeys(keys, verb = "hablar") {
   });
 }
 
-function beat(id, attempts = [], verb) {
+function beat(id, attempts = [], verb, pronouns = {}) {
   const trial = journeyTrial(id);
-  return [...attempts, ...mintKeys(trialSittingKeys(trial), verb)];
+  return [...attempts, ...mintKeys(trialSittingKeys(trial, pronouns), verb)];
+}
+
+function peopleOn(keys) {
+  return [...new Set(keys.map((key) => parseFormKey(key).person))];
 }
 
 describe("Home two modes", () => {
-  it("shows Practice and Journey on Home, not the old clutter", () => {
+  it("shows Practice and Journey as cards, What you know secondary", () => {
     const home = readFileSync(join(root, "components/Home.jsx"), "utf8");
     const practice = readFileSync(join(root, "components/Practice.jsx"), "utf8");
     expect(PRACTICE).toBe("Practice");
     expect(JOURNEY).toBe("Journey");
     expect(LEDE).toBe("The conjugation quiz.");
+    expect(WHAT_YOU_KNOW).toBe("What you know");
     expect(home).toMatch(/PRACTICE/);
     expect(home).toMatch(/JOURNEY/);
+    expect(home).toMatch(/home-card/);
+    expect(home).toMatch(/home-cards/);
+    expect(home).toMatch(/WHAT_YOU_KNOW/);
+    expect(home).toMatch(/finishedRound/);
     expect(home).toMatch(/journeyUnlocked/);
     expect(home).not.toMatch(/Customize/);
     expect(home).not.toMatch(/CLASS_SET_LOAD/);
@@ -92,6 +112,8 @@ describe("Journey gate", () => {
     const app = readFileSync(join(root, "App.jsx"), "utf8");
     expect(app).toMatch(/openPractice/);
     expect(app).toMatch(/startJourney/);
+    expect(app).toMatch(/savePronouns/);
+    expect(app).toMatch(/journeyAtlas/);
     expect(app).not.toMatch(/stripe|Stripe|price_/);
   });
 });
@@ -142,27 +164,84 @@ function itemFormKeySafe(item) {
   };
 }
 
+describe("vos is opt-in then first-class", () => {
+  it("does not put vos side-quest trials on the required path", () => {
+    const ids = journeyCatalog().map((trial) => trial.id);
+    expect(ids).not.toContain("vos");
+    expect(ids).not.toContain("vosotros");
+    expect(journeyCatalog().filter((trial) => !trial.optional).map((trial) => trial.id)).toEqual(
+      Array.from({ length: 26 }, (_, index) => String(index + 1)),
+    );
+  });
+
+  it("keeps default sittings on the standard person set", () => {
+    const trial = journeyTrial("1");
+    const people = peopleOn(trialSittingKeys(trial));
+    expect(people).toContain("tu");
+    expect(people).not.toContain("vos");
+    expect(people).not.toContain("vosotros");
+    expect(journeyPronouns({ address: "tu", extraColumn: false })).toEqual({
+      address: "tu",
+      extraColumn: false,
+    });
+  });
+
+  it("makes selected vos first-class on cells, keys, and beat", () => {
+    const trial = journeyTrial("1");
+    const pronouns = { address: "vos" };
+    const keys = trialSittingKeys(trial, pronouns);
+    const settings = journeySettings(trial, pronouns);
+    const people = peopleOn(keys);
+    expect(people).toContain("vos");
+    expect(people).not.toContain("tu");
+    expect(people).not.toContain("vosotros");
+    expect(keys).toHaveLength(cellsFor(settings).length);
+    expect(trialBeaten(mintKeys(trialSittingKeys(trial)), trial, pronouns)).toBe(false);
+    expect(trialBeaten(mintKeys(keys), trial, pronouns)).toBe(true);
+    expect(sameSittingSet(keys, trialSittingKeys(trial))).toBe(false);
+    expect(sameSittingSet(keys, trialSittingKeys(trial, pronouns))).toBe(true);
+    const withColumn = trialSittingKeys(trial, { address: "tu", extraColumn: true });
+    expect(peopleOn(withColumn)).toContain("vosotros");
+    expect(peopleOn(withColumn)).toContain("tu");
+    expect(trialBeaten(mintKeys(trialSittingKeys(trial)), trial, { extraColumn: true })).toBe(false);
+    expect(trialBeaten(mintKeys(withColumn), trial, { extraColumn: true })).toBe(true);
+  });
+
+  it("lets the required path finish without vos or vosotros", () => {
+    let attempts = [];
+    for (const trial of journeyCatalog().filter((item) => !item.optional)) {
+      attempts = beat(trial.id, attempts, ["3", "4", "9", "15"].includes(trial.id) ? "ser" : "hablar");
+    }
+    const people = peopleOn(trialSittingKeys(journeyTrial("1")));
+    expect(people).not.toContain("vos");
+    expect(people).not.toContain("vosotros");
+    expect(requiredAllBeaten(beatenTrialIds(attempts))).toBe(true);
+    expect(journeyAtlas(attempts).complete).toBe(true);
+  });
+});
+
 describe("trial order and locks", () => {
-  it("opens the first trial and keeps later nodes locked", () => {
-    const catalog = journeyCatalog();
+  it("opens the first trial and previews later nodes without padlocks", () => {
     const beaten = new Set();
     expect(currentJourneyId([])).toBe("1");
     expect(trialUnlocked(journeyTrial("1"), beaten)).toBe(true);
     expect(trialUnlocked(journeyTrial("2"), beaten)).toBe(false);
     expect(trialUnlocked(journeyTrial("14"), beaten)).toBe(false);
     expect(journeyPlayable(journeyTrial("14"), [])).toBe(false);
+    const nodes = journeyMap([]);
+    expect(nodes.find((node) => node.id === "1").state).toBe("current");
+    expect(nodes.find((node) => node.id === "2").state).toBe("ahead");
+    expect(nodes.every((node) => node.state !== "locked")).toBe(true);
   });
 
-  it("opens optional vos after 1 and does not require it for 2", () => {
+  it("opens 2 after 1 without a vos gate", () => {
     const after1 = beat("1");
     const beaten = beatenTrialIds(after1);
     expect(beaten.has("1")).toBe(true);
-    expect(trialUnlocked(journeyTrial("vos"), beaten)).toBe(true);
+    expect(journeyTrial("vos")).toBe(null);
+    expect(journeyTrial("vosotros")).toBe(null);
     expect(trialUnlocked(journeyTrial("2"), beaten)).toBe(true);
-    expect(trialUnlocked(journeyTrial("vosotros"), beaten)).toBe(true);
     expect(currentJourneyId(after1)).toBe("2");
-    expect(journeyTrial("vos").optional).toBe(true);
-    expect(journeyTrial("vosotros").optional).toBe(true);
   });
 
   it("opens 8 and 9 together after 6 and 7, and 13 only after 12", () => {
@@ -211,6 +290,66 @@ describe("trial order and locks", () => {
     }
     const nodes = journeyMap(attempts);
     expect(nodes.filter((node) => !node.optional).every((node) => node.state === "beaten")).toBe(true);
+  });
+});
+
+describe("island atlas", () => {
+  it("shows the whole route, pulses trial 1, and previews ahead nodes", () => {
+    const atlas = journeyAtlas([]);
+    expect(atlas.islands).toHaveLength(7);
+    expect(atlas.nodes.find((node) => node.id === "1").state).toBe("current");
+    expect(atlas.nodes.find((node) => node.id === "1").playable).toBe(true);
+    expect(atlas.nodes.filter((node) => node.id !== "1").every((node) => node.state === "ahead")).toBe(
+      true,
+    );
+    expect(atlas.nodes.every((node) => node.state !== "locked")).toBe(true);
+    expect(atlas.complete).toBe(false);
+    expect(atlas.route.length).toBeGreaterThan(20);
+    expect(atlas.route.every((seg) => !seg.lit)).toBe(true);
+    const map = readFileSync(join(root, "components/JourneyMap.jsx"), "utf8");
+    expect(map).toMatch(/atlas-svg/);
+    expect(map).toMatch(/addressOptions/);
+    expect(map).toMatch(/optionalColumn/);
+    expect(map).not.toMatch(/journey-path/);
+    expect(map).not.toMatch(/is-locked|padlock/);
+  });
+
+  it("fills a mastered node, lights its segment, and pulses the next required", () => {
+    const after1 = beat("1");
+    const atlas = journeyAtlas(after1);
+    expect(atlas.nodes.find((node) => node.id === "1").state).toBe("beaten");
+    expect(atlas.nodes.find((node) => node.id === "2").state).toBe("current");
+    expect(atlas.route.find((seg) => seg.from === "1" && seg.to === "2").lit).toBe(true);
+    expect(atlas.complete).toBe(false);
+  });
+
+  it("shares the pronoun chips with Customize and does not wipe sittings", () => {
+    const customize = readFileSync(join(root, "components/Customize.jsx"), "utf8");
+    const map = readFileSync(join(root, "components/JourneyMap.jsx"), "utf8");
+    expect(customize).toMatch(/addressOptions/);
+    expect(customize).toMatch(/optionalColumn/);
+    expect(map).toMatch(/addressOptions/);
+    expect(map).toMatch(/onPronouns/);
+    const memory = {};
+    globalThis.localStorage = {
+      getItem: (key) => memory[key] ?? null,
+      setItem: (key, value) => {
+        memory[key] = String(value);
+      },
+    };
+    let state = loadState();
+    state = rememberSitting(state, [], {
+      fresh: true,
+      keys: ["indicative:presente:yo:regular:ar"],
+    });
+    const sitting = [...activeProfile(state).sittingKeys];
+    const atlasKeys = [...activeProfile(state).atlasKeys];
+    state = savePronouns(state, { address: "vos", extraColumn: true });
+    expect(state.settings.address).toBe("vos");
+    expect(state.settings.extraColumn).toBe(true);
+    expect(state.hasClassSet).toBe(false);
+    expect(activeProfile(state).sittingKeys).toEqual(sitting);
+    expect(activeProfile(state).atlasKeys).toEqual(atlasKeys);
   });
 });
 

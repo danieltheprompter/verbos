@@ -260,6 +260,22 @@ export function markFinished(state) {
   return next;
 }
 
+export function savePronouns(state, { address, extraColumn } = {}) {
+  const current = ensureProfiles(state);
+  const next = {
+    ...current,
+    settings: normalizeSettings({
+      ...current.settings,
+      address: address || current.settings.address,
+      extraColumn:
+        extraColumn === undefined ? current.settings.extraColumn : Boolean(extraColumn),
+    }),
+    warmupBell: deviceWarmupBell(current),
+  };
+  saveState(next);
+  return next;
+}
+
 export function saveSettings(state, settings) {
   const current = ensureProfiles(state);
   const next = {
