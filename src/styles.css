@@ -59,7 +59,7 @@ p {
   flex-direction: column;
 }
 
-.shell:has(.atlas) {
+.shell:has(.isle-map) {
   width: min(880px, 100%);
 }
 
@@ -216,27 +216,31 @@ button.wordmark-mini,
   text-align: left;
 }
 
-.atlas {
+.isle-map {
   width: 100%;
+  padding: 10px 8px 4px;
+  background: color-mix(in srgb, var(--paper-2) 78%, #cfe3d4);
+  border-radius: 24px;
+  box-shadow: inset 0 0 0 1px var(--rule);
 }
 
-.atlas-svg {
+.isle-map-svg {
   display: block;
   width: 100%;
   height: auto;
 }
 
 .atlas-isle ellipse {
-  fill: color-mix(in srgb, var(--paper) 70%, var(--ok-wash));
-  stroke: var(--rule);
-  stroke-width: 1.5;
+  fill: color-mix(in srgb, var(--ok-wash) 42%, var(--paper));
+  stroke: color-mix(in srgb, var(--ok) 35%, var(--rule));
+  stroke-width: 1.75;
 }
 
 .atlas-isle text {
-  fill: var(--ink-soft);
+  fill: var(--ink);
   font-family: var(--type-display);
-  font-size: 15px;
-  font-weight: 650;
+  font-size: 16px;
+  font-weight: 680;
   text-anchor: middle;
 }
 
@@ -259,6 +263,11 @@ button.wordmark-mini,
   stroke-width: 1.6;
 }
 
+.atlas-node circle.atlas-hit {
+  fill: transparent;
+  stroke: none;
+}
+
 .atlas-node text {
   fill: var(--ink);
   font-size: 11px;
@@ -276,7 +285,7 @@ button.wordmark-mini,
   stroke-dasharray: 3 3;
 }
 
-.atlas-node.is-current circle {
+.atlas-node.is-current circle:not(.atlas-hit) {
   stroke: var(--ink);
   stroke-width: 2.4;
   animation: atlas-pulse 1.4s ease-in-out infinite;
@@ -292,7 +301,7 @@ button.wordmark-mini,
   cursor: pointer;
 }
 
-.atlas.is-done .atlas-route {
+.isle-map.is-done .atlas-route {
   stroke: var(--ok);
   stroke-width: 3.5;
   stroke-dasharray: none;

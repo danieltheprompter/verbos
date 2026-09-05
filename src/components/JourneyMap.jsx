@@ -69,9 +69,9 @@ export function JourneyMap({
         </fieldset>
       ) : null}
 
-      <div className={`atlas ${atlas?.complete ? "is-done" : ""}`}>
+      <div className={`isle-map ${atlas?.complete ? "is-done" : ""}`}>
         <svg
-          className="atlas-svg"
+          className="isle-map-svg"
           viewBox="0 0 900 640"
           role="img"
           aria-label={JOURNEY_MAP}
@@ -115,6 +115,7 @@ export function JourneyMap({
               <title>
                 {node.state === "beaten" ? `${JOURNEY_REVIEW}: ${node.label}` : node.label}
               </title>
+              <circle className="atlas-hit" r="22" />
               <circle r="16" />
               <text y="5">{nodeMark(node)}</text>
             </g>

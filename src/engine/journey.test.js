@@ -307,7 +307,7 @@ describe("island atlas", () => {
     expect(atlas.route.length).toBeGreaterThan(20);
     expect(atlas.route.every((seg) => !seg.lit)).toBe(true);
     const map = readFileSync(join(root, "components/JourneyMap.jsx"), "utf8");
-    expect(map).toMatch(/atlas-svg/);
+    expect(map).toMatch(/isle-map-svg/);
     expect(map).toMatch(/addressOptions/);
     expect(map).toMatch(/optionalColumn/);
     expect(map).not.toMatch(/journey-path/);
